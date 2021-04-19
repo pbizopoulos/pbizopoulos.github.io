@@ -13,7 +13,7 @@ jobs:
       - name: install wkhtmltopdf and convert html to pdf
         run: |
           sudo apt-get -y install wkhtmltopdf
-          wkhtmltopdf index.html cv.pdf
+          wkhtmltopdf cv.html cv.pdf
       - uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
