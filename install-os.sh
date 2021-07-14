@@ -1,33 +1,24 @@
 #!/bin/sh
 
-# curl -o ./archlinux.iso https://mirror.pkgbuild.com/iso/latest/archlinux-2021.05.01-x86_64.iso
+# LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)" && curl -f -o ./archlinux.iso "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
 
-# test installation with qemu
-# 1. sudo pacman -S qemu edk2-ovmf
-# 2. qemu-img create -f raw ./archlinux.img 16G
-# 3. qemu-system-x86_64 -m 4G -enable-kvm -cdrom ./archlinux.iso -net user,hostfwd=tcp::10022-:22 -net nic -drive file=./archlinux.img,format=raw
-# 4. (from img) echo "root\nroot" | passwd
-# 5. ssh root@localhost -p10022 "curl -L pbizopoulos.github.io/init.sh | bash && poweroff"
-# 6. qemu-system-x86_64 -m 4G -enable-kvm -drive file=./archlinux.img,format=raw -drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd
-
-# installation
 # 1. plug USB (/dev/sdx) to a Linux machine
 # 2. dd bs=4M if=./archlinux.iso of=/dev/sdx status=progress oflag=sync
 # 3. unplug USB (/dev/sdx)
 # 4. plug USB (/dev/sdx) to the target
 # 5. power target and boot from USB
-# 6. curl -LO pbizopoulos.github.io/init.sh
+# 6. curl -LO pbizopoulos.github.io/install-os.sh
 # 7. vim script.sh to change root_password, ssh_password, user_password
-# 8. bash script.sh
+# 8. sh script.sh
 # 9. reboot
-# 10. run commands in post-installation.txt
+# 10. run commands in install-os-post.txt
 
 set -e
 root_password="root"
 ssh_password="root"
 user_password="root"
 timedatectl set-ntp true
-pacman -Sy --noconfirm
+pacman --noconfirm -Sy
 sgdisk --zap-all /dev/sda
 printf "n\n1\n4096\n+512M\nef00\nw\ny\n" | gdisk /dev/sda
 printf "n\n2\n\n\n8e00\nw\ny\n" | gdisk /dev/sda
@@ -87,7 +78,7 @@ git clone https://github.com/pbizopoulos/fswm && cd fswm && make install && cd .
 EOF
 
 arch-chroot -u pbizopoulos /mnt /bin/bash << EOF
-cd /home/pbizopoulos/ && git clone https://aur.archlinux.org/st.git && cd st && curl -LO https://st.suckless.org/patches/solarized/st-solarized-light-20190306-ed68fe7.diff && sudo -u pbizopoulos makepkg && git apply st-solarized-light-20190306-ed68fe7.diff && cp config.def.h config.h && makepkg --noconfirm -sif && cd .. && rm -rf st/
+cd /home/pbizopoulos/ && git clone https://aur.archlinux.org/st.git && cd st && curl -LO https://st.suckless.org/patches/solarized/st-solarized-light-20190306-ed68fe7.diff && makepkg && git apply st-solarized-light-20190306-ed68fe7.diff && cp config.def.h config.h && makepkg --noconfirm -sif && cd .. && rm -rf st/
 
 tee -a /home/pbizopoulos/.xinitrc << END
 setxkbmap -layout us,gr -option grp:win_space_toggle
@@ -150,7 +141,7 @@ echo "filetype plugin indent on" > .vimrc
 
 ssh-keygen -t ed25519 -C "pbizopoulos@protonmail.com" -f "/home/pbizopoulos/.ssh/id_ed25519" -P "$ssh_password"
 
-tee -a /home/pbizopoulos/post-installation.txt << END
+tee -a /home/pbizopoulos/install-os-post.txt << END
 1. pulseaudio --start
 2. pactl set-sink-volume 0 100%
 3. pactl set-sink-mute 0 0
