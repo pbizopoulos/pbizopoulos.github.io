@@ -26,9 +26,8 @@ function send() {
 	echo -en "${1}" >guest.in
 }
 
-readonly MIRROR="https://mirror.pkgbuild.com"
-LATEST_ISO="$(curl -fs "${MIRROR}/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)"
-curl -fO "${MIRROR}/iso/latest/${LATEST_ISO}"
+LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)"
+curl -fO "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
 ISO="${LATEST_ISO}"
 
 rm -rf ./tmp/ && mkdir -p ./tmp/ && cd ./tmp/
