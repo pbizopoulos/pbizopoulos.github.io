@@ -22,10 +22,6 @@ function expect() {
 	done
 }
 
-function send() {
-	echo -en "${1}" >guest.in
-}
-
 LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)"
 curl -fO "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
 ISO="${LATEST_ISO}"
@@ -52,10 +48,10 @@ qemu-img create -f qcow2 scratch-disk.img 16G
 
 exec 3>&1 {fd}< <(tee /dev/fd/3 <guest.out)
 expect "archiso login:"
-send "root\n"
+echo -en "root\n" > guest.in
 expect "# "
-send "curl -L pbizopoulos.github.io/install-os.sh | sed 's/sda/vda/' | bash\n"
+echo -en "curl -L pbizopoulos.github.io/install-os.sh | sed 's/sda/vda/' | bash\n" > guest.in
 expect "7. Add contents of /home/pbizopoulos/.ssh/id_ed25519.pub to GitHub SSH settings."
-send "shutdown now\n"
+echo -en "shutdown now\n" > guest.in
 wait
 qemu-system-x86_64 -m 4G -enable-kvm -drive file=scratch-disk.img -drive if=pflash,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd
