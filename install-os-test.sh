@@ -44,10 +44,9 @@ qemu-img create -f qcow2 ./scratch-disk.img 16G
 	-net user \
 	-kernel vmlinuz-linux \
 	-initrd initramfs-linux.img \
-	-append "archisobasedir=arch archisolabel=${ISO_VOLUME_ID} console=ttyS0" \
+	-append "archisolabel=${ISO_VOLUME_ID} console=ttyS0" \
 	-drive file=./scratch-disk.img,if=virtio \
-	-drive file="../${ISO}",format=raw,if=virtio,media=cdrom,readonly=on \
-	-virtfs "local,path=.,mount_tag=host,security_model=none" \
+	-drive file="../${ISO}",if=virtio,media=cdrom,readonly=on \
 	-monitor none \
 	-serial pipe:guest \
 	-nographic || kill "${$}"; } &
