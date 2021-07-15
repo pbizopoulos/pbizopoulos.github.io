@@ -1,17 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
-# LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)" && curl -f -o ./archlinux.iso "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
-
-# 1. plug USB (/dev/sdx) to a Linux machine
-# 2. dd bs=4M if=./archlinux.iso of=/dev/sdx status=progress oflag=sync
-# 3. unplug USB (/dev/sdx)
-# 4. plug USB (/dev/sdx) to the target
-# 5. power target and boot from USB
-# 6. curl -LO pbizopoulos.github.io/install-os.sh
-# 7. vim script.sh to change root_password, ssh_password, user_password
-# 8. sh script.sh
-# 9. reboot
-# 10. run commands in install-os-post.txt
+# 1. LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)" && curl -f -o ./archlinux.iso "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
+# 2. plug USB (/dev/sdx) to host
+# 3. dd bs=4M if=./archlinux.iso of=/dev/sdx status=progress oflag=sync
+# 4. unplug USB (/dev/sdx)
+# 5. plug USB (/dev/sdx) to the target
+# 6. boot target from USB
+# 7. curl -LO pbizopoulos.github.io/install-os.sh
+# 8. vim script.sh to change root_password, ssh_password, user_password
+# 9. bash script.sh
+# 10. reboot
+# 11. execute commands in install-os-post.txt
 
 set -e
 root_password="root"

@@ -1,7 +1,9 @@
 #!/bin/bash
-# requires qemu, edk2-ovmf and libisoburn
 
-set -o nounset -o errexit
+# 1. sudo pacman -Syu edk2-ovmf qemu libisoburn
+# 2. curl -L pbizopoulos.github.io/install-os-test.sh | bash
+
+set -e
 
 function expect() {
 	local length="${#1}"
