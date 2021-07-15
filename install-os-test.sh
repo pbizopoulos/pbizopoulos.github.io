@@ -29,15 +29,13 @@ function send() {
 readonly MIRROR="https://mirror.pkgbuild.com"
 LATEST_ISO="$(curl -fs "${MIRROR}/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)"
 curl -fO "${MIRROR}/iso/latest/${LATEST_ISO}"
-ISO="./${LATEST_ISO}"
+ISO="${LATEST_ISO}"
 
-rm -rf ./tmp/
-mkdir -p ./tmp/
-cd ./tmp/
+rm -rf ./tmp/ && mkdir -p ./tmp/ && cd ./tmp/
 xorriso -osirrox on -indev "../${ISO}" -extract arch/boot/x86_64 .
 ISO_VOLUME_ID="$(xorriso -indev "../${ISO}" |& awk -F : '$1 ~ "Volume id" {print $2}' | tr -d "' ")"
 mkfifo guest.out guest.in
-qemu-img create -f qcow2 ./scratch-disk.img 16G
+qemu-img create -f qcow2 scratch-disk.img 16G
 
 { qemu-system-x86_64 \
 	-m 4G \
@@ -47,7 +45,7 @@ qemu-img create -f qcow2 ./scratch-disk.img 16G
 	-kernel vmlinuz-linux \
 	-initrd initramfs-linux.img \
 	-append "archisolabel=${ISO_VOLUME_ID} console=ttyS0" \
-	-drive file=./scratch-disk.img,if=virtio \
+	-drive file=scratch-disk.img,if=virtio \
 	-drive file="../${ISO}",if=virtio,media=cdrom,readonly=on \
 	-monitor none \
 	-serial pipe:guest \
@@ -57,8 +55,8 @@ exec 3>&1 {fd}< <(tee /dev/fd/3 <guest.out)
 expect "archiso login:"
 send "root\n"
 expect "# "
-send "curl -L pbizopoulos.github.io/install-os.sh | sed 's/sda/vda/' | sh\n"
+send "curl -L pbizopoulos.github.io/install-os.sh | sed 's/sda/vda/' | bash\n"
 expect "7. Add contents of /home/pbizopoulos/.ssh/id_ed25519.pub to GitHub SSH settings."
 send "shutdown now\n"
 wait
-qemu-system-x86_64 -m 4G -enable-kvm -drive file=./scratch-disk.img -drive if=pflash,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd
+qemu-system-x86_64 -m 4G -enable-kvm -drive file=scratch-disk.img -drive if=pflash,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd
