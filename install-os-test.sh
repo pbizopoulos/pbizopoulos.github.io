@@ -26,13 +26,11 @@ ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-
 if [ ! -f "/var/tmp/${ISO}" ]; then
 	curl -o "/var/tmp/${ISO}" "https://mirror.pkgbuild.com/iso/latest/${ISO}"
 fi
-
-rm -f /var/tmp/guest.in /var/tmp/guest.out
 xorriso -osirrox on -indev "/var/tmp/${ISO}" -extract arch/boot/x86_64 /var/tmp/
 ISO_VOLUME_ID="$(xorriso -indev "/var/tmp/${ISO}" |& awk -F : '$1 ~ "Volume id" {print $2}' | tr -d "' ")"
+rm -f /var/tmp/guest.in /var/tmp/guest.out
 mkfifo /var/tmp/guest.out /var/tmp/guest.in
 qemu-img create -f qcow2 /var/tmp/os.img 8G
-
 { qemu-system-x86_64 \
 	-m 4G \
 	-enable-kvm \
@@ -46,7 +44,6 @@ qemu-img create -f qcow2 /var/tmp/os.img 8G
 	-monitor none \
 	-serial pipe:/var/tmp/guest \
 	-nographic || kill "${$}"; } &
-
 exec 3>&1 {fd}< <(tee /dev/fd/3 </var/tmp/guest.out)
 expect "archiso login:"
 echo -en "root\n" > /var/tmp/guest.in

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# 1. LATEST_ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)" && curl -f -o ./archlinux.iso "https://mirror.pkgbuild.com/iso/latest/${LATEST_ISO}"
-# 2. plug USB (/dev/sdx) to host
-# 3. dd bs=4M if=./archlinux.iso of=/dev/sdx status=progress oflag=sync
-# 4. unplug USB (/dev/sdx)
-# 5. plug USB (/dev/sdx) to the target
+# 1. ISO="$(curl -fs "https://mirror.pkgbuild.com/iso/latest/" | grep -Eo 'archlinux-[0-9]{4}\.[0-9]{2}\.[0-9]{2}-x86_64.iso' | head -n 1)" && curl -o "/var/tmp/${ISO}" "https://mirror.pkgbuild.com/iso/latest/${ISO}"
+# 2. plug USB to host
+# 3. dd bs=4M if="/var/tmp/${ISO}" of=/dev/sdx status=progress oflag=sync
+# 4. unplug USB from host
+# 5. plug USB to target
 # 6. boot target from USB
 # 7. curl -LO pbizopoulos.github.io/install-os.sh
 # 8. vim script.sh to change root_password, ssh_password, user_password
