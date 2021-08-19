@@ -1,0 +1,24 @@
+name: convert-html-to-pdf-and-release
+on:
+  push:
+    paths:
+      - '.github/workflows/convert-html-to-pdf-and-release.yml'
+      - 'cv.html'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v2
+      - name: install wkhtmltopdf and convert html to pdf
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install wkhtmltopdf
+          wkhtmltopdf cv.html cv.pdf
+      - uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Build CV pdf"
+          files: cv.pdf
