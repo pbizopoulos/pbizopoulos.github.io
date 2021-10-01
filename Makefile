@@ -49,6 +49,7 @@ $(tmpdir)/python-coverage: Dockerfile $(pythonfile) requirements.txt
 	touch $(tmpdir)/python-coverage
 
 $(tmpdir)/python-format: Dockerfile $(pythonfile)
+	mkdir -p $(tmpdir)/
 	docker container run \
 		--rm \
 		--user `id -u`:`id -g` \
