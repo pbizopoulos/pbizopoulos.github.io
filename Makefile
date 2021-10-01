@@ -54,7 +54,7 @@ $(tmpdir)/python-format: Dockerfile $(pythonfile)
 		--user `id -u`:`id -g` \
 		--volume `pwd`:$(workdir)/ \
 		--workdir $(workdir)/ \
-		`docker image build -q .` bash -c "isort $(pythonfile) && autoflake --in-place --remove-all-unused-imports --remove-unused-variables $(pythonfile) && autopep8 -i --max-line-length 1000 $(pythonfile)
+		`docker image build -q .` bash -c "isort $(pythonfile) && autoflake --in-place --remove-all-unused-imports --remove-unused-variables $(pythonfile) && autopep8 -i --max-line-length 1000 $(pythonfile)"
 	touch $(tmpdir)/python-format
 
 $(tmpdir)/ms.pdf: $(bibfile) $(texfile) $(tmpdir)/python-run
