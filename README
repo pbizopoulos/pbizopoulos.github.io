@@ -1,1 +1,4 @@
-Personal site which is also used as a file server.
+This repository functions as a:
+
+1) Personal site: https://pbizopoulos.github.io/
+2) File server: curl -LO pbizopoulos.github.io/Makefile
