@@ -12,8 +12,8 @@ jobs:
         uses: actions/checkout@v2
       - name: install wkhtmltopdf and convert html to pdf
         run: |
-          sudo apt-get -y update
-          sudo apt-get -y install wkhtmltopdf
+          sudo apt-get update
+          sudo apt-get install -y wkhtmltopdf
           wkhtmltopdf cv.html cv.pdf
       - uses: marvinpinto/action-automatic-releases@latest
         with:
