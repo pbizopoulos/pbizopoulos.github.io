@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/convert-html-to-pdf-and-release.yml'
-      - 'cv.html'
+      - 'curriculum-vitae.html'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,11 +14,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wkhtmltopdf
-          wkhtmltopdf cv.html cv.pdf
+          wkhtmltopdf curriculum-vitae.html curriculum-vitae.pdf
       - uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: true
-          title: "Build CV pdf"
-          files: cv.pdf
+          title: "Release curriculum-vitae.pdf"
+          files: curriculum-vitae.pdf
