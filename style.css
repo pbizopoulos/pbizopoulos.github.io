@@ -1,0 +1,16 @@
+#div-header {
+	border-bottom: solid;
+	float: left;
+	width: 100%;
+}
+
+#div-navigation {
+	float: left;
+	width: 50%;
+}
+
+#div-source-code-link {
+	float: left;
+	text-align: right;
+	width: 50%;
+}
