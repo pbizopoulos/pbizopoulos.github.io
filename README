@@ -1,0 +1,12 @@
+# pbizopoulos.github.io
+https://pbizopoulos.github.io/
+
+# Requirements
+POSIX mandatory utilities
+Make
+Docker
+
+# Check code and build
+git clone https://github.com/pbizopoulos/pbizopoulos.github.io
+cd pbizopoulos.github.io/
+make check all
