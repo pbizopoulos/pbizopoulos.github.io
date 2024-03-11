@@ -1,0 +1,18 @@
+# pbizopoulos.github.io
+https://pbizopoulos.github.io/
+
+# Requirements
+POSIX Shell & Utilities
+Git
+Docker
+
+# Download
+git clone https://github.com/pbizopoulos/pbizopoulos.github.io $HOME/github.com/pbizopoulos/pbizopoulos.github.io
+cd $HOME/github.com/pbizopoulos/pbizopoulos.github.io/
+
+# Development
+cd docs/ && make clean check all && cd ..
+
+# Staging
+cd docs/ && make STAGING=1
+
