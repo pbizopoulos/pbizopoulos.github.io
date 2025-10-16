@@ -16,6 +16,6 @@
       nixpkgs.config.allowUnfree = true;
     }
     // {
-      formatter.x86_64-linux = inputs.canonicalization.formatter.x86_64-linux;
+      inherit (inputs.canonicalization) formatter;
     };
 }
