@@ -1,0 +1,9 @@
+# pbizopoulos.github.io
+xdg-open https://pbizopoulos.github.io
+
+# Usage
+xdg-open https://pbizopoulos.github.io/README.txt
+
+# Extra commands
+xdg-open https://github.com/pbizopoulos/pbizopoulos.github.io/settings/pages
+# In 'Build and deployment', Source choose GitHub Actions.

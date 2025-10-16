@@ -1,0 +1,4 @@
+*.fd
+*.qcow2
+result
+tmp/
