@@ -182,7 +182,6 @@
         inputs.self.packages.${pkgs.stdenv.system}.fswm
         pkgs.distrobox
         pkgs.google-chrome
-        pkgs.nvidia-container-toolkit
         (pkgs.st.overrideAttrs {
           patches = [
             (pkgs.fetchpatch {
