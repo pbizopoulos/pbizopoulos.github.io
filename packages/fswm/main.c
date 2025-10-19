@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
             }
             case XCB_MAP_REQUEST: {
                 xcb_map_request_event_t *me = (xcb_map_request_event_t *)ev;
-		if (client_count < MAX_CLIENTS)
-			clients[client_count++] = me->window;
+                if (client_count < MAX_CLIENTS)
+                    clients[client_count++] = me->window;
                 xcb_map_window(conn, me->window);
                 focus_client(conn, client_count - 1);
                 xcb_configure_window(conn, clients[current_index], XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, cfg);
