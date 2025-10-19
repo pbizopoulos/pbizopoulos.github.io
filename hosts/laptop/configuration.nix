@@ -129,9 +129,7 @@
     xserver = {
       displayManager.startx = {
         enable = true;
-        extraCommands = ''
-          fswm st -f "Liberation Mono:pixelsize=60:weight=bold"
-        '';
+        extraCommands = "fswm st -f 'Liberation Mono:pixelsize=60:weight=bold'";
         generateScript = true;
       };
       enable = true;
@@ -162,7 +160,7 @@
           ];
         })
         (pkgs.vim.customize {
-          vimrcConfig.customRC = ''filetype plugin indent on'';
+          vimrcConfig.customRC = "filetype plugin indent on";
         })
       ];
     };

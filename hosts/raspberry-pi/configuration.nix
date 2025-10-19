@@ -49,10 +49,7 @@
       isNormalUser = true;
       packages = [
         (pkgs.vim.customize {
-          vimrcConfig.customRC = ''
-            filetype plugin indent on
-            set viminfofile=$XDG_STATE_HOME/viminfo
-          '';
+          vimrcConfig.customRC = "filetype plugin indent on";
         })
       ];
       password = "guest";
