@@ -13,32 +13,9 @@ static int current_index = 0;
 static void focus_client(xcb_connection_t *conn, int index) {
     uint32_t stack = XCB_STACK_MODE_ABOVE;
     if (client_count == 0) return;
-    if (index < 0) index = client_count - 1;
-    if (index >= client_count) index = 0;
-    current_index = index;
+    current_index = (index + client_count) % client_count;
     xcb_configure_window(conn, clients[current_index], XCB_CONFIG_WINDOW_STACK_MODE, &stack);
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[current_index], XCB_CURRENT_TIME);
-}
-
-static void add_client(xcb_window_t window) {
-    if (client_count < MAX_CLIENTS) {
-        clients[client_count++] = window;
-    }
-}
-
-static void remove_client(xcb_window_t window) {
-    int i;
-    for (i = 0; i < client_count; i++) {
-        if (clients[i] == window) {
-            int j;
-            for (j = i; j < client_count - 1; j++)
-                clients[j] = clients[j + 1];
-            client_count--;
-            if (current_index >= client_count)
-                current_index = client_count - 1;
-            return;
-        }
-    }
 }
 
 int main(int argc, char *argv[]) {
@@ -99,7 +76,8 @@ int main(int argc, char *argv[]) {
             }
             case XCB_MAP_REQUEST: {
                 xcb_map_request_event_t *me = (xcb_map_request_event_t *)ev;
-                add_client(me->window);
+		if (client_count < MAX_CLIENTS)
+			clients[client_count++] = me->window;
                 xcb_map_window(conn, me->window);
                 focus_client(conn, client_count - 1);
                 xcb_configure_window(conn, clients[current_index], XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, cfg);
@@ -107,7 +85,17 @@ int main(int argc, char *argv[]) {
             }
             case XCB_UNMAP_NOTIFY: {
                 xcb_unmap_notify_event_t *ue = (xcb_unmap_notify_event_t *)ev;
-                remove_client(ue->window);
+                int i, j;
+                for (i = 0; i < client_count; i++) {
+                    if (clients[i] == ue->window) {
+                        for (j = i; j < client_count - 1; j++)
+                            clients[j] = clients[j + 1];
+                        client_count--;
+                        if (current_index >= client_count)
+                            current_index = client_count - 1;
+                        break;
+                    }
+                }
                 focus_client(conn, current_index);
                 break;
             }
