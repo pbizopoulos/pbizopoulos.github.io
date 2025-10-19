@@ -11,12 +11,11 @@ static int client_count = 0;
 static int current_index = 0;
 
 static void focus_client(xcb_connection_t *conn, int index) {
-    uint32_t stack;
+    uint32_t stack = XCB_STACK_MODE_ABOVE;
     if (client_count == 0) return;
     if (index < 0) index = client_count - 1;
     if (index >= client_count) index = 0;
     current_index = index;
-    stack = XCB_STACK_MODE_ABOVE;
     xcb_configure_window(conn, clients[current_index], XCB_CONFIG_WINDOW_STACK_MODE, &stack);
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[current_index], XCB_CURRENT_TIME);
 }
@@ -28,21 +27,18 @@ static void add_client(xcb_window_t window) {
 }
 
 static void remove_client(xcb_window_t window) {
-    int found_index;
     int i;
-    found_index = -1;
     for (i = 0; i < client_count; i++) {
         if (clients[i] == window) {
-            found_index = i;
-            break;
+            int j;
+            for (j = i; j < client_count - 1; j++)
+                clients[j] = clients[j + 1];
+            client_count--;
+            if (current_index >= client_count)
+                current_index = client_count - 1;
+            return;
         }
     }
-    if (found_index == -1) return;
-    for (i = found_index; i < client_count - 1; i++) {
-        clients[i] = clients[i + 1];
-    }
-    client_count--;
-    if (current_index >= client_count) current_index = client_count - 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -51,7 +47,9 @@ int main(int argc, char *argv[]) {
     xcb_generic_event_t *ev;
     uint32_t event_mask;
     uint32_t cfg[4];
-    xcb_keycode_t del, t, tab;
+    xcb_keycode_t del = 119;
+    xcb_keycode_t t = 28;
+    xcb_keycode_t tab = 23;
     int next;
     if (argc < 2) {
         fprintf(stderr, "usage: add 'exec fswm <terminal>' to ~/.xinitrc\n");
@@ -75,9 +73,6 @@ int main(int argc, char *argv[]) {
     cfg[1] = 0;
     cfg[2] = screen->width_in_pixels;
     cfg[3] = screen->height_in_pixels;
-    del = 119;
-    t = 28;
-    tab = 23;
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1, tab, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT, tab, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, t, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
