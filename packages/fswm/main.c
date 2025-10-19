@@ -28,41 +28,31 @@ int main(int argc, char *argv[])
     uint32_t event_mask;
     uint32_t screen_geometry[4];
     int i, j;
-
     const xcb_keycode_t KEY_TAB = 23;
-    const xcb_keycode_t KEY_T   = 28;
+    const xcb_keycode_t KEY_T = 28;
     const xcb_keycode_t KEY_DEL = 119;
-
     if (argc < 2) return EXIT_FAILURE;
-
     conn = xcb_connect(NULL, NULL);
     if (!conn || xcb_connection_has_error(conn)) return EXIT_FAILURE;
-
     screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
     event_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
-
     if (xcb_request_check(conn, xcb_change_window_attributes_checked(conn, screen->root, XCB_CW_EVENT_MASK, &event_mask))) {
         xcb_disconnect(conn);
         return EXIT_FAILURE;
     }
-
     signal(SIGCHLD, SIG_IGN);
-
     screen_geometry[0] = 0;
     screen_geometry[1] = 0;
     screen_geometry[2] = screen->width_in_pixels;
     screen_geometry[3] = screen->height_in_pixels;
-
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1, KEY_TAB, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT, KEY_TAB, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_T, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_DEL, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
     while (1) {
         xcb_flush(conn);
         event = xcb_wait_for_event(conn);
         if (!event) break;
-
         switch (event->response_type & ~0x80) {
             case XCB_KEY_PRESS: {
                 xcb_key_press_event_t *key_event = (xcb_key_press_event_t *)event;
@@ -103,10 +93,8 @@ int main(int argc, char *argv[])
             }
             default: break;
         }
-
         free(event);
     }
-
     xcb_disconnect(conn);
     return 0;
 }
