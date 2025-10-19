@@ -7,39 +7,41 @@
 #define MAX_CLIENTS 256
 
 static xcb_window_t clients[MAX_CLIENTS];
-static int client_count = 0;
-static int current_client_index = 0;
+static int num_clients = 0;
+static int focused_index = 0;
 
-static void focus_client(xcb_connection_t *conn, int target_index) {
-    uint32_t stack;
-    if (client_count == 0) return;
+static void focus_client_at_index(xcb_connection_t *conn, int target_index)
+{
+    uint32_t stack_mode = XCB_STACK_MODE_ABOVE;
+    if (num_clients == 0) return;
 
-    current_client_index = (target_index % client_count + client_count) % client_count;
+    focused_index = (target_index % num_clients + num_clients) % num_clients;
 
-    stack = XCB_STACK_MODE_ABOVE;
-    xcb_configure_window(conn, clients[current_client_index], XCB_CONFIG_WINDOW_STACK_MODE, &stack);
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[current_client_index], XCB_CURRENT_TIME);
+    xcb_configure_window(conn, clients[focused_index],
+                         XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
+
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+                        clients[focused_index], XCB_CURRENT_TIME);
     xcb_flush(conn);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     xcb_connection_t *conn;
     xcb_screen_t *screen;
-    xcb_generic_event_t *ev;
+    xcb_generic_event_t *event;
     uint32_t event_mask;
     uint32_t screen_geometry[4];
-    xcb_keycode_t KEY_TAB, KEY_T, KEY_DEL;
-
     int i, j;
+
+    const xcb_keycode_t KEY_TAB = 23;
+    const xcb_keycode_t KEY_T   = 28;
+    const xcb_keycode_t KEY_DEL = 119;
 
     if (argc < 2) {
         fprintf(stderr, "usage: add 'exec fswm <terminal>' to ~/.xinitrc\n");
         return EXIT_FAILURE;
     }
-
-    KEY_TAB = 23;
-    KEY_T   = 28;
-    KEY_DEL = 119;
 
     conn = xcb_connect(NULL, NULL);
     if (!conn || xcb_connection_has_error(conn)) {
@@ -54,7 +56,8 @@ int main(int argc, char *argv[]) {
                  XCB_EVENT_MASK_PROPERTY_CHANGE;
 
     if (xcb_request_check(conn,
-        xcb_change_window_attributes_checked(conn, screen->root, XCB_CW_EVENT_MASK, &event_mask))) {
+        xcb_change_window_attributes_checked(conn, screen->root,
+                                             XCB_CW_EVENT_MASK, &event_mask))) {
         fprintf(stderr, "fswm: another window manager is running\n");
         xcb_disconnect(conn);
         return EXIT_FAILURE;
@@ -67,41 +70,40 @@ int main(int argc, char *argv[]) {
     screen_geometry[2] = screen->width_in_pixels;
     screen_geometry[3] = screen->height_in_pixels;
 
-    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1, KEY_TAB, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT, KEY_TAB, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_T, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_DEL, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1, KEY_TAB,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT, KEY_TAB,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_T,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1, KEY_DEL,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
     while (1) {
-        int forward;
-        int next_index;
+        int forward, next_index;
 
         xcb_flush(conn);
-        ev = xcb_wait_for_event(conn);
-        if (!ev) break;
+        event = xcb_wait_for_event(conn);
+        if (!event) break;
 
-        switch (ev->response_type & ~0x80) {
+        switch (event->response_type & ~0x80) {
 
             case XCB_KEY_PRESS: {
-                xcb_key_press_event_t *kp;
+                xcb_key_press_event_t *key_event = (xcb_key_press_event_t *)event;
 
-                kp = (xcb_key_press_event_t *)ev;
-
-                if ((kp->state & XCB_MOD_MASK_1) && kp->detail == KEY_TAB) {
-                    forward = !(kp->state & XCB_MOD_MASK_SHIFT);
-                    next_index = current_client_index + (forward ? 1 : -1);
-                    focus_client(conn, next_index);
+                if ((key_event->state & XCB_MOD_MASK_1) && key_event->detail == KEY_TAB) {
+                    forward = !(key_event->state & XCB_MOD_MASK_SHIFT);
+                    next_index = focused_index + (forward ? 1 : -1);
+                    focus_client_at_index(conn, next_index);
                 }
-
-                else if ((kp->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
-                         (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1) && kp->detail == KEY_T) {
+                else if ((key_event->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
+                         (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1) && key_event->detail == KEY_T) {
                     if (!fork()) execvp(argv[1], &argv[1]);
                 }
-
-                else if ((kp->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
-                         (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1) && kp->detail == KEY_DEL) {
+                else if ((key_event->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
+                         (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1) && key_event->detail == KEY_DEL) {
                     xcb_disconnect(conn);
-                    free(ev);
+                    free(event);
                     return 0;
                 }
 
@@ -109,16 +111,14 @@ int main(int argc, char *argv[]) {
             }
 
             case XCB_MAP_REQUEST: {
-                xcb_map_request_event_t *me;
+                xcb_map_request_event_t *map_event = (xcb_map_request_event_t *)event;
 
-                me = (xcb_map_request_event_t *)ev;
+                if (num_clients < MAX_CLIENTS)
+                    clients[num_clients++] = map_event->window;
 
-                if (client_count < MAX_CLIENTS)
-                    clients[client_count++] = me->window;
-
-                xcb_map_window(conn, me->window);
-                focus_client(conn, client_count - 1);
-                xcb_configure_window(conn, clients[current_client_index],
+                xcb_map_window(conn, map_event->window);
+                focus_client_at_index(conn, num_clients - 1);
+                xcb_configure_window(conn, clients[focused_index],
                                      XCB_CONFIG_WINDOW_X |
                                      XCB_CONFIG_WINDOW_Y |
                                      XCB_CONFIG_WINDOW_WIDTH |
@@ -128,23 +128,21 @@ int main(int argc, char *argv[]) {
             }
 
             case XCB_UNMAP_NOTIFY: {
-                xcb_unmap_notify_event_t *ue;
+                xcb_unmap_notify_event_t *unmap_event = (xcb_unmap_notify_event_t *)event;
 
-                ue = (xcb_unmap_notify_event_t *)ev;
-
-                for (i = 0; i < client_count; i++) {
-                    if (clients[i] == ue->window) {
-                        for (j = i; j < client_count - 1; j++)
+                for (i = 0; i < num_clients; i++) {
+                    if (clients[i] == unmap_event->window) {
+                        for (j = i; j < num_clients - 1; j++)
                             clients[j] = clients[j + 1];
-                        client_count--;
+                        num_clients--;
                         break;
                     }
                 }
 
-                if (client_count > 0)
-                    focus_client(conn, current_client_index);
+                if (num_clients > 0)
+                    focus_client_at_index(conn, focused_index);
                 else
-                    current_client_index = 0;
+                    focused_index = 0;
 
                 break;
             }
@@ -153,7 +151,7 @@ int main(int argc, char *argv[]) {
                 break;
         }
 
-        free(ev);
+        free(event);
     }
 
     xcb_disconnect(conn);
