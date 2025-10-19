@@ -50,7 +50,6 @@ int main(int argc, char *argv[]) {
     xcb_keycode_t del = 119;
     xcb_keycode_t t = 28;
     xcb_keycode_t tab = 23;
-    int next;
     if (argc < 2) {
         fprintf(stderr, "usage: add 'exec fswm <terminal>' to ~/.xinitrc\n");
         return EXIT_FAILURE;
@@ -84,13 +83,14 @@ int main(int argc, char *argv[]) {
         switch (ev->response_type & ~0x80) {
             case XCB_KEY_PRESS: {
                 xcb_key_press_event_t *kp = (xcb_key_press_event_t *)ev;
-                next = -1;
+                int next = -1;
                 if (kp->detail == tab && (kp->state & XCB_MOD_MASK_1)) {
-                    if (kp->state & XCB_MOD_MASK_SHIFT) next = current_index - 1;
-                    else next = current_index + 1;
+                    if (kp->state & XCB_MOD_MASK_SHIFT)
+                        next = current_index - 1;
+                    else
+                        next = current_index + 1;
                 } else if (kp->detail == del) {
-                    free(ev);
-                    goto done;
+                    break;
                 } else if (kp->detail == t && (kp->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1))) {
                     if (!fork()) execvp(argv[1], &argv[1]);
                 }
@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) {
         }
         free(ev);
     }
-done:
     xcb_disconnect(conn);
     return 0;
 }
