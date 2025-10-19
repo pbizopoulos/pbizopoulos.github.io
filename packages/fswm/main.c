@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <xcb/xcb.h>
 
-#define MAX_CLIENTS 256
+#define MAX_CLIENTS 8
 
 static xcb_window_t clients[MAX_CLIENTS];
 static int num_clients = 0;
@@ -80,12 +80,17 @@ int main(int argc, char *argv[])
             }
             case XCB_MAP_REQUEST: {
                 xcb_map_request_event_t *map_event = (xcb_map_request_event_t *)event;
-                if (num_clients < MAX_CLIENTS)
-                    clients[num_clients++] = map_event->window;
+                if (num_clients >= MAX_CLIENTS) {
+                    printf("Max clients reached. Denying new window 0x%08x\n", map_event->window);
+                    xcb_kill_client(conn, map_event->window);
+                    break;
+                }
+                clients[num_clients++] = map_event->window;
                 xcb_map_window(conn, map_event->window);
                 focus_client_at_index(conn, num_clients - 1);
                 xcb_configure_window(conn, clients[focused_index],
-                                     XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                                     XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                                     XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                                      screen_geometry);
                 break;
             }
