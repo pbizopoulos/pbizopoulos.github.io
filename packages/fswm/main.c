@@ -80,7 +80,8 @@ int main(int argc, char *argv[]) {
     if (xcb_connection_has_error(connection)) {
         fprintf(stderr, "fswm: cannot connect to the X server\n");
         goto cleanup;
-    } else if (xcb_request_error) {
+    }
+    if (xcb_request_error) {
         fprintf(stderr, "fswm: another window manager is already running\n");
         goto cleanup;
     }
@@ -143,7 +144,6 @@ int main(int argc, char *argv[]) {
     }
 cleanup:
     free(xcb_request_error);
-    if (connection)
-        xcb_disconnect(connection);
+    xcb_disconnect(connection);
     return xcb_request_error ? EXIT_FAILURE : 0;
 }
