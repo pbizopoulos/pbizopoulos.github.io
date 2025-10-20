@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   xcb_generic_event_t *event;
   uint32_t event_mask;
   uint32_t screen_geometry[4];
-  int i, j;
+  int i;
   const xcb_keycode_t KEY_TAB = 23;
   const xcb_keycode_t KEY_T = 28;
   const xcb_keycode_t KEY_DEL = 119;
@@ -107,9 +107,7 @@ int main(int argc, char *argv[]) {
       xcb_unmap_notify_event_t *unmap_event = (xcb_unmap_notify_event_t *)event;
       for (i = 0; i < num_clients; i++) {
         if (clients[i] == unmap_event->window) {
-          for (j = i; j < num_clients - 1; j++)
-            clients[j] = clients[j + 1];
-          num_clients--;
+          clients[i] = clients[--num_clients];
           break;
         }
       }
