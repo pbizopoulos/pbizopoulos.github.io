@@ -17,8 +17,8 @@ static void focus_client_at_index(xcb_connection_t *conn, int target_index) {
     return;
   }
   if (target_index < 0)
-    target_index = num_clients - 1;
-  else if (target_index >= num_clients)
+    target_index += num_clients;
+  if (target_index >= num_clients)
     target_index = 0;
   xcb_configure_window(conn, clients[target_index],
                        XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
@@ -120,16 +120,16 @@ int main(int argc, char *argv[]) {
           break;
         }
       }
-      if (removed_index == -1 || num_clients == 0) {
+      if (removed_index != -1 && num_clients > 0) {
+        if (focused_index >= removed_index) {
+          focused_index--;
+          if (focused_index < 0)
+            focused_index = num_clients - 1;
+        }
+        focus_client_at_index(conn, focused_index);
+      } else {
         focused_index = 0;
-        break;
       }
-      if (focused_index == removed_index) {
-        focused_index = (removed_index - 1 + num_clients) % num_clients;
-      } else if (focused_index > removed_index) {
-        focused_index--;
-      }
-      focus_client_at_index(conn, focused_index);
       break;
     }
     default:
