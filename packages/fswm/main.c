@@ -14,12 +14,10 @@ static void focus_client_at_index(xcb_connection_t *conn, int target_index) {
   uint32_t stack_mode = XCB_STACK_MODE_ABOVE;
   if (num_clients == 0)
     return;
-  while (target_index < 0 || target_index >= num_clients) {
-    if (target_index < 0)
-      target_index += num_clients;
-    else
-      target_index -= num_clients;
-  }
+  while (target_index < 0)
+    target_index += num_clients;
+  while (target_index >= num_clients)
+    target_index -= num_clients;
   xcb_configure_window(conn, clients[target_index],
                        XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[target_index],
@@ -96,17 +94,17 @@ int main(int argc, char *argv[]) {
         printf("Max clients reached. Denying new window 0x%08x\n",
                map_event->window);
         xcb_kill_client(conn, map_event->window);
-        break;
+      } else {
+        clients[num_clients++] = map_event->window;
+        xcb_map_window(conn, map_event->window);
+        focused_index = num_clients - 1;
+        focus_client_at_index(conn, focused_index);
+        xcb_configure_window(conn, clients[focused_index],
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                                 XCB_CONFIG_WINDOW_WIDTH |
+                                 XCB_CONFIG_WINDOW_HEIGHT,
+                             screen_geometry);
       }
-      clients[num_clients++] = map_event->window;
-      xcb_map_window(conn, map_event->window);
-      focused_index = num_clients - 1;
-      focus_client_at_index(conn, focused_index);
-      xcb_configure_window(conn, clients[focused_index],
-                           XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                               XCB_CONFIG_WINDOW_WIDTH |
-                               XCB_CONFIG_WINDOW_HEIGHT,
-                           screen_geometry);
       break;
     }
     case XCB_UNMAP_NOTIFY: {
