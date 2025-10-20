@@ -47,11 +47,7 @@
     users.guest = {
       extraGroups = [ "wheel" ];
       isNormalUser = true;
-      packages = [
-        (pkgs.vim.customize {
-          vimrcConfig.customRC = "filetype plugin indent on";
-        })
-      ];
+      packages = [ (pkgs.vim.customize { vimrcConfig.customRC = "filetype plugin indent on"; }) ];
       password = "guest";
     };
   };

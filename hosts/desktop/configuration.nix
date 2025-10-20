@@ -188,9 +188,7 @@
             })
           ];
         })
-        (pkgs.vim.customize {
-          vimrcConfig.customRC = "filetype plugin indent on";
-        })
+        (pkgs.vim.customize { vimrcConfig.customRC = "filetype plugin indent on"; })
       ];
     };
   };

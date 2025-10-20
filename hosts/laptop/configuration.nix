@@ -83,7 +83,7 @@
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.52" ];
+    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.53" ];
   };
   preservation = {
     enable = true;
@@ -159,9 +159,7 @@
             })
           ];
         })
-        (pkgs.vim.customize {
-          vimrcConfig.customRC = "filetype plugin indent on";
-        })
+        (pkgs.vim.customize { vimrcConfig.customRC = "filetype plugin indent on"; })
       ];
     };
   };
