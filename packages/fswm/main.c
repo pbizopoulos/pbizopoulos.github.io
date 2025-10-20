@@ -111,10 +111,7 @@ int main(int argc, char *argv[]) {
           break;
         }
       }
-      if (num_clients > 0)
-        focus_client_at_index(conn, focused_index);
-      else
-        focused_index = 0;
+      focus_client_at_index(conn, focused_index);
       break;
     }
     default:
