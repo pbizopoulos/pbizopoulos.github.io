@@ -26,7 +26,6 @@ names_allowed = {
     r"formatter\.nix",
     r"prm(/.*)?",
     r"secrets\.nix",
-    r"tmp(/.*)?",
 }
 file_dependencies = {
     r"hosts/[^/]+/configuration\.nix": {
