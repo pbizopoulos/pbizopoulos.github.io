@@ -14,12 +14,13 @@ static void focus_client_at_index(xcb_connection_t *conn, int target_index) {
   uint32_t stack_mode = XCB_STACK_MODE_ABOVE;
   if (num_clients == 0)
     return;
-  focused_index = (target_index + num_clients) % num_clients;
-  xcb_configure_window(conn, clients[focused_index],
+  target_index = (target_index + num_clients) % num_clients;
+  xcb_configure_window(conn, clients[target_index],
                        XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      clients[focused_index], XCB_CURRENT_TIME);
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[target_index],
+                      XCB_CURRENT_TIME);
   xcb_flush(conn);
+  focused_index = target_index;
 }
 
 int main(int argc, char *argv[]) {
@@ -74,9 +75,8 @@ int main(int argc, char *argv[]) {
         focus_client_at_index(conn, focused_index + direction);
       } else if ((key_event->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
                  (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) {
-        if (key_event->detail == KEY_T) {
-          if (!fork())
-            execvp(argv[1], &argv[1]);
+        if (key_event->detail == KEY_T && !fork()) {
+          execvp(argv[1], &argv[1]);
         } else if (key_event->detail == KEY_DEL) {
           xcb_disconnect(conn);
           free(event);
