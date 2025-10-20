@@ -14,7 +14,7 @@ static void focus_client_at_index(xcb_connection_t *conn, int target_index) {
   uint32_t stack_mode = XCB_STACK_MODE_ABOVE;
   if (num_clients == 0)
     return;
-  focused_index = (target_index % num_clients + num_clients) % num_clients;
+  focused_index = (target_index + num_clients) % num_clients;
   xcb_configure_window(conn, clients[focused_index],
                        XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
