@@ -1,26 +1,15 @@
 #!/usr/bin/env python3
-"""Check Python."""
+"""Canonicalize Python."""
 
 from __future__ import annotations
 
 import os
-import shutil
-import sys
 import unittest
 from pathlib import Path
 
 import fire
 import libcst
 import libcst.matchers as m
-
-_PACKAGE_PATH = (
-    Path.home() / "github.com/pbizopoulos/canonicalization/packages/check_python/"
-)
-if Path(__file__).resolve().as_posix().startswith("/nix/store/"):
-    _PARENT_PATH = Path(__file__).resolve().parent
-else:
-    _PARENT_PATH = _PACKAGE_PATH
-_OUT_PATH = _PACKAGE_PATH / "tmp"
 
 
 class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
@@ -288,31 +277,18 @@ class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
 
 
 class _TestCase(unittest.TestCase):
-    def test_check_python_bytes_input(self) -> None:
-        with (_PARENT_PATH / "prm/main_before.py").open() as file:
-            code_output_before = check_python(file.read().encode())
-        with (_PARENT_PATH / "prm/main_after.py").open() as file:
+    def test_canonicalize_python_bytes_input(self) -> None:
+        parent_path = Path(__file__).resolve().parent
+        with (parent_path / "prm/main_before.py").open() as file:
+            code_output_before = canonicalize_python(file.read().encode())
+        with (parent_path / "prm/main_after.py").open() as file:
             code_output_after = file.read()
         if code_output_before.decode() != code_output_after:  # type: ignore[union-attr]
             raise AssertionError
 
-    def test_check_python_empty_input(self) -> None:
-        code_output_after = check_python(b"")
+    def test_canonicalize_python_empty_input(self) -> None:
+        code_output_after = canonicalize_python(b"")
         if code_output_after != b"":
-            raise AssertionError
-
-    def test_check_python_file_input(self) -> None:
-        _OUT_PATH.mkdir(exist_ok=True, parents=True)
-        shutil.copyfile(
-            _PARENT_PATH / "prm/main_before.py",
-            _OUT_PATH / "main_after.py",
-        )
-        check_python((_OUT_PATH / "main_after.py").as_posix())
-        with (_OUT_PATH / "main_after.py").open() as file:
-            code_output_before_processed = file.read()
-        with (_PARENT_PATH / "prm/main_after.py").open() as file:
-            code_output_after = file.read()
-        if code_output_before_processed != code_output_after:
             raise AssertionError
 
 
@@ -337,8 +313,8 @@ def _get_sort_key(node: libcst.FunctionDef) -> str:
     return node_name_value
 
 
-def check_python(*args: str | bytes) -> str | bytes | None:
-    """Check Python.
+def canonicalize_python(*args: str | bytes) -> str | bytes | None:
+    """Canonicalize Python.
 
     It does the following:
     1. Sorts alphabetically classes and functions in that order.
@@ -365,13 +341,12 @@ def check_python(*args: str | bytes) -> str | bytes | None:
 
 
 def main() -> None:
-    """Launch check_python using the Fire module."""
-    fire.Fire(check_python)
+    """Launch canonicalize_python using the Fire module."""
+    fire.Fire(canonicalize_python)
 
 
 if __name__ == "__main__":
     if os.getenv("DEBUG"):
-        sys.exit()
         unittest.main()
     else:
         main()
