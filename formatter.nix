@@ -13,10 +13,16 @@ inputs.treefmt-nix.lib.mkWrapper pkgs {
     };
     ormolu.enable = true;
     prettier.enable = true;
-    ruff-check.enable = true;
+    ruff-check = {
+      enable = true;
+      extendSelect = [ "ALL" ];
+    };
     ruff-format.enable = true;
     shellcheck.enable = true;
-    shfmt.enable = true;
+    shfmt = {
+      enable = true;
+      simplify = true;
+    };
     statix.enable = true;
     yamlfmt.enable = true;
   };
@@ -32,15 +38,8 @@ inputs.treefmt-nix.lib.mkWrapper pkgs {
           "--strict"
         ];
       };
-      ruff-check.options = [
-        "--select"
-        "ALL"
-        "--unsafe-fixes"
-      ];
-      shfmt.options = [
-        "--posix"
-        "--simplify"
-      ];
+      ruff-check.options = [ "--unsafe-fixes" ];
+      shfmt.options = [ "--posix" ];
     };
     global.excludes = [
       "*/prm/**"
