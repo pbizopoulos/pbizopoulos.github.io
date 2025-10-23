@@ -3,8 +3,7 @@
 }:
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
-    cc -o fswm main.c -O3 -std=c89 -Werror -lxcb \
-    -fanalyzer \
+    cc -o fswm main.c -O3 -std=c89 -Werror -lxcb -lxcb-keysyms \
     -Waggressive-loop-optimizations \
     -Wall \
     -Walloc-zero \
@@ -96,6 +95,7 @@ pkgs.stdenv.mkDerivation rec {
     -Wvector-operation-performance \
     -Wvla \
     -Wwrite-strings
+    # -fanalyzer \
     # -Waggregate-return
     # -Wtraditional-conversion
   '';
@@ -104,12 +104,8 @@ pkgs.stdenv.mkDerivation rec {
     cp -f fswm $out/bin/
     chmod 755 $out/bin/fswm
   '';
-  meta = {
-    description = "A feature-complete and portable full-screen window manager based on XCB, written in C89";
-    mainProgram = pname;
-    platforms = pkgs.lib.platforms.unix;
-  };
-  nativeBuildInputs = [ pkgs.xorg.libxcb ];
+  meta.mainProgram = pname;
+  nativeBuildInputs = [ pkgs.xorg.libxcb pkgs.xorg.xcbutilkeysyms pkgs.xorg.libX11 ];
   pname = builtins.baseNameOf ./.;
   src = ./.;
   version = "0.0.0";

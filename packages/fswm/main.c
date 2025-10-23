@@ -2,136 +2,242 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <X11/keysym.h>
 #include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
 
-#define MAX_CLIENTS 8
+typedef struct List {
+	struct Client *head;
+	struct Client *tail;
+} List;
 
-static xcb_window_t clients[MAX_CLIENTS];
-static int num_clients = 0;
-static int focused_index = 0;
+typedef struct Client {
+	struct Client *next;
+	struct Client *previous;
+	struct List *parent;
+	xcb_window_t window;
+} Client;
 
-static void focus_client_at_index(xcb_connection_t *conn, int target_index) {
-  uint32_t stack_mode = XCB_STACK_MODE_ABOVE;
-  if (num_clients == 0)
-    return;
-  target_index = ((target_index % num_clients) + num_clients) % num_clients;
-  xcb_configure_window(conn, clients[target_index],
-                       XCB_CONFIG_WINDOW_STACK_MODE, &stack_mode);
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, clients[target_index],
-                      XCB_CURRENT_TIME);
-  xcb_flush(conn);
-  focused_index = target_index;
+static void update_client(Client *client, xcb_connection_t *connection);
+
+static Client *client_current = NULL;
+static Client *client_previous_focus = NULL;
+static List clients;
+
+static Client *remove_client(Client *client) {
+	if (client == client->parent->head) {
+		client->parent->head = client->parent->head->next;
+		if (client->parent->head) {
+			client->parent->head->previous = NULL;
+		} else {
+			client->parent->tail = NULL;
+		}
+	} else if (client == client->parent->tail) {
+		client->parent->tail = client->parent->tail->previous;
+		client->parent->tail->next = NULL;
+	} else {
+		client->previous->next = client->next;
+		client->next->previous = client->previous;
+	}
+	client->previous = client->next = NULL;
+	client->parent = NULL;
+	return client;
+}
+
+void update_client(Client *client_focus, xcb_connection_t *connection) {
+	unsigned int key_press_value_list[] = {XCB_STACK_MODE_ABOVE};
+	Client *client_head = clients.head;
+	if (client_focus) {
+		if (client_focus == client_previous_focus) {
+			client_current = client_previous_focus;
+			client_previous_focus = client_current->previous;
+		} else {
+			client_previous_focus = client_current;
+			client_current = client_focus;
+		}
+	} else {
+		if (client_previous_focus) {
+			client_current = client_previous_focus;
+		} else {
+			client_current = clients.head;
+		}
+		if (client_current) {
+			client_previous_focus = client_current->previous;
+		} else {
+			client_previous_focus = NULL;
+		}
+	}
+	if (!client_current) {
+		return;
+	}
+	if (!clients.head) {
+		return;
+	}
+	while (client_head) {
+		if (client_head == client_current) {
+			xcb_configure_window(connection, client_head->window, XCB_CONFIG_WINDOW_STACK_MODE, key_press_value_list);
+		}
+		client_head = client_head->next;
+	}
+	xcb_set_input_focus(connection, XCB_INPUT_FOCUS_POINTER_ROOT, client_current->window, XCB_CURRENT_TIME);
 }
 
 int main(int argc, char *argv[]) {
-  xcb_connection_t *conn;
-  xcb_screen_t *screen;
-  xcb_generic_event_t *event;
-  uint32_t event_mask;
-  uint32_t screen_geometry[4];
-  int i;
-  const xcb_keycode_t KEY_TAB = 23;
-  const xcb_keycode_t KEY_T = 28;
-  const xcb_keycode_t KEY_DEL = 119;
-  if (argc < 2)
-    return EXIT_FAILURE;
-  conn = xcb_connect(NULL, NULL);
-  if (!conn || xcb_connection_has_error(conn))
-    return EXIT_FAILURE;
-  screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-  event_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-               XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
-               XCB_EVENT_MASK_PROPERTY_CHANGE;
-  if (xcb_request_check(
-          conn, xcb_change_window_attributes_checked(
-                    conn, screen->root, XCB_CW_EVENT_MASK, &event_mask))) {
-    xcb_disconnect(conn);
-    return EXIT_FAILURE;
-  }
-  signal(SIGCHLD, SIG_IGN);
-  screen_geometry[0] = 0;
-  screen_geometry[1] = 0;
-  screen_geometry[2] = screen->width_in_pixels;
-  screen_geometry[3] = screen->height_in_pixels;
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1, KEY_TAB,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT,
-               KEY_TAB, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1,
-               KEY_T, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1,
-               KEY_DEL, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  while (1) {
-    xcb_flush(conn);
-    event = xcb_wait_for_event(conn);
-    if (!event)
-      break;
-    switch (event->response_type & ~0x80) {
-    case XCB_KEY_PRESS: {
-      xcb_key_press_event_t *key_event = (xcb_key_press_event_t *)event;
-      int direction;
-      if ((key_event->state & XCB_MOD_MASK_1) && key_event->detail == KEY_TAB) {
-        direction = (key_event->state & XCB_MOD_MASK_SHIFT) ? -1 : 1;
-        focus_client_at_index(conn, focused_index + direction);
-      } else if ((key_event->state & (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) ==
-                 (XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_1)) {
-        if (key_event->detail == KEY_T && !fork()) {
-          execvp(argv[1], &argv[1]);
-        } else if (key_event->detail == KEY_DEL) {
-          xcb_disconnect(conn);
-          free(event);
-          return 0;
-        }
-      }
-      break;
-    }
-    case XCB_MAP_REQUEST: {
-      xcb_map_request_event_t *map_event = (xcb_map_request_event_t *)event;
-      if (num_clients >= MAX_CLIENTS) {
-        printf("Max clients reached. Denying new window 0x%08x\n",
-               map_event->window);
-        xcb_kill_client(conn, map_event->window);
-      } else {
-        clients[num_clients++] = map_event->window;
-        xcb_map_window(conn, map_event->window);
-        focused_index = num_clients - 1;
-        focus_client_at_index(conn, focused_index);
-        xcb_configure_window(conn, clients[focused_index],
-                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                                 XCB_CONFIG_WINDOW_WIDTH |
-                                 XCB_CONFIG_WINDOW_HEIGHT,
-                             screen_geometry);
-      }
-      break;
-    }
-    case XCB_UNMAP_NOTIFY: {
-      xcb_unmap_notify_event_t *unmap_event = (xcb_unmap_notify_event_t *)event;
-      int removed_index = -1;
-      for (i = 0; i < num_clients; i++) {
-        if (clients[i] == unmap_event->window) {
-          removed_index = i;
-          clients[i] = clients[num_clients - 1];
-          num_clients--;
-          break;
-        }
-      }
-      if (removed_index != -1 && num_clients > 0) {
-        if (focused_index >= removed_index) {
-          focused_index--;
-          if (focused_index < 0)
-            focused_index = num_clients - 1;
-        }
-        focus_client_at_index(conn, focused_index);
-      } else {
-        focused_index = 0;
-      }
-      break;
-    }
-    default:
-      break;
-    }
-    free(event);
-  }
-  xcb_disconnect(conn);
-  return 0;
+	Client *client = calloc(1, sizeof(Client));
+	unsigned int map_request_configure_value_list[4];
+	unsigned int root_value_list[] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT|XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE};
+	xcb_connection_t *connection = xcb_connect(NULL, NULL);
+	xcb_generic_event_t *generic_event = NULL;
+	xcb_key_symbols_t *key_symbols = xcb_key_symbols_alloc(connection);
+	xcb_keycode_t *delete_keycode = xcb_key_symbols_get_keycode(key_symbols, XK_Delete);
+	xcb_keycode_t *t_keycode = xcb_key_symbols_get_keycode(key_symbols, XK_T);
+	xcb_keycode_t *tab_keycode = xcb_key_symbols_get_keycode(key_symbols, XK_Tab);
+	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
+	xcb_void_cookie_t wm_cookie = xcb_change_window_attributes_checked(connection, screen->root, XCB_CW_EVENT_MASK, root_value_list);
+	xcb_generic_error_t *xcb_request_error = xcb_request_check(connection, wm_cookie);
+	xcb_key_symbols_free(key_symbols);
+	if (argc < 2) {
+		fprintf(stderr, "usage: printf 'exec fswm <terminal_emulator_command>\\n' >> ~/.xinitrc\n");
+		goto error_exit;
+	} else if (xcb_connection_has_error(connection) > 0) {
+		fprintf(stderr, "fswm: cannot connect to the X server\n");
+		goto error_exit;
+	} else if (xcb_request_error) {
+		fprintf(stderr, "fswm: another window manager is already running\n");
+		goto error_exit;
+	}
+	signal(SIGCHLD, SIG_IGN);
+	map_request_configure_value_list[0] = 0;
+	map_request_configure_value_list[1] = 0;
+	map_request_configure_value_list[2] = screen->width_in_pixels;
+	map_request_configure_value_list[3] = screen->height_in_pixels;
+	xcb_change_window_attributes(connection, screen->root, XCB_CW_EVENT_MASK, root_value_list);
+	xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_1, *tab_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_1|XCB_MOD_MASK_SHIFT, *tab_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_CONTROL|XCB_MOD_MASK_1, *t_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_CONTROL|XCB_MOD_MASK_1, *delete_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	while (1) {
+		xcb_flush(connection);
+		generic_event = xcb_wait_for_event(connection);
+		if (generic_event->response_type == XCB_KEY_PRESS) {
+			const xcb_key_press_event_t *key_press_event = (xcb_key_press_event_t *)generic_event;
+			if (key_press_event->detail == *tab_keycode && key_press_event->state == (XCB_MOD_MASK_1|XCB_MOD_MASK_SHIFT)) {
+				Client *client_focus = NULL;
+				if (client_current) {
+					client_focus = client_current->previous;
+				} else {
+					client_focus = NULL;
+				}
+				if (!(client_focus)) {
+					client_focus = clients.tail;
+				}
+				client_previous_focus = client_current;
+				update_client(client_focus, connection);
+			} else if (key_press_event->detail == *tab_keycode) {
+				Client *client_focus = NULL;
+				if (client_current) {
+					client_focus = client_current->next;
+				} else {
+					client_focus = NULL;
+				}
+				if (!(client_focus)) {
+					client_focus = clients.head;
+				}
+				client_previous_focus = client_current;
+				update_client(client_focus, connection);
+			} else if (key_press_event->detail == *delete_keycode) {
+				free(generic_event);
+				break;
+			} else if (key_press_event->detail == *t_keycode) {
+				if (!(fork())) {
+					execvp(argv[1], &argv[1]);
+				}
+			}
+		} else if (generic_event->response_type == XCB_MAP_REQUEST) {
+			const xcb_map_request_event_t *map_request_event = (xcb_map_request_event_t *)generic_event;
+			Client *client_map_request = NULL;
+			if (clients.head) {
+				client_map_request = clients.head;
+			} else {
+				client_map_request = NULL;
+			}
+			while (client_map_request) {
+				if (client_map_request->window == map_request_event->window) {
+					break;
+				}
+				client_map_request = client_map_request->next;
+			}
+			if (!(client_map_request)) {
+				Client *client_new = calloc(1, sizeof(Client));
+				client_new->window = map_request_event->window;
+				if (clients.head) {
+					Client *clients_tail = clients.tail;
+					clients.tail = client_new;
+					clients_tail->next = client_new;
+					client_new->previous = clients_tail;
+					client_new->next = NULL;
+				} else {
+					clients.head = client_new;
+					clients.tail = client_new;
+				}
+				client_new->parent = &clients;
+				client_map_request = client_new;
+			}
+			xcb_map_window(connection, client_map_request->window);
+			update_client(client_map_request, connection);
+			xcb_configure_window(connection, client_current->window, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, map_request_configure_value_list);
+		} else if (generic_event->response_type == XCB_UNMAP_NOTIFY) {
+			const xcb_unmap_notify_event_t *unmap_notify_event = (xcb_unmap_notify_event_t *)generic_event;
+			Client *client_unmap_notify = NULL;
+			if (clients.head) {
+				client_unmap_notify = clients.head;
+			} else {
+				client_unmap_notify = NULL;
+			}
+			while (client_unmap_notify) {
+				if (client_unmap_notify->window == unmap_notify_event->window) {
+					break;
+				}
+				client_unmap_notify = client_unmap_notify->next;
+			}
+			if (!client_unmap_notify) {
+				continue;
+			}
+			remove_client(client_unmap_notify);
+			if (client_unmap_notify == client_previous_focus) {
+				if (client_current) {
+					client_previous_focus = client_current->previous;
+				} else {
+					client_previous_focus = NULL;
+				}
+			}
+			update_client(client_previous_focus, connection);
+			free(client_unmap_notify);
+			client_unmap_notify = NULL;
+		}
+		free(generic_event);
+	}
+	while (client) {
+		free(client);
+		if (clients.head) {
+			client = remove_client(clients.head);
+		} else {
+			client = NULL;
+		}
+	}
+	free(delete_keycode);
+	free(t_keycode);
+	free(tab_keycode);
+	free(xcb_request_error);
+	xcb_disconnect(connection);
+	return 0;
+error_exit:
+	free(client);
+	free(delete_keycode);
+	free(generic_event);
+	free(t_keycode);
+	free(tab_keycode);
+	free(xcb_request_error);
+	xcb_disconnect(connection);
+	return EXIT_FAILURE;
 }
