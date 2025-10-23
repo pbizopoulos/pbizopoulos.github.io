@@ -210,7 +210,7 @@
       virtualisation = {
         fileSystems = {
           "/home".neededForBoot = true;
-          "/persist".neededForBoot = true;
+          "/persistent".neededForBoot = true;
         };
         graphics = false;
       };
