@@ -105,7 +105,11 @@ pkgs.stdenv.mkDerivation rec {
     chmod 755 $out/bin/fswm
   '';
   meta.mainProgram = pname;
-  nativeBuildInputs = [ pkgs.xorg.libxcb pkgs.xorg.xcbutilkeysyms pkgs.xorg.libX11 ];
+  nativeBuildInputs = [
+    pkgs.xorg.libxcb
+    pkgs.xorg.xcbutilkeysyms
+    pkgs.xorg.libX11
+  ];
   pname = builtins.baseNameOf ./.;
   src = ./.;
   version = "0.0.0";

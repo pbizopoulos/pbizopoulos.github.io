@@ -83,7 +83,7 @@
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.53" ];
+    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.54" ];
   };
   preservation = {
     enable = true;
