@@ -106,9 +106,9 @@ pkgs.stdenv.mkDerivation rec {
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [
+    pkgs.xorg.libX11
     pkgs.xorg.libxcb
     pkgs.xorg.xcbutilkeysyms
-    pkgs.xorg.libX11
   ];
   pname = builtins.baseNameOf ./.;
   src = ./.;
