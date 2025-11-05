@@ -12,7 +12,7 @@ cd <URL-local> && nix fmt						# run formatter
 
 # <package> commands
 nix build nixpkgs#pkgsCross.<cpu>-<vendor>.<package>			# build <package> for <cpu>-<vendor>
-nix build <URL>#packages.<cpu>.<package>				# build <package> for <cpu>
+nix build <URL>#packages.<cpu>.<package>				# build <package> for <cpu>, you can use --print-out-paths
 nix run <URL>#<package>							# run <package>, export DEBUG=1 to run tests and use the next command if build is slow
 nix run <URL>#<package> --extra-substituters https://nix-community.cachix.org --extra-trusted-public-keys nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
 nix run --impure github:nix-community/nixGL nix run <URL>#<package>	# run <package> if using cuda in non-NixOS, export NIXPKGS_ALLOW_UNFREE=1 if needed
