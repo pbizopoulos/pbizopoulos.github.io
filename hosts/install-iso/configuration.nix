@@ -15,9 +15,11 @@ let
         echo "Usage: install-nixos <hostname> <username> <disk>" >&2
         exit 1
       fi
+      TMPDIR="$(mktemp -d)"
+      trap 'rm -rf "$TMPDIR"' EXIT
       sudo mount "$3" /mnt
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
-        git clone "/mnt/$2" ~/tmp
+        git clone "/mnt/$2" "$TMPDIR/repo"
       fi
       sudo umount /mnt
       sudo disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
@@ -25,8 +27,8 @@ let
       sudo mkdir -p /mnt/persistent/passwords
       mkpasswd -m sha-512 > "$2"
       sudo mv "$2" "/mnt/persistent/passwords/"
-      if git -C "/mnt/home/$2" rev-parse >/dev/null 2>&1; then
-        git clone ~/tmp "/mnt/home/$2"
+      if git -C "$TMPDIR/repo" rev-parse >/dev/null 2>&1; then
+        git clone "$TMPDIR/repo" "/mnt/home/$2"
       fi
     '';
   };
