@@ -96,18 +96,19 @@
         }
       ];
       files = [
+        "/etc/ssh/ssh_host_ed25519_key.pub"
+        "/etc/ssh/ssh_host_rsa_key.pub"
         {
           file = "/etc/machine-id";
           inInitrd = true;
         }
         {
           file = "/etc/ssh/ssh_host_ed25519_key";
-          mode = "0700";
-          inInitrd = true;
+          mode = "0600";
         }
         {
-          file = "/etc/ssh/ssh_host_ed25519_key.pub";
-          inInitrd = true;
+          file = "/etc/ssh/ssh_host_rsa_key";
+          mode = "0600";
         }
       ];
     };
@@ -127,7 +128,20 @@
     slock.enable = true;
   };
   services = {
-    openssh.enable = true;
+    openssh = {
+      enable = true;
+      hostKeys = [
+        {
+          bits = 4096;
+          path = "/persistent/etc/ssh/ssh_host_rsa_key";
+          type = "rsa";
+        }
+        {
+          path = "/persistent/etc/ssh/ssh_host_ed25519_key";
+          type = "ed25519";
+        }
+      ];
+    };
     pipewire = {
       enable = true;
       wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
