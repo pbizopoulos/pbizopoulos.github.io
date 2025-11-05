@@ -1,5 +1,4 @@
 { modulesPath, pkgs, ... }:
-
 let
   installNixos = pkgs.writeShellApplication {
     name = "install-nixos";
@@ -18,7 +17,7 @@ let
       TMPDIR="$(mktemp -d)"
       trap 'rm -rf "$TMPDIR"' EXIT
       sudo mount "$3" /mnt
-      if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
+      if git -C "/mnt/$2" rev-parse &>/dev/null; then
         git clone "/mnt/$2" "$TMPDIR/repo"
       fi
       sudo umount /mnt
@@ -27,7 +26,7 @@ let
       sudo mkdir -p /mnt/persistent/passwords
       mkpasswd -m sha-512 > "$2"
       sudo mv "$2" "/mnt/persistent/passwords/"
-      if git -C "$TMPDIR/repo" rev-parse >/dev/null 2>&1; then
+      if [ -d "$TMPDIR/repo/.git" ]; then
         git clone "$TMPDIR/repo" "/mnt/home/$2"
       fi
     '';
