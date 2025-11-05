@@ -83,12 +83,13 @@
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.57" ];
+    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.53" ];
   };
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
       directories = [
+        "/etc/ssh"
         "/var/lib/iwd"
         {
           directory = "/var/lib/nixos";
