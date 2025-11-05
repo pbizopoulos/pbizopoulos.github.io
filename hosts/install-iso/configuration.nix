@@ -17,7 +17,7 @@ let
       fi
       mount "$3" /mnt
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
-        git -C "/mnt/$2" archive -o ~/repo.tar.gz HEAD
+        git clone "/mnt/$2" ~/tmp
       fi
       umount /mnt
       disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
@@ -25,7 +25,7 @@ let
       mkdir -p /mnt/persistent/passwords
       mkpasswd -m sha-512 >"/mnt/persistent/passwords/$2"
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
-        tar xzf ~/repo.tar.gz -C "/mnt/home/$2"
+        git clone ~/tmp "/mnt/home/$2"
       fi
     '';
   };
