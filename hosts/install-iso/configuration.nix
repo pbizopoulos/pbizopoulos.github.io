@@ -15,17 +15,18 @@ let
         echo "Usage: sudo install-nixos <hostname> <username> <disk>" >&2
         exit 1
       fi
-      mount "$3" /mnt
-      git -C "/mnt/$2" init
-      git -C "/mnt/$2" commit -m. --allow-empty
-      git -C "/mnt/$2" archive -o ~/repo.tar.gz
-      umount /mnt
+      if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
+        mount "$3" /mnt
+        git -C "/mnt/$2" archive -o ~/repo.tar.gz
+        umount /mnt
+      fi
       disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
       nixos-install --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --no-root-passwd
       mkdir -p /mnt/persistent/passwords
       mkpasswd -m sha-512 >"/mnt/persistent/passwords/$2"
-      tar xzf ~/repo.tar.gz -C "/mnt/home/$2"
-      git -C "/mnt/home/$2" add -f .
+      if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
+        tar xzf ~/repo.tar.gz -C "/mnt/home/$2"
+      fi
     '';
   };
 in
