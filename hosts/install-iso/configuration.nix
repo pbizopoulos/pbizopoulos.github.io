@@ -17,7 +17,7 @@ let
       fi
       mount "$3" /mnt
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
-        git -C "/mnt/$2" archive -o ~/repo.tar.gz
+        git -C "/mnt/$2" archive -o ~/repo.tar.gz HEAD
       fi
       umount /mnt
       disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
