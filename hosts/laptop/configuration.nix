@@ -89,7 +89,6 @@
     enable = true;
     preserveAt."/persistent" = {
       directories = [
-        "/etc/ssh"
         "/var/lib/iwd"
         {
           directory = "/var/lib/nixos";
@@ -99,6 +98,15 @@
       files = [
         {
           file = "/etc/machine-id";
+          inInitrd = true;
+        }
+        {
+          file = "/etc/ssh/ssh_host_ed25519_key";
+          mode = "0700";
+          inInitrd = true;
+        }
+        {
+          file = "/etc/ssh/ssh_host_ed25519_key.pub";
           inInitrd = true;
         }
       ];
