@@ -1,13 +1,12 @@
 # <URL> options
 xdg-open https://nix.dev/manual/nix/latest/command-ref/new-cli/nix3-flake.html#examples
-git+ssh://git@<domain>/<namespace>/<repository-name>			# <URL-private> remote private repository
-<domain>:<namespace>/<repository-name>					# <URL-public> remote public repository
 ~/<domain>/<namespace>/<repository-name>				# <URL-local> local repository
+<domain>:<namespace>/<repository-name>					# <URL-public> remote public repository
+git+ssh://git@<domain>/<namespace>/<repository-name>			# <URL-private> remote private repository
 
 # general commands
-nix flake clone <URL> --dest <URL-local>				# clone repository
-nix flake new <URL-local> --template <URL> 				# create new flake from <URL>
-nix flake show <URL> | grep -Ev "omitted|unknown"			# show all <package> and <host>
+git clone <URL> <URL-local>						# clone repository
+nix flake show <URL> 							# show all <package> and <host>
 nix flake check <URL>			 				# run tests and build all <package> and <host>
 cd <URL-local> && nix fmt						# run formatter
 
