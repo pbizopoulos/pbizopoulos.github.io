@@ -25,7 +25,7 @@ let
       sudo mkdir -p /mnt/persistent/passwords
       mkpasswd -m sha-512 > "$2"
       sudo mv "$2" "/mnt/persistent/passwords/"
-      if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
+      if git -C "/mnt/home/$2" rev-parse >/dev/null 2>&1; then
         git clone ~/tmp "/mnt/home/$2"
       fi
     '';
