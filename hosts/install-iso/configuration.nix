@@ -12,18 +12,18 @@ let
     text = ''
       set -euo pipefail
       if [ "$#" -ne 3 ]; then
-        echo "Usage: sudo install-nixos <hostname> <username> <disk>" >&2
+        echo "Usage: install-nixos <hostname> <username> <disk>" >&2
         exit 1
       fi
-      mount "$3" /mnt
+      sudo mount "$3" /mnt
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
         git clone "/mnt/$2" ~/tmp
       fi
-      umount /mnt
-      disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
-      nixos-install --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --no-root-passwd
-      mkdir -p /mnt/persistent/passwords
-      mkpasswd -m sha-512 >"/mnt/persistent/passwords/$2"
+      sudo umount /mnt
+      sudo disko --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --mode disko
+      sudo nixos-install --flake "github:pbizopoulos/pbizopoulos.github.io#$1" --no-root-passwd
+      sudo mkdir -p /mnt/persistent/passwords
+      sudo mkpasswd -m sha-512 >"/mnt/persistent/passwords/$2"
       if git -C "/mnt/$2" rev-parse >/dev/null 2>&1; then
         git clone ~/tmp "/mnt/home/$2"
       fi
@@ -44,6 +44,6 @@ in
     allowUnfree = true;
     permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-57-6.12.53" ];
   };
-  users.motd = "Run 'sudo install-nixos <hostname> <username> <disk>'";
+  users.motd = "Run 'install-nixos <hostname> <username> <disk>'";
   virtualisation.vmVariant.virtualisation.graphics = false;
 }
