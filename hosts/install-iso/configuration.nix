@@ -28,6 +28,7 @@ let
       sudo mv "$2" "/mnt/persistent/passwords/"
       if [ -d "$TMPDIR/repo/.git" ]; then
         git clone "$TMPDIR/repo" "/mnt/home/$2"
+        git -C "/mnt/home/$2" remote remove origin
       fi
     '';
   };
