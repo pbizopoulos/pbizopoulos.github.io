@@ -9,7 +9,7 @@
       url = "github:nix-community/disko";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware";
-    nixpkgs.url = "github:NixOS/nixpkgs/5e2a59a5b1a82f89f2c7e598302a9cacebb72a67";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     preservation.url = "github:nix-community/preservation";
     treefmt-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
