@@ -1,6 +1,6 @@
 #!/bin/sh
 
-packages="efficientnet-pytorch jsf label-studio-sdk mediapipe pretrainedmodels scikit-spatial segmentation_models_pytorch sqladmin wfdb"
+packages="efficientnet-pytorch jsf mediapipe pretrainedmodels segmentation_models_pytorch sqladmin wfdb"
 
 for pkg in $packages; do
   exists=$(nix-instantiate -I nixpkgs=channel:nixos-unstable --eval -E "
