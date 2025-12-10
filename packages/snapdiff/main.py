@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import contextlib
 import hashlib
 import platform
@@ -28,14 +29,17 @@ def has_command(cmd: str) -> bool:
 
 
 def repo_identifier(repo: Repo) -> str:
+    """Return a unique identifier for a repository.
+
+    Uses the first remote URL if available; otherwise uses the repo's absolute path.
+    """
     h = hashlib.sha256()
-    head = getattr(repo.head.commit, "hexsha", "no-head")
-    remote = (
-        next(repo.remotes.origin.urls, "no-remote") if repo.remotes else "no-remote"
-    )
-    h.update(head.encode())
-    h.update(b"\0")
-    h.update(remote.encode())
+    if repo.remotes:
+        remote_url = next(iter(repo.remotes[0].urls), None)
+        identifier_source = remote_url or str(Path(repo.working_tree_dir).resolve())
+    else:
+        identifier_source = str(Path(repo.working_tree_dir).resolve())
+    h.update(identifier_source.encode())
     return h.hexdigest()
 
 
@@ -45,7 +49,6 @@ def open_image(img: Path) -> None:
         subprocess.run(["open", str(img)], check=False)
     elif system == "Windows":
         import os
-
         os.startfile(str(img))
     else:
         subprocess.run(["xdg-open", str(img)], check=False)
@@ -64,16 +67,30 @@ def git_style_sha1(path: Path) -> str | None:
     return hashlib.sha1(header + data).hexdigest()
 
 
+def compute_tracked_hash(repo: Repo) -> str:
+    """Compute a SHA256 hash of the contents of all tracked (non-ignored) files."""
+    repo_root = Path(repo.working_tree_dir)
+    tracked_files = sorted(f for f in repo.git.ls_files().splitlines())
+    h = hashlib.sha256()
+    for path_str in tracked_files:
+        path = repo_root / path_str
+        if path.is_file():
+            h.update(path.read_bytes())
+        # Include filename in hash to detect added/removed files
+        h.update(path_str.encode())
+    return h.hexdigest()
+
+
 def snapshot_ignored(repo: Repo) -> None:
     if not has_command("rsync"):
-        msg = "rsync is required for ultra-fast snapshots"
-        raise RuntimeError(msg)
+        raise RuntimeError("rsync is required for ultra-fast snapshots")
     repo_root = Path(repo.working_tree_dir)
     snap_dir = BASE_SNAPSHOT_DIR / repo_identifier(repo)
     ignored = gitignored_files(repo)
     if snap_dir.exists():
         shutil.rmtree(snap_dir)
     snap_dir.mkdir(parents=True, exist_ok=True)
+
     if ignored:
         proc = subprocess.Popen(
             [
@@ -91,6 +108,10 @@ def snapshot_ignored(repo: Repo) -> None:
         proc.wait()
         print(f"Snapshot taken for {len(ignored)} ignored files.")  # noqa: T201
 
+    # Save hash of tracked files for reproducibility
+    input_hash = compute_tracked_hash(repo)
+    (snap_dir / "input-hash.txt").write_text(input_hash)
+
 
 def diff_ignored(repo: Repo) -> None:
     repo_root = Path(repo.working_tree_dir)
@@ -98,8 +119,20 @@ def diff_ignored(repo: Repo) -> None:
     if not snap_dir.exists():
         print("No snapshot found. Run 'snapshot' first.")  # noqa: T201
         return
+
+    # Compare tracked files hash for reproducibility
+    saved_hash_path = snap_dir / "input-hash.txt"
+    if saved_hash_path.exists():
+        saved_hash = saved_hash_path.read_text()
+        current_hash = compute_tracked_hash(repo)
+        if saved_hash == current_hash:
+            print("Inputs are reproducible: tracked files unchanged.")  # noqa: T201
+        else:
+            print("Tracked files have changed since snapshot!")  # noqa: T201
+
+    # Continue with normal diff logic
     current = set(gitignored_files(repo))
-    snapshot = {p.relative_to(snap_dir) for p in snap_dir.rglob("*") if p.is_file()}
+    snapshot = {p.relative_to(snap_dir) for p in snap_dir.rglob("*") if p.is_file() and p.name != "input-hash.txt"}
     new_files = current - snapshot
     deleted_files = snapshot - current
     possibly_changed = current & snapshot
