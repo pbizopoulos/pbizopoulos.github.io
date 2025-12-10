@@ -13,37 +13,23 @@ BASE_SNAPSHOT_DIR = Path("/tmp/snapdiff_snapshots")
 
 
 def get_repo(path: str | None = None) -> Repo:
-    """Return a Git repo object for the current directory or given path."""
-    path = Path(path) if path else Path.cwd()
+    p = Path(path) if path else Path.cwd()
+    if p.is_file():
+        p = p.parent
     try:
-        return Repo(path, search_parent_directories=False)
-    except InvalidGitRepositoryError:
-        for parent in path.parents:
-            try:
-                return Repo(parent, search_parent_directories=False)
-            except InvalidGitRepositoryError:
-                continue
-        msg = f"No Git repo found at {path} or its parents"
-        raise InvalidGitRepositoryError(msg)
+        return Repo(p, search_parent_directories=True)
+    except InvalidGitRepositoryError as e:
+        msg = f"No Git repository found for: {p.resolve()}"
+        raise InvalidGitRepositoryError(
+            msg,
+        ) from e
 
 
-def gitignored_files(repo: Repo) -> list[Path]:
-    """Return git-ignored files relative to repo root (skip submodules)."""
-    repo_root = Path(repo.working_tree_dir)
-    submodules = {repo_root / sm.path for sm in repo.submodules}
-    ignored = []
-    for f in repo_root.rglob("*"):
-        if f.is_file() and not any(f.is_relative_to(sm) for sm in submodules):
-            try:
-                if repo.ignored(str(f)):
-                    ignored.append(f.relative_to(repo_root))
-            except Exception:
-                continue
-    return ignored
+def has_command(cmd: str) -> bool:
+    return shutil.which(cmd) is not None
 
 
 def repo_identifier(repo: Repo) -> str:
-    """Deterministic repo ID using HEAD commit + remote URL fallback."""
     h = hashlib.sha256()
     try:
         head = repo.head.commit.hexsha
@@ -72,9 +58,10 @@ def filecmp(f1: Path, f2: Path) -> bool:
 
 
 def open_image(img: Path) -> None:
-    if platform.system() == "Darwin":
+    system = platform.system()
+    if system == "Darwin":
         subprocess.run(["open", str(img)], check=False)
-    elif platform.system() == "Windows":
+    elif system == "Windows":
         import os
 
         os.startfile(str(img))
@@ -82,50 +69,70 @@ def open_image(img: Path) -> None:
         subprocess.run(["xdg-open", str(img)], check=False)
 
 
+def gitignored_files(repo: Repo) -> list[Path]:
+    repo_root = Path(repo.working_tree_dir)
+    submodule_paths = {repo_root / sm.path for sm in repo.submodules}
+    ignored = []
+    for f in repo_root.rglob("*"):
+        if not f.is_file():
+            continue
+        if any(f.is_relative_to(sm) for sm in submodule_paths):
+            continue
+        try:
+            if repo.git.check_ignore(str(f)):
+                ignored.append(f.relative_to(repo_root))
+        except Exception:
+            continue
+    return ignored
+
+
 def snapshot_ignored(repo: Repo) -> None:
-    """Snapshot git-ignored files, keeping only the latest snapshot."""
     repo_root = Path(repo.working_tree_dir)
     snap_dir = BASE_SNAPSHOT_DIR / repo_identifier(repo) / "latest"
     if snap_dir.exists():
         shutil.rmtree(snap_dir)
     snap_dir.mkdir(parents=True, exist_ok=True)
     for file in gitignored_files(repo):
-        src, dst = repo_root / file, snap_dir / file
+        src = repo_root / file
+        dst = snap_dir / file
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
 
 
 def diff_ignored(repo: Repo) -> None:
-    """Compare current git-ignored files against the latest snapshot."""
     repo_root = Path(repo.working_tree_dir)
     snap_dir = BASE_SNAPSHOT_DIR / repo_identifier(repo) / "latest"
     if not snap_dir.exists():
         return
-    changed = [
+    changed_files = [
         f for f in gitignored_files(repo) if not filecmp(snap_dir / f, repo_root / f)
     ]
-    if not changed:
+    if not changed_files:
         return
-    for file in changed:
+    image_exts = {".png", ".jpg", ".jpeg", ".gif"}
+    for file in changed_files:
         prev_file = snap_dir / file
         cur_file = repo_root / file
-        if file.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif"):
-            with contextlib.suppress(Exception):
-                subprocess.run(["compare", str(prev_file), str(cur_file)], check=False)
+        if file.suffix.lower() in image_exts:
+            if prev_file.exists() and cur_file.exists() and has_command("compare"):
+                subprocess.run(
+                    ["compare", str(prev_file), str(cur_file)],
+                    check=False,
+                )
             if cur_file.exists():
                 open_image(cur_file)
+            continue
+        if not has_command("diffoscope"):
             continue
         if prev_file.exists() and cur_file.exists():
             subprocess.run(["diffoscope", str(prev_file), str(cur_file)], check=False)
         elif cur_file.exists():
             subprocess.run(["diffoscope", "/dev/null", str(cur_file)], check=False)
-        else:
+        elif prev_file.exists():
             subprocess.run(["diffoscope", str(prev_file), "/dev/null"], check=False)
 
 
 class SnapDiff:
-    """Snapshot and diff git-ignored files using GitPython."""
-
     def snapshot(self, repo: str | None = None) -> None:
         with contextlib.suppress(InvalidGitRepositoryError):
             snapshot_ignored(get_repo(repo))
