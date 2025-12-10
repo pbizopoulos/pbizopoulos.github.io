@@ -9,6 +9,7 @@ pkgs.python312Packages.buildPythonPackage rec {
     pkgs.diffoscope
     pkgs.imagemagick
     pkgs.python312Packages.fire
+    pkgs.python312Packages.gitpython
   ];
   pyproject = false;
   src = ./.;

@@ -1,122 +1,229 @@
 #!/usr/bin/env python3
 import hashlib
-import os
 import platform
 import shutil
 import subprocess
 from pathlib import Path
 
 import fire
+from git import InvalidGitRepositoryError, Repo
 
 BASE_SNAPSHOT_DIR = Path("/tmp/snapdiff_snapshots")
 
 
-def _hash_file(path: Path) -> str:
+# -------------------- Git Helpers -------------------- #
+
+
+def get_repo(path: Path | None = None) -> Repo:
+    """Return a GitPython Repo object for the current directory or specified path.
+    Works for normal repos and submodules. Does not climb into parent repos.
+    """
+    path = Path(path) if path else Path.cwd()
+    try:
+        return Repo(path, search_parent_directories=False)
+    except InvalidGitRepositoryError:
+        # Try parents until we find a .git
+        for parent in path.parents:
+            try:
+                return Repo(parent, search_parent_directories=False)
+            except InvalidGitRepositoryError:
+                continue
+        msg = f"No Git repository found at {path} or its parents"
+        raise InvalidGitRepositoryError(msg)
+
+
+def tracked_files_hash(repo: Repo) -> str:
+    """SHA256 hash of all tracked files in the repository."""
+    files = sorted(repo.git.ls_files().splitlines())
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
+    repo_root = Path(repo.working_tree_dir)
+    for file in files:
+        fpath = repo_root / file
+        if fpath.is_file():
+            h.update(file.encode())
+            h.update(b"\0")
+            with open(fpath, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    h.update(chunk)
     return h.hexdigest()
 
 
-def _get_snapshot_paths(dir_path: Path):
-    dir_abs = dir_path.resolve()
-    safe_dir = str(dir_abs).replace("/", "_")
-    cur_snapshot = BASE_SNAPSHOT_DIR / f"{safe_dir}.snapshot"
-    prev_snapshot = BASE_SNAPSHOT_DIR / f"{safe_dir}.snapshot.prev"
-    prev_dir = BASE_SNAPSHOT_DIR / f"{safe_dir}.prev_dir"
-    cur_snapshot.parent.mkdir(parents=True, exist_ok=True)
-    prev_dir.mkdir(parents=True, exist_ok=True)
-    return cur_snapshot, prev_snapshot, prev_dir, dir_abs
+def gitignored_files(repo: Repo):
+    """List git-ignored files relative to repo root, skipping nested submodules.
+    Works for normal repos or submodules.
+    """
+    repo_root = Path(repo.working_tree_dir)
+    ignored = []
+
+    # Nested submodules inside this repo (skip their contents)
+    submodule_paths = {Path(repo_root) / sm.path for sm in repo.submodules}
+
+    for f in repo_root.rglob("*"):
+        if f.is_file():
+            if any(f.is_relative_to(submod) for submod in submodule_paths):
+                continue
+            try:
+                if repo.ignored(str(f)):
+                    ignored.append(f.relative_to(repo_root))
+            except Exception:
+                continue
+    return ignored
 
 
-def _save_snapshot(dir_abs: Path, snapshot_path: Path) -> None:
-    with open(snapshot_path, "w") as f:
-        for file in sorted(dir_abs.rglob("*")):
-            if file.is_file():
-                rel = file.relative_to(dir_abs)
-                f.write(f"{_hash_file(file)} {rel}\n")
+def repo_identifier(repo: Repo) -> str:
+    """Deterministic repository identifier using HEAD commit + remote URL (or fallback)."""
+    h = hashlib.sha256()
+    try:
+        head = repo.head.commit.hexsha
+    except ValueError:
+        head = "no-head"
+    try:
+        remote_url = next(repo.remotes.origin.urls)
+    except (ValueError, AttributeError):
+        remote_url = "no-remote"
+    h.update(head.encode())
+    h.update(b"\0")
+    h.update(remote_url.encode())
+    return h.hexdigest()
 
 
-def _copy_dir(src: Path, dst: Path) -> None:
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst)
+# -------------------- File Helpers -------------------- #
 
 
-def _open_image(img: Path) -> None:
+def filecmp(f1: Path, f2: Path) -> bool:
+    if not f1.exists() or not f2.exists():
+        return False
+    if f1.stat().st_size != f2.stat().st_size:
+        return False
+    with open(f1, "rb") as a, open(f2, "rb") as b:
+        while True:
+            c1 = a.read(8192)
+            c2 = b.read(8192)
+            if c1 != c2:
+                return False
+            if not c1:
+                break
+    return True
+
+
+def open_image(img: Path) -> None:
     if platform.system() == "Darwin":
         subprocess.run(["open", str(img)], check=False)
     elif platform.system() == "Windows":
+        import os
+
         os.startfile(str(img))
-    else:  # Linux / Unix
+    else:
         subprocess.run(["xdg-open", str(img)], check=False)
 
 
-class SnapDiff:
-    """Directory snapshot and diff CLI."""
+# -------------------- Snapshot / Diff -------------------- #
 
-    def snapshot(self, dir_path: str) -> None:
-        """Take a snapshot of the directory."""
-        dir_path = Path(dir_path)
-        cur_snapshot, prev_snapshot, prev_dir, dir_abs = _get_snapshot_paths(dir_path)
-        _save_snapshot(dir_abs, cur_snapshot)
-        _copy_dir(dir_abs, prev_dir)
-        shutil.copy(cur_snapshot, prev_snapshot)
 
-    def diff(self, dir_path: str) -> None:
-        """Compare current directory with previous snapshot (does NOT create a snapshot)."""
-        dir_path = Path(dir_path)
-        _cur_snapshot, prev_snapshot, prev_dir, dir_abs = _get_snapshot_paths(dir_path)
+def snapshot_ignored(repo: Repo) -> None:
+    """Snapshot git-ignored files preserving directory structure."""
+    repo_root = Path(repo.working_tree_dir)
+    repo_id = repo_identifier(repo)
+    tracked_hash = tracked_files_hash(repo)
 
-        if not prev_snapshot.exists():
-            return
+    snap_dir = BASE_SNAPSHOT_DIR / repo_id / tracked_hash
+    if snap_dir.exists():
+        shutil.rmtree(snap_dir)
+    snap_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load previous snapshot
-        prev_files = {
-            line.split(maxsplit=1)[1]: line.split(maxsplit=1)[0]
-            for line in prev_snapshot.read_text().splitlines()
-        }
+    for file in gitignored_files(repo):
+        src = repo_root / file
+        dst = snap_dir / file
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
 
-        # Load current directory state (hash on the fly)
-        cur_files = {}
-        for file in dir_abs.rglob("*"):
-            if file.is_file():
-                rel = file.relative_to(dir_abs)
-                cur_files[str(rel)] = _hash_file(file)
+    # Update latest symlink
+    latest_link = BASE_SNAPSHOT_DIR / repo_id / "latest"
+    if latest_link.exists() or latest_link.is_symlink():
+        latest_link.unlink()
+    latest_link.symlink_to(tracked_hash)
 
-        changed_files = [
-            f
-            for f in set(prev_files) | set(cur_files)
-            if prev_files.get(f) != cur_files.get(f)
-        ]
-        if not changed_files:
-            return
 
-        for file in changed_files:
-            prev_file = prev_dir / file
-            cur_file = dir_abs / file
-            if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
-                diff_file = prev_dir / f"{file}.diff.png"
-                diff_file.parent.mkdir(parents=True, exist_ok=True)
-                if prev_file.exists() and cur_file.exists():
-                    subprocess.run(
-                        ["compare", str(prev_file), str(cur_file), str(diff_file)],
-                        check=False,
-                    )
-                    _open_image(diff_file)
-                elif not prev_file.exists() and cur_file.exists():
-                    shutil.copy(cur_file, diff_file)
-                    _open_image(diff_file)
-            elif prev_file.exists() and cur_file.exists():
+def diff_ignored(repo: Repo) -> None:
+    repo_root = Path(repo.working_tree_dir)
+    repo_id = repo_identifier(repo)
+    repo_snap_dir = BASE_SNAPSHOT_DIR / repo_id
+
+    latest_link = repo_snap_dir / "latest"
+    if not latest_link.exists() or not latest_link.is_symlink():
+        return
+
+    prev_hash = latest_link.readlink().name
+    prev_dir = repo_snap_dir / prev_hash
+    tracked_hash = tracked_files_hash(repo)
+    cur_dir = repo_snap_dir / tracked_hash
+
+    if not cur_dir.exists():
+        cur_dir.mkdir(parents=True, exist_ok=True)
+        for file in gitignored_files(repo):
+            src = repo_root / file
+            dst = cur_dir / file
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+
+    changed_files = []
+    for file in gitignored_files(repo):
+        prev_file = prev_dir / file
+        cur_file = cur_dir / file
+        if not filecmp(prev_file, cur_file):
+            changed_files.append(file)
+
+    if not changed_files:
+        return
+
+    for file in changed_files:
+        prev_file = prev_dir / file
+        cur_file = cur_dir / file
+
+        if file.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif"):
+            diff_out = prev_dir / f"{file}.diff.png"
+            diff_out.parent.mkdir(parents=True, exist_ok=True)
+            if prev_file.exists() and cur_file.exists():
                 subprocess.run(
-                    ["diffoscope", str(prev_file), str(cur_file)],
+                    ["compare", str(prev_file), str(cur_file), str(diff_out)],
                     check=False,
                 )
-            elif not prev_file.exists() and cur_file.exists():
-                subprocess.run(["diffoscope", "/dev/null", str(cur_file)], check=False)
-            else:
-                subprocess.run(["diffoscope", str(prev_file), "/dev/null"], check=False)
+                open_image(diff_out)
+            elif cur_file.exists():
+                shutil.copy(cur_file, diff_out)
+                open_image(diff_out)
+        elif prev_file.exists() and cur_file.exists():
+            subprocess.run(["diffoscope", str(prev_file), str(cur_file)], check=False)
+        elif cur_file.exists():
+            subprocess.run(["diffoscope", "/dev/null", str(cur_file)], check=False)
+        else:
+            subprocess.run(["diffoscope", str(prev_file), "/dev/null"], check=False)
+
+    if prev_hash == tracked_hash:
+        pass
+    else:
+        pass
+
+
+# -------------------- CLI -------------------- #
+
+
+class SnapDiff:
+    """Snapshot and diff git-ignored files using GitPython."""
+
+    def snapshot(self, repo: str | None = None) -> None:
+        try:
+            repo_obj = get_repo(repo)
+        except InvalidGitRepositoryError:
+            return
+        snapshot_ignored(repo_obj)
+
+    def diff(self, repo: str | None = None) -> None:
+        try:
+            repo_obj = get_repo(repo)
+        except InvalidGitRepositoryError:
+            return
+        diff_ignored(repo_obj)
 
 
 if __name__ == "__main__":
