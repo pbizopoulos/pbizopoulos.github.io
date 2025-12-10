@@ -29,14 +29,10 @@ def has_command(cmd: str) -> bool:
 
 def repo_identifier(repo: Repo) -> str:
     h = hashlib.sha256()
-    try:
-        head = repo.head.commit.hexsha
-    except Exception:
-        head = "no-head"
-    try:
-        remote = next(repo.remotes.origin.urls)
-    except Exception:
-        remote = "no-remote"
+    head = getattr(repo.head.commit, "hexsha", "no-head")
+    remote = (
+        next(repo.remotes.origin.urls, "no-remote") if repo.remotes else "no-remote"
+    )
     h.update(head.encode())
     h.update(b"\0")
     h.update(remote.encode())
@@ -78,28 +74,29 @@ def snapshot_ignored(repo: Repo) -> None:
     if snap_dir.exists():
         shutil.rmtree(snap_dir)
     snap_dir.mkdir(parents=True, exist_ok=True)
-    if not ignored:
-        return
-    proc = subprocess.Popen(
-        [
-            "rsync",
-            "-a",
-            "--delete",
-            "--relative",
-            "--files-from=-",
-            f"{repo_root}/",
-            f"{snap_dir}/",
-        ],
-        stdin=subprocess.PIPE,
-    )
-    proc.communicate(input="\n".join(str(f) for f in ignored).encode())
-    proc.wait()
+    if ignored:
+        proc = subprocess.Popen(
+            [
+                "rsync",
+                "-a",
+                "--delete",
+                "--relative",
+                "--files-from=-",
+                f"{repo_root}/",
+                f"{snap_dir}/",
+            ],
+            stdin=subprocess.PIPE,
+        )
+        proc.communicate(input="\n".join(str(f) for f in ignored).encode())
+        proc.wait()
+        print(f"Snapshot taken for {len(ignored)} ignored files.")  # noqa: T201
 
 
 def diff_ignored(repo: Repo) -> None:
     repo_root = Path(repo.working_tree_dir)
     snap_dir = BASE_SNAPSHOT_DIR / repo_identifier(repo)
     if not snap_dir.exists():
+        print("No snapshot found. Run 'snapshot' first.")  # noqa: T201
         return
     current = set(gitignored_files(repo))
     snapshot = {p.relative_to(snap_dir) for p in snap_dir.rglob("*") if p.is_file()}
@@ -113,13 +110,17 @@ def diff_ignored(repo: Repo) -> None:
     ]
     image_exts = {".png", ".jpg", ".jpeg", ".gif"}
     if new_files:
+        print("New ignored files:")  # noqa: T201
         for f in sorted(new_files):
-            pass
+            print(f"  + {f}")  # noqa: T201
     if deleted_files:
+        print("Deleted ignored files:")  # noqa: T201
         for f in sorted(deleted_files):
-            pass
+            print(f"  - {f}")  # noqa: T201
     if changed_files:
+        print("Modified ignored files:")  # noqa: T201
         for f in sorted(changed_files):
+            print(f"  * {f}")  # noqa: T201
             prev_file = snap_dir / f
             cur_file = repo_root / f
             if f.suffix.lower() in image_exts:
@@ -139,8 +140,6 @@ def diff_ignored(repo: Repo) -> None:
                     ["diff", "-u", str(prev_file), str(cur_file)],
                     check=False,
                 )
-            else:
-                pass
 
 
 class SnapDiff:
