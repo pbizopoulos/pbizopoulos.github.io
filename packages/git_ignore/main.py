@@ -14,7 +14,9 @@ BASE_DIR = Path("/tmp/gitignore_snapshots")
 
 
 def get_repo(path: str | None = None) -> Repo:
-    p = Path(path or ".").parent if Path(path or ".").is_file() else Path(path or ".")
+    p = Path(path or ".")
+    if p.is_file():
+        p = p.parent
     try:
         return Repo(p, search_parent_directories=True)
     except InvalidGitRepositoryError as e:
@@ -23,11 +25,12 @@ def get_repo(path: str | None = None) -> Repo:
 
 
 def repo_id(repo: Repo) -> str:
-    return hashlib.sha256(
-        (src := next(iter(repo.remotes[0].urls), None)).encode()
-        if repo.remotes
-        else str(repo.working_tree_dir).encode(),
-    ).hexdigest()
+    if repo.remotes:
+        src = next(iter(repo.remotes[0].urls), None)
+        data = src.encode() if src else b""
+    else:
+        data = str(repo.working_tree_dir).encode()
+    return hashlib.sha256(data).hexdigest()
 
 
 def ignored_files(repo: Repo):
@@ -61,18 +64,21 @@ class GitIgnore:
         ).hexdigest()
         snap_dir = repo_dir / snap_hash
         snap_dir.mkdir(exist_ok=True)
+
+        rel_files = [f"./{p}" for p in files]
         subprocess.run(
             [
                 "rsync",
                 "-a",
                 "--delete",
                 "--relative",
-                *[f"./{p}" for p in files],
+                *rel_files,
                 str(snap_dir),
             ],
             cwd=root,
             check=True,
         )
+
         latest = repo_dir / "latest"
         if latest.exists() or latest.is_symlink():
             latest.unlink()
@@ -106,14 +112,12 @@ class GitIgnore:
             )
             index_path = diff_subdir / "index.html"
             system = platform.system()
-            opener = {
-                "Darwin": ["open", str(index_path)],
-                "Windows": lambda: os.startfile(str(index_path)),
-            }.get(system, ["xdg-open", str(index_path)])
-            if callable(opener):
-                opener()
+            if system == "Darwin":
+                subprocess.run(["open", str(index_path)], check=False)
+            elif system == "Windows":
+                os.startfile(str(index_path))
             else:
-                subprocess.run(opener, check=False)
+                subprocess.run(["xdg-open", str(index_path)], check=False)
 
 
 if __name__ == "__main__":
