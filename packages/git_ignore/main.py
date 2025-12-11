@@ -42,7 +42,7 @@ def ignored_files(repo: Repo):
             "--directory",
             "--exclude-standard",
         ).splitlines()
-        if p.strip()
+        if p
     )
 
 
