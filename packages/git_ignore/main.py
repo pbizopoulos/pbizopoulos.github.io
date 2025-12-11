@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 """Git ignore."""
 
 import hashlib
+import os
 import platform
 import subprocess
 from pathlib import Path
@@ -37,37 +37,6 @@ def ignored_files(repo: Repo):
     return sorted(Path(p) for p in out.splitlines() if p.strip())
 
 
-def compute_hash(repo: Repo) -> str:
-    root = Path(repo.working_tree_dir)
-    h = hashlib.sha256()
-    for p in ignored_files(repo):
-        fp = root / p
-        if fp.is_file():
-            h.update(fp.read_bytes())
-        h.update(str(p).encode())
-    return h.hexdigest()
-
-
-def is_binary(path: Path) -> bool:
-    try:
-        with open(path, "rb") as f:
-            return b"\0" in f.read(1024)
-    except Exception:
-        return True
-
-
-def open_file(path: Path) -> None:
-    system = platform.system()
-    if system == "Darwin":
-        subprocess.run(["open", str(path)], check=False)
-    elif system == "Windows":
-        import os
-
-        os.startfile(str(path))
-    else:
-        subprocess.run(["xdg-open", str(path)], check=False)
-
-
 def commit(repo: Repo) -> None:
     root = Path(repo.working_tree_dir)
     repo_dir = BASE_DIR / repo_id(repo)
@@ -75,7 +44,14 @@ def commit(repo: Repo) -> None:
     files = ignored_files(repo)
     if not files:
         return
-    snap_hash = compute_hash(repo)
+    root = Path(repo.working_tree_dir)
+    h = hashlib.sha256()
+    for p in ignored_files(repo):
+        fp = root / p
+        if fp.is_file():
+            h.update(fp.read_bytes())
+        h.update(str(p).encode())
+    snap_hash = h.hexdigest()
     snap_dir = repo_dir / snap_hash
     snap_dir.mkdir(exist_ok=True)
     file_args = [f"./{p}" for p in files]
@@ -99,74 +75,34 @@ def diff(repo: Repo) -> None:
     files = ignored_files(repo)
     if not files:
         return
-    file_args = [f"./{p}" for p in files]
-    proc = subprocess.run(
-        [
-            "rsync",
-            "-a",
-            "--relative",
-            "--dry-run",
-            "--itemize-changes",
-            *file_args,
-            str(root),
-        ],
-        cwd=latest,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    for line in proc.stdout.splitlines():
-        if not line.strip():
-            continue
-        code = line[:11]
-        path = Path(line[12:])
+    diff_dir = repo_dir / "diffs"
+    diff_dir.mkdir(exist_ok=True)
+    for path in files:
         pf = latest / path
-        cf = root / path
-        if code.startswith("<"):
+        if pf.is_dir():
             continue
-        if code.startswith((">", "c")) and cf.is_file():
-            h = hashlib.sha256()
-            h.update(pf.read_bytes())
-            h.update(cf.read_bytes())
-            h.update(str(path).encode())
-            file_hash = h.hexdigest()
-            diff_dir = repo_dir / "diffs"
-            diff_dir.mkdir(exist_ok=True)
-            if cf.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
-                diff_img = diff_dir / f"{file_hash}_diff.png"
-                subprocess.run(
-                    [
-                        "magick",
-                        "compare",
-                        "-compose",
-                        "src",
-                        str(pf),
-                        str(cf),
-                        str(diff_img),
-                    ],
-                    check=False,
-                )
-                diff_html = diff_dir / f"{file_hash}_diff.html"
-                with open(diff_html, "w") as f:
-                    f.write(f"""
-                    <html>
-                    <head><title>Diff for {path}</title></head>
-                    <body>
-                        <h2>{path}</h2>
-                        <img src="{diff_img.name}" alt="Diff" style="max-width:600px;"/>
-                    </body>
-                    </html>
-                    """)
-                open_file(diff_html)
-            elif is_binary(cf):
-                diff_html = diff_dir / f"{file_hash}.html"
-                subprocess.run(
-                    ["diffoscope", str(pf), str(cf), "--html", str(diff_html)],
-                    check=False,
-                )
-                open_file(diff_html)
-            else:
-                subprocess.run(["diff", "-u", str(pf), str(cf)], check=False)
+        cf = root / path
+        if not cf.exists():
+            continue
+        h = hashlib.sha256()
+        h.update(pf.read_bytes())
+        h.update(cf.read_bytes())
+        h.update(str(path).encode())
+        file_hash = h.hexdigest()
+        diff_subdir = diff_dir / file_hash
+        diff_subdir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["diffoscope", str(pf), str(cf), "--html-dir", str(diff_subdir)],
+            check=False,
+        )
+        path = diff_subdir / "index.html"
+        system = platform.system()
+        if system == "Darwin":
+            subprocess.run(["open", str(path)], check=False)
+        elif system == "Windows":
+            os.startfile(str(path))
+        else:
+            subprocess.run(["xdg-open", str(path)], check=False)
 
 
 class GitIgnore:
