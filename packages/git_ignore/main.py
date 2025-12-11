@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
-from pathlib import Path
+"""Git ignore."""
+
 import hashlib
-import subprocess
 import platform
+import subprocess
 import tempfile
+from pathlib import Path
 
 import fire
-from git import Repo, InvalidGitRepositoryError
+from git import InvalidGitRepositoryError, Repo
 
 BASE_DIR = Path("/tmp/gitignore_snapshots")
 
 
-def get_repo(path: str = None) -> Repo:
+def get_repo(path: str | None = None) -> Repo:
     p = Path(path or ".")
     if p.is_file():
         p = p.parent
     try:
         return Repo(p, search_parent_directories=True)
     except InvalidGitRepositoryError as e:
-        raise InvalidGitRepositoryError(f"No Git repository found for: {p.resolve()}") from e
+        msg = f"No Git repository found for: {p.resolve()}"
+        raise InvalidGitRepositoryError(msg) from e
 
 
 def repo_id(repo: Repo) -> str:
-    src = next(iter(repo.remotes[0].urls), None) if repo.remotes else str(repo.working_tree_dir)
+    src = (
+        next(iter(repo.remotes[0].urls), None)
+        if repo.remotes
+        else str(repo.working_tree_dir)
+    )
     return hashlib.sha256(src.encode()).hexdigest()
 
 
@@ -50,69 +57,65 @@ def is_binary(path: Path) -> bool:
         return True
 
 
-def open_file(path: Path):
+def open_file(path: Path) -> None:
     system = platform.system()
     if system == "Darwin":
         subprocess.run(["open", str(path)], check=False)
     elif system == "Windows":
         import os
+
         os.startfile(str(path))
     else:
         subprocess.run(["xdg-open", str(path)], check=False)
 
 
-def commit(repo: Repo):
+def commit(repo: Repo) -> None:
     root = Path(repo.working_tree_dir)
     repo_dir = BASE_DIR / repo_id(repo)
     repo_dir.mkdir(parents=True, exist_ok=True)
-
     files = ignored_files(repo)
     if not files:
-        print("No ignored files to commit.")
         return
-
     snap_hash = compute_hash(repo)
     snap_dir = repo_dir / snap_hash
     snap_dir.mkdir(exist_ok=True)
-
     file_args = [f"./{p}" for p in files]
-    subprocess.run(["rsync", "-a", "--delete", "--relative"] + file_args + [str(snap_dir)],
-                   cwd=root, check=True)
-
+    subprocess.run(
+        ["rsync", "-a", "--delete", "--relative", *file_args, str(snap_dir)],
+        cwd=root,
+        check=True,
+    )
     latest = repo_dir / "latest"
     if latest.exists() or latest.is_symlink():
         latest.unlink()
     latest.symlink_to(snap_hash, target_is_directory=True)
 
-    print(f"Committed {len(files)} ignored files to {snap_dir}")
-    print(f"Updated latest -> {snap_hash}")
 
-
-def diff(repo: Repo):
+def diff(repo: Repo) -> None:
     root = Path(repo.working_tree_dir)
     repo_dir = BASE_DIR / repo_id(repo)
     latest = repo_dir / "latest"
-
     if not latest.exists():
-        print("No commit found. Run 'commit' first.")
         return
-
     files = ignored_files(repo)
     if not files:
-        print("No ignored files to diff.")
         return
-
-    print("\n=== Ignored files diff ===")
     file_args = [f"./{p}" for p in files]
-
     proc = subprocess.run(
-        ["rsync", "-a", "--relative", "--dry-run", "--itemize-changes"] + file_args + [str(root)],
+        [
+            "rsync",
+            "-a",
+            "--relative",
+            "--dry-run",
+            "--itemize-changes",
+            *file_args,
+            str(root),
+        ],
         cwd=latest,
         capture_output=True,
         text=True,
-        check=False
+        check=False,
     )
-
     for line in proc.stdout.splitlines():
         if not line.strip():
             continue
@@ -120,30 +123,28 @@ def diff(repo: Repo):
         path = Path(line[12:])
         pf = latest / path
         cf = root / path
-
         if code.startswith("<"):
-            print(f"\n--- Deleted: {path}")
-        elif code.startswith(">") or code.startswith("c"):
+            pass
+        elif code.startswith((">", "c")):
             if cf.is_file() and cf.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
-                print(f"\n*** Image changed: {path}")
-                # Create HTML report for image diff
                 with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
                     diff_report = Path(tmp.name)
-                subprocess.run(["diffoscope", str(pf), str(cf), "--html", str(diff_report)], check=False)
+                subprocess.run(
+                    ["diffoscope", str(pf), str(cf), "--html", str(diff_report)],
+                    check=False,
+                )
                 open_file(diff_report)
             elif cf.is_file() and is_binary(cf):
-                print(f"\n*** Binary changed: {path}")
                 subprocess.run(["diffoscope", str(pf), str(cf)], check=False)
             else:
-                print(f"\n--- Text changed: {path}")
                 subprocess.run(["diff", "-u", str(pf), str(cf)], check=False)
 
 
 class GitIgnore:
-    def commit(self, repo: str = None):
+    def commit(self, repo: str | None = None) -> None:
         commit(get_repo(repo))
 
-    def diff(self, repo: str = None):
+    def diff(self, repo: str | None = None) -> None:
         diff(get_repo(repo))
 
 
