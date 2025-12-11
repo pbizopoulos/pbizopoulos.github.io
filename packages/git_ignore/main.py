@@ -2,8 +2,8 @@
 from pathlib import Path
 import hashlib
 import subprocess
-import datetime
 import platform
+import tempfile
 
 import fire
 from git import Repo, InvalidGitRepositoryError
@@ -75,15 +75,10 @@ def commit(repo: Repo):
     snap_dir = repo_dir / snap_hash
     snap_dir.mkdir(exist_ok=True)
 
-    # Copy ignored files preserving relative paths
     file_args = [f"./{p}" for p in files]
-    subprocess.run(
-        ["rsync", "-a", "--delete", "--relative"] + file_args + [str(snap_dir)],
-        cwd=root,
-        check=True
-    )
+    subprocess.run(["rsync", "-a", "--delete", "--relative"] + file_args + [str(snap_dir)],
+                   cwd=root, check=True)
 
-    # Update latest symlink
     latest = repo_dir / "latest"
     if latest.exists() or latest.is_symlink():
         latest.unlink()
@@ -99,7 +94,7 @@ def diff(repo: Repo):
     latest = repo_dir / "latest"
 
     if not latest.exists():
-        print("No commits found. Run 'commit' first.")
+        print("No commit found. Run 'commit' first.")
         return
 
     files = ignored_files(repo)
@@ -129,39 +124,19 @@ def diff(repo: Repo):
         if code.startswith("<"):
             print(f"\n--- Deleted: {path}")
         elif code.startswith(">") or code.startswith("c"):
-            if cf.is_file() and is_binary(cf):
+            if cf.is_file() and cf.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
+                print(f"\n*** Image changed: {path}")
+                # Create HTML report for image diff
+                with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
+                    diff_report = Path(tmp.name)
+                subprocess.run(["diffoscope", str(pf), str(cf), "--html", str(diff_report)], check=False)
+                open_file(diff_report)
+            elif cf.is_file() and is_binary(cf):
                 print(f"\n*** Binary changed: {path}")
                 subprocess.run(["diffoscope", str(pf), str(cf)], check=False)
-                open_file(cf)
             else:
                 print(f"\n--- Text changed: {path}")
                 subprocess.run(["diff", "-u", str(pf), str(cf)], check=False)
-
-
-def checkout(repo: Repo, snap_hash: str):
-    root = Path(repo.working_tree_dir)
-    repo_dir = BASE_DIR / repo_id(repo)
-    snap_dir = repo_dir / snap_hash
-
-    if not snap_dir.exists():
-        print(f"Commit {snap_hash} does not exist.")
-        return
-
-    subprocess.run(["rsync", "-a", "--relative", f"{snap_dir}/", f"{root}/"], check=True)
-    print(f"Restored ignored files from {snap_hash}")
-
-
-def log(repo: Repo):
-    repo_dir = BASE_DIR / repo_id(repo)
-    if not repo_dir.exists():
-        print("No commits found.")
-        return
-
-    print("Commits:")
-    for snap in sorted(repo_dir.iterdir()):
-        if snap.is_dir() and snap.name != "latest":
-            ts = datetime.datetime.fromtimestamp(snap.stat().st_mtime)
-            print(f"{snap.name}  ({ts.isoformat()})")
 
 
 class GitIgnore:
@@ -170,12 +145,6 @@ class GitIgnore:
 
     def diff(self, repo: str = None):
         diff(get_repo(repo))
-
-    def checkout(self, snap_hash: str, repo: str = None):
-        checkout(get_repo(repo), snap_hash)
-
-    def log(self, repo: str = None):
-        log(get_repo(repo))
 
 
 if __name__ == "__main__":
