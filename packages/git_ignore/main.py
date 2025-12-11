@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Git ignore."""
+"""Snapshot and compare ignored files in a Git repository."""
 
 import hashlib
 import os
@@ -10,115 +10,140 @@ from pathlib import Path
 import fire
 from git import InvalidGitRepositoryError, Repo
 
-BASE_DIR = Path("/tmp/gitignore_snapshots")
+SNAPSHOT_BASE_DIRECTORY = Path("/tmp/gitignore_snapshots")
 
 
-def get_repo(path: str | None = None) -> Repo:
-    p = Path(path or ".")
-    if p.is_file():
-        p = p.parent
-    try:
-        return Repo(p, search_parent_directories=True)
-    except InvalidGitRepositoryError as e:
-        msg = f"No Git repository found for: {p.resolve()}"
-        raise InvalidGitRepositoryError(msg) from e
-
-
-def repo_id(repo: Repo) -> str:
-    if repo.remotes:
-        src = next(iter(repo.remotes[0].urls), None)
-        data = src.encode() if src else b""
+def compute_repository_id(repository: Repo) -> str:
+    """Compute a unique ID for a repository based on its remote URL or working directory."""
+    if repository.remotes:
+        remote_url = next(iter(repository.remotes[0].urls), None)
+        data_bytes = remote_url.encode() if remote_url else b""
     else:
-        data = str(repo.working_tree_dir).encode()
-    return hashlib.sha256(data).hexdigest()
+        data_bytes = str(repository.working_tree_dir).encode()
+    return hashlib.sha256(data_bytes).hexdigest()
 
 
-def ignored_files(repo: Repo):
-    return sorted(
-        Path(p)
-        for p in repo.git.ls_files(
-            "-o",
-            "-i",
-            "--directory",
-            "--exclude-standard",
-        ).splitlines()
-        if p
+def list_ignored_files(repository: Repo) -> list[Path]:
+    """Return a sorted list of ignored files and directories in the repository."""
+    ignored = repository.git.ls_files(
+        "-o",  # other (untracked) files
+        "-i",  # ignored files
+        "--directory",
+        "--exclude-standard",
     )
+    return sorted(Path(file_path) for file_path in ignored.splitlines() if file_path)
 
 
-class GitIgnore:
-    def commit(self, repo: str | None = None) -> None:
-        repo = get_repo(repo)
-        root = Path(repo.working_tree_dir)
-        repo_dir = BASE_DIR / repo_id(repo)
-        repo_dir.mkdir(parents=True, exist_ok=True)
-        files = ignored_files(repo)
-        if not files:
+class GitIgnoreManager:
+    """Manage snapshots and diffs of ignored files in Git repositories."""
+
+    def commit(self, repository_path: str | None = None) -> None:
+        target_path = Path(repository_path or ".")
+        if target_path.is_file():
+            target_path = target_path.parent
+        try:
+            repository = Repo(target_path, search_parent_directories=True)
+        except InvalidGitRepositoryError as e:
+            message = f"No Git repository found for: {target_path.resolve()}"
+            raise InvalidGitRepositoryError(message) from e
+        repository_root = Path(repository.working_tree_dir)
+        repository_directory = SNAPSHOT_BASE_DIRECTORY / compute_repository_id(repository)
+        repository_directory.mkdir(parents=True, exist_ok=True)
+
+        ignored_files = list_ignored_files(repository)
+        if not ignored_files:
             return
-        snap_hash = hashlib.sha256(
-            b"".join(
-                ((root / p).read_bytes() if (root / p).is_file() else b"")
-                + str(p).encode()
-                for p in files
-            ),
-        ).hexdigest()
-        snap_dir = repo_dir / snap_hash
-        snap_dir.mkdir(exist_ok=True)
 
-        rel_files = [f"./{p}" for p in files]
+        snapshot_data = bytearray()
+        for file_path in ignored_files:
+            full_file_path = repository_root / file_path
+            if full_file_path.is_file():
+                snapshot_data.extend(full_file_path.read_bytes())
+            snapshot_data.extend(str(file_path).encode())
+
+        snapshot_hash = hashlib.sha256(snapshot_data).hexdigest()
+        snapshot_directory = repository_directory / snapshot_hash
+        snapshot_directory.mkdir(exist_ok=True)
+
+        relative_file_paths = [f"./{file_path}" for file_path in ignored_files]
         subprocess.run(
             [
                 "rsync",
                 "-a",
                 "--delete",
                 "--relative",
-                *rel_files,
-                str(snap_dir),
+                *relative_file_paths,
+                str(snapshot_directory),
             ],
-            cwd=root,
+            cwd=repository_root,
             check=True,
         )
 
-        latest = repo_dir / "latest"
-        if latest.exists() or latest.is_symlink():
-            latest.unlink()
-        latest.symlink_to(snap_hash, target_is_directory=True)
+        latest_symlink = repository_directory / "latest"
+        if latest_symlink.exists() or latest_symlink.is_symlink():
+            latest_symlink.unlink()
+        latest_symlink.symlink_to(snapshot_hash, target_is_directory=True)
 
-    def diff(self, repo: str | None = None) -> None:
-        repo = get_repo(repo)
-        root = Path(repo.working_tree_dir)
-        repo_dir = BASE_DIR / repo_id(repo)
-        latest = repo_dir / "latest"
-        if not latest.exists():
+    def diff(self, repository_path: str | None = None) -> None:
+        target_path = Path(repository_path or ".")
+        if target_path.is_file():
+            target_path = target_path.parent
+        try:
+            repository = Repo(target_path, search_parent_directories=True)
+        except InvalidGitRepositoryError as e:
+            message = f"No Git repository found for: {target_path.resolve()}"
+            raise InvalidGitRepositoryError(message) from e
+        repository_root = Path(repository.working_tree_dir)
+        repository_directory = SNAPSHOT_BASE_DIRECTORY / compute_repository_id(repository)
+        latest_snapshot_symlink = repository_directory / "latest"
+
+        if not latest_snapshot_symlink.exists():
             return
-        files = ignored_files(repo)
-        if not files:
+
+        ignored_files = list_ignored_files(repository)
+        if not ignored_files:
             return
-        diff_dir = repo_dir / "diffs"
-        diff_dir.mkdir(exist_ok=True)
-        for path in files:
-            pf = latest / path
-            cf = root / path
-            if pf.is_dir() or not cf.exists():
+
+        diffs_directory = repository_directory / "diffs"
+        diffs_directory.mkdir(exist_ok=True)
+
+        for relative_file_path in ignored_files:
+            previous_file_path = latest_snapshot_symlink / relative_file_path
+            current_file_path = repository_root / relative_file_path
+
+            if previous_file_path.is_dir() or not current_file_path.exists():
                 continue
-            file_hash = hashlib.sha256(
-                pf.read_bytes() + cf.read_bytes() + str(path).encode(),
-            ).hexdigest()
-            diff_subdir = diff_dir / file_hash
-            diff_subdir.mkdir(parents=True, exist_ok=True)
+
+            diff_data = bytearray()
+            if previous_file_path.is_file() and current_file_path.exists():
+                diff_data.extend(previous_file_path.read_bytes())
+                diff_data.extend(current_file_path.read_bytes())
+                diff_data.extend(str(relative_file_path).encode())
+
+            diff_hash = hashlib.sha256(diff_data).hexdigest()
+            diff_snapshot_directory = diffs_directory / diff_hash
+            diff_snapshot_directory.mkdir(parents=True, exist_ok=True)
+
             subprocess.run(
-                ["diffoscope", str(pf), str(cf), "--html-dir", str(diff_subdir)],
+                [
+                    "diffoscope",
+                    str(previous_file_path),
+                    str(current_file_path),
+                    "--html-dir",
+                    str(diff_snapshot_directory),
+                ],
                 check=False,
             )
-            index_path = diff_subdir / "index.html"
-            system = platform.system()
-            if system == "Darwin":
-                subprocess.run(["open", str(index_path)], check=False)
-            elif system == "Windows":
-                os.startfile(str(index_path))
+
+            index_html_path = diff_snapshot_directory / "index.html"
+            current_platform = platform.system()
+            if current_platform == "Darwin":
+                subprocess.run(["open", str(index_html_path)], check=False)
+            elif current_platform == "Windows":
+                os.startfile(str(index_html_path))
             else:
-                subprocess.run(["xdg-open", str(index_path)], check=False)
+                subprocess.run(["xdg-open", str(index_html_path)], check=False)
 
 
 if __name__ == "__main__":
-    fire.Fire(GitIgnore)
+    fire.Fire(GitIgnoreManager)
