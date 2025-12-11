@@ -4,7 +4,6 @@
 import hashlib
 import platform
 import subprocess
-import tempfile
 from pathlib import Path
 
 import fire
@@ -100,9 +99,7 @@ def diff(repo: Repo) -> None:
     files = ignored_files(repo)
     if not files:
         return
-
     file_args = [f"./{p}" for p in files]
-
     proc = subprocess.run(
         [
             "rsync",
@@ -118,7 +115,6 @@ def diff(repo: Repo) -> None:
         text=True,
         check=False,
     )
-
     for line in proc.stdout.splitlines():
         if not line.strip():
             continue
@@ -126,38 +122,35 @@ def diff(repo: Repo) -> None:
         path = Path(line[12:])
         pf = latest / path
         cf = root / path
-
         if code.startswith("<"):
-            continue  # Deleted in current snapshot
-        elif code.startswith((">", "c")) and cf.is_file():
-            # Compute hash for diff filename
+            continue
+        if code.startswith((">", "c")) and cf.is_file():
             h = hashlib.sha256()
             h.update(pf.read_bytes())
             h.update(cf.read_bytes())
             h.update(str(path).encode())
             file_hash = h.hexdigest()
-
-            # Directory to store diffs
             diff_dir = repo_dir / "diffs"
             diff_dir.mkdir(exist_ok=True)
-
-            # Image files -> generate visual diff PNG
             if cf.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
                 orig_img = diff_dir / f"{file_hash}_original{cf.suffix}"
                 new_img = diff_dir / f"{file_hash}_new{cf.suffix}"
                 diff_img = diff_dir / f"{file_hash}_diff.png"
-
-                # Copy original and new images to diff_dir
                 subprocess.run(["cp", str(pf), str(orig_img)], check=True)
                 subprocess.run(["cp", str(cf), str(new_img)], check=True)
-
-                # Create visual diff with ImageMagick
                 subprocess.run(
-                    ["compare", "-highlight-color", "red", "-compose", "src", str(pf), str(cf), str(diff_img)],
+                    [
+                        "compare",
+                        "-highlight-color",
+                        "red",
+                        "-compose",
+                        "src",
+                        str(pf),
+                        str(cf),
+                        str(diff_img),
+                    ],
                     check=False,
                 )
-
-                # Create HTML showing side-by-side original, new, and diff
                 diff_html = diff_dir / f"{file_hash}.html"
                 with open(diff_html, "w") as f:
                     f.write(f"""
@@ -178,10 +171,7 @@ def diff(repo: Repo) -> None:
                     </body>
                     </html>
                     """)
-
                 open_file(diff_html)
-
-            # Other binaries -> HTML diff via diffoscope
             elif is_binary(cf):
                 diff_html = diff_dir / f"{file_hash}.html"
                 subprocess.run(
@@ -189,10 +179,9 @@ def diff(repo: Repo) -> None:
                     check=False,
                 )
                 open_file(diff_html)
-
-            # Text files -> regular diff
             else:
                 subprocess.run(["diff", "-u", str(pf), str(cf)], check=False)
+
 
 class GitIgnore:
     def commit(self, repo: str | None = None) -> None:
