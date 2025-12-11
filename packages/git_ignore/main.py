@@ -133,16 +133,11 @@ def diff(repo: Repo) -> None:
             diff_dir = repo_dir / "diffs"
             diff_dir.mkdir(exist_ok=True)
             if cf.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif"}:
-                orig_img = diff_dir / f"{file_hash}_original{cf.suffix}"
-                new_img = diff_dir / f"{file_hash}_new{cf.suffix}"
                 diff_img = diff_dir / f"{file_hash}_diff.png"
-                subprocess.run(["cp", str(pf), str(orig_img)], check=True)
-                subprocess.run(["cp", str(cf), str(new_img)], check=True)
                 subprocess.run(
                     [
+                        "magick",
                         "compare",
-                        "-highlight-color",
-                        "red",
                         "-compose",
                         "src",
                         str(pf),
@@ -151,23 +146,14 @@ def diff(repo: Repo) -> None:
                     ],
                     check=False,
                 )
-                diff_html = diff_dir / f"{file_hash}.html"
+                diff_html = diff_dir / f"{file_hash}_diff.html"
                 with open(diff_html, "w") as f:
                     f.write(f"""
                     <html>
                     <head><title>Diff for {path}</title></head>
                     <body>
                         <h2>{path}</h2>
-                        <table>
-                        <tr>
-                            <th>Original</th><th>New</th><th>Diff</th>
-                        </tr>
-                        <tr>
-                            <td><img src="{orig_img.name}" alt="Original" style="max-width:400px;"/></td>
-                            <td><img src="{new_img.name}" alt="New" style="max-width:400px;"/></td>
-                            <td><img src="{diff_img.name}" alt="Diff" style="max-width:400px;"/></td>
-                        </tr>
-                        </table>
+                        <img src="{diff_img.name}" alt="Diff" style="max-width:600px;"/>
                     </body>
                     </html>
                     """)
