@@ -4,113 +4,97 @@ import shutil
 from pathlib import Path
 import fire
 
-
 def run(cmd, cwd=None, check=True):
     return subprocess.run(cmd, cwd=cwd, check=check, text=True)
 
-
 def find_git_root(start: Path) -> Path:
-    """Walk upward to locate the Git repository root."""
+    """Find the root of the current Git repository."""
     p = start.resolve()
     for parent in [p] + list(p.parents):
         if (parent / ".git").exists():
             return parent
     raise RuntimeError("Not inside a Git repository.")
 
-
-def ensure_tmp_repo(tmp_repo: Path):
-    """Initialize the shadow Git repo if missing."""
-    if not (tmp_repo / ".git").exists():
-        run(["git", "init"], cwd=tmp_repo)
-        # Required to allow HEAD~1 diffs
-        run(["git", "commit", "--allow-empty", "-m", "initial"], cwd=tmp_repo)
-
-
-def expand_targets(repo_root: Path, targets):
-    """Expand files + directories recursively, repo-root-relative."""
+def expand_targets(repo_root: Path, targets, cwd: Path) -> list[Path]:
+    """
+    Expand files and directories recursively.
+    - `targets` are relative to the current working directory.
+    - Returns a list of absolute Paths inside the real repo.
+    """
     files = []
     for t in targets:
-        p = (repo_root / t).resolve()
-        if not p.exists():
-            print(f"Warning: does not exist: {p}")
+        path = (cwd / t).resolve()  # Resolve relative to current working directory
+        if not path.exists():
+            print(f"Warning: {path} does not exist.")
             continue
-
-        if p.is_file():
-            files.append(p)
+        if path.is_file():
+            files.append(path)
         else:
-            for sub in p.rglob("*"):
-                if sub.is_file():
-                    files.append(sub)
+            for p in path.rglob("*"):
+                if p.is_file():
+                    files.append(p)
     return files
-
 
 class GitShadow:
     TMP_BASE = Path("/tmp/gitshadow")
 
-    def _tmp_repo_for_current_repo(self):
+    def _tmp_repo(self):
+        """Return repo_root and shadow repo path."""
         repo_root = find_git_root(Path.cwd())
         tmp_repo = self.TMP_BASE / repo_root.name
+        tmp_repo.mkdir(parents=True, exist_ok=True)
         return repo_root, tmp_repo
 
-    #
-    # gitshadow add path1 path2 ...
-    #
+    def init(self):
+        """Initialize the shadow Git repo in /tmp/<repository>."""
+        repo_root, tmp_repo = self._tmp_repo()
+        if (tmp_repo / ".git").exists():
+            print(f"Shadow repo already exists: {tmp_repo}")
+            return
+        run(["git", "init"], cwd=tmp_repo)
+        run(["git", "commit", "--allow-empty", "-m", "initial"], cwd=tmp_repo)
+        print(f"Shadow repo initialized at: {tmp_repo}")
+
     def add(self, *paths: str):
-        """Add ignored files/directories to the shadow repo."""
+        """Copy specified files/directories into the shadow repo and stage them."""
         if not paths:
             print("Usage: gitshadow add <paths...>")
             return
+        repo_root, tmp_repo = self._tmp_repo()
+        if not (tmp_repo / ".git").exists():
+            print("Shadow repo missing. Run `gitshadow init` first.")
+            return
 
-        repo_root, tmp_repo = self._tmp_repo_for_current_repo()
-        tmp_repo.mkdir(parents=True, exist_ok=True)
-
-        ensure_tmp_repo(tmp_repo)
-
-        files = expand_targets(repo_root, list(paths))
+        cwd = Path.cwd()  # current working directory
+        files = expand_targets(repo_root, paths, cwd)
         if not files:
             print("Nothing to add.")
             return
 
         print(f"→ Adding {len(files)} files into shadow repo: {tmp_repo}")
-        print("  From repo:", repo_root)
+        print("  From repo root:", repo_root)
         print("  Paths:", ", ".join(paths))
 
         for src in files:
-            rel = src.relative_to(repo_root)
+            rel = src.relative_to(repo_root)  # relative to repo root
             dest = tmp_repo / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest)
             run(["git", "add", str(rel)], cwd=tmp_repo)
 
-        print("✓ Staged. Now run:")
-        print("  gitshadow commit -m 'your message'")
+        print("✓ Files staged. Now run `gitshadow commit -m 'message'` to commit.")
 
-    #
-    # PASSTHROUGH: treat any unknown attribute as a git subcommand
-    #
     def __getattr__(self, command):
-        """
-        Allows:
-            gitshadow commit -m "msg"
-            gitshadow diff
-            gitshadow log
-            gitshadow show HEAD:file
-            gitshadow status
-        """
-
+        """Passthrough all other git commands into shadow repo."""
         def git_passthrough(*args):
-            repo_root, tmp_repo = self._tmp_repo_for_current_repo()
-
+            repo_root, tmp_repo = self._tmp_repo()
             if not (tmp_repo / ".git").exists():
-                print("Shadow repo missing. Run `gitshadow add` first.")
+                print("Shadow repo missing. Run `gitshadow init` first.")
                 return
-
             cmd = ["git", command, *args]
             print(f"→ Running in shadow repo: {' '.join(cmd)}")
             run(cmd, cwd=tmp_repo, check=False)
-
         return git_passthrough
-
 
 if __name__ == "__main__":
     fire.Fire(GitShadow)
