@@ -45,13 +45,11 @@ def commit(repo: Repo) -> None:
     files = ignored_files(repo)
     if not files:
         return
-    root = Path(repo.working_tree_dir)
     h = hashlib.sha256()
-    for p in ignored_files(repo):
+    for p in files:
         fp = root / p
-        if fp.is_file():
-            h.update(fp.read_bytes())
-        h.update(str(p).encode())
+        data = (fp.read_bytes() if fp.is_file() else b"") + str(p).encode()
+        h.update(data)
     snap_hash = h.hexdigest()
     snap_dir = repo_dir / snap_hash
     snap_dir.mkdir(exist_ok=True)
@@ -80,30 +78,25 @@ def diff(repo: Repo) -> None:
     diff_dir.mkdir(exist_ok=True)
     for path in files:
         pf = latest / path
-        if pf.is_dir():
-            continue
         cf = root / path
-        if not cf.exists():
+        if pf.is_dir() or not cf.exists():
             continue
-        h = hashlib.sha256()
-        h.update(pf.read_bytes())
-        h.update(cf.read_bytes())
-        h.update(str(path).encode())
-        file_hash = h.hexdigest()
+        file_data = pf.read_bytes() + cf.read_bytes() + str(path).encode()
+        file_hash = hashlib.sha256(file_data).hexdigest()
         diff_subdir = diff_dir / file_hash
         diff_subdir.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             ["diffoscope", str(pf), str(cf), "--html-dir", str(diff_subdir)],
             check=False,
         )
-        path = diff_subdir / "index.html"
+        index_path = diff_subdir / "index.html"
         system = platform.system()
         if system == "Darwin":
-            subprocess.run(["open", str(path)], check=False)
+            subprocess.run(["open", str(index_path)], check=False)
         elif system == "Windows":
-            os.startfile(str(path))
+            os.startfile(str(index_path))
         else:
-            subprocess.run(["xdg-open", str(path)], check=False)
+            subprocess.run(["xdg-open", str(index_path)], check=False)
 
 
 class GitIgnore:
