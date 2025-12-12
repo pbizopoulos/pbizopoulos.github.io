@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-case "$1" in
+case "${1:-}" in
 -h | --help | help)
   cat <<'EOF'
 git-inverse: Track files ignored by the main Git repository using an inverse repository
@@ -34,6 +34,10 @@ EOF
   ;;
 esac
 
+if [ ! -d .gitinverse ]; then
+  git-inverse --help
+  exit 1
+fi
 if [ ! -f .gitinverse/.gitignore ]; then
   echo "*" >.gitinverse/.gitignore
 fi
