@@ -34,9 +34,9 @@ EOF
   ;;
 esac
 
-if [ ! -d .gitinverse ]; then
-  git-inverse --help
-  exit 1
+if [ ! -d .gitinverse ] || [ ! -f .gitinverse/HEAD ]; then
+  echo "fatal: not a git repository: .gitinverse" >&2
+  exit 128
 fi
 if [ ! -f .gitinverse/.gitignore ]; then
   echo "*" >.gitinverse/.gitignore
