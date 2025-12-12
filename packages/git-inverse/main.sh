@@ -17,11 +17,7 @@ EOF
   ;;
 esac
 
-if [ ! -d .gitinverse ] || [ ! -f .gitinverse/HEAD ]; then
-  echo "fatal: not a git repository: .gitinverse" >&2
-  exit 128
-fi
-if [ ! -f .gitinverse/.gitignore ]; then
+if [ -d .gitinverse ]; then
   echo "*" >.gitinverse/.gitignore
 fi
 if [ -f .gitignore ]; then
@@ -48,3 +44,6 @@ trap "$restore_cmd" EXIT
   fi
 } >.gitignore
 git --git-dir=.gitinverse --work-tree=. "$@"
+if [ -d .gitinverse ]; then
+  echo "*" >.gitinverse/.gitignore
+fi
