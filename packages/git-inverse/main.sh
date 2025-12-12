@@ -16,6 +16,7 @@ EOF
 esac
 if [ -d "$repo_root/.gitinverse" ]; then
   echo "*" >"$repo_root/.gitinverse/.gitignore"
+  git -C "$repo_root" ls-files "$(git rev-parse --show-toplevel)" >"$repo_root/.gitinverse/info/exclude"
 fi
 if [ -f "$repo_root/.gitignore" ]; then
   mv "$repo_root/.gitignore" "$repo_root/.gitignore.orig"
@@ -27,22 +28,4 @@ else
 fi
 # shellcheck disable=SC2064
 trap "$restore_cmd" EXIT
-{
-  echo "*"
-  if [ -f "$repo_root/.gitignore.orig" ]; then
-    grep -v '^[[:space:]]*$' "$repo_root/.gitignore.orig" |
-      grep -v '^[[:space:]]*#' |
-      while IFS= read -r line; do
-        echo "!$line"
-        case "$line" in
-        */)
-          echo "!${line}**"
-          ;;
-        esac
-      done
-  fi
-} >"$repo_root/.gitignore"
 git --git-dir="$repo_root/.gitinverse" --work-tree="$repo_root" "$@"
-if [ -d "$repo_root/.gitinverse" ]; then
-  echo "*" >"$repo_root/.gitinverse/.gitignore"
-fi
