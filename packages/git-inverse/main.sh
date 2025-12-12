@@ -19,9 +19,9 @@ if [ -d "$repo_root/.gitinverse" ]; then
   git -C "$repo_root" ls-files "$(git rev-parse --show-toplevel)" >"$repo_root/.gitinverse/info/exclude"
 fi
 if [ -f "$repo_root/.gitignore" ]; then
-  mv "$repo_root/.gitignore" "$repo_root/.gitignore.orig"
+  mv "$repo_root/.gitignore" "$repo_root/.gitinverse/.gitignore.orig"
   # shellcheck disable=SC2016
-  restore_cmd='mv "$repo_root/.gitignore.orig" "$repo_root/.gitignore"'
+  restore_cmd='mv "$repo_root/.gitinverse/.gitignore.orig" "$repo_root/.gitignore"'
 else
   # shellcheck disable=SC2016
   restore_cmd='rm -f "$repo_root/.gitignore"'
