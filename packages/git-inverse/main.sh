@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Resolve the repository root
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+
 case "${1:-}" in
 -h | --help | help)
   cat <<'EOF'
@@ -17,21 +20,29 @@ EOF
   ;;
 esac
 
-if [ -d .gitinverse ]; then
-  echo "*" >.gitinverse/.gitignore
+# Ensure .gitinverse exists
+if [ -d "$repo_root/.gitinverse" ]; then
+  echo "*" >"$repo_root/.gitinverse/.gitignore"
 fi
-if [ -f .gitignore ]; then
-  mv .gitignore .gitignore.orig
-  restore_cmd='mv .gitignore.orig .gitignore'
+
+# Backup existing .gitignore if present
+if [ -f "$repo_root/.gitignore" ]; then
+  mv "$repo_root/.gitignore" "$repo_root/.gitignore.orig"
+  # shellcheck disable=SC2016
+  restore_cmd='mv "$repo_root/.gitignore.orig" "$repo_root/.gitignore"'
 else
-  restore_cmd='rm -f .gitignore'
+  # shellcheck disable=SC2016
+  restore_cmd='rm -f "$repo_root/.gitignore"'
 fi
+
 # shellcheck disable=SC2064
 trap "$restore_cmd" EXIT
+
+# Create temporary inverted .gitignore
 {
   echo "*"
-  if [ -f .gitignore.orig ]; then
-    grep -v '^[[:space:]]*$' .gitignore.orig |
+  if [ -f "$repo_root/.gitignore.orig" ]; then
+    grep -v '^[[:space:]]*$' "$repo_root/.gitignore.orig" |
       grep -v '^[[:space:]]*#' |
       while IFS= read -r line; do
         echo "!$line"
@@ -42,8 +53,12 @@ trap "$restore_cmd" EXIT
         esac
       done
   fi
-} >.gitignore
-git --git-dir=.gitinverse --work-tree=. "$@"
-if [ -d .gitinverse ]; then
-  echo "*" >.gitinverse/.gitignore
+} >"$repo_root/.gitignore"
+
+# Run Git command in the inverse repository
+git --git-dir="$repo_root/.gitinverse" --work-tree="$repo_root" "$@"
+
+# Reset .gitinverse ignore to '*'
+if [ -d "$repo_root/.gitinverse" ]; then
+  echo "*" >"$repo_root/.gitinverse/.gitignore"
 fi
