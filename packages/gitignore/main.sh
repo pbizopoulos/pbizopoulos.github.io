@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+if [ -d .gitignore_ ] && [ ! -f .gitignore_/.gitignore ]; then
+  echo "*" >.gitignore_/.gitignore
+fi
 if [ -f .gitignore ]; then
   mv .gitignore .gitignore.orig
   restore_cmd='mv .gitignore.orig .gitignore'
