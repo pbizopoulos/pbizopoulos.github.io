@@ -4,31 +4,14 @@ set -e
 case "${1:-}" in
 -h | --help | help)
   cat <<'EOF'
-git-inverse: Track files ignored by the main Git repository using an inverse repository
+git-inverse: track files ignored by the main Git repository
 
 Usage:
   git-inverse <git-command> [args...]
 
-Description:
-  Runs Git commands in a separate repository (.gitinverse) that tracks
-  only files ignored by the main repository. Temporarily inverts .gitignore
-  rules so normally ignored files become trackable, while everything else
-  remains ignored.
-
-Examples:
-  git-inverse status
-      Show status of normally ignored files.
-
-  git-inverse add build/output.log
-      Stage ignored files for commit.
-
-  git-inverse commit -m "Track ignored files"
-      Commit ignored files to the inverse repository.
-
-Notes:
-  - The inverse repository (.gitinverse) must already exist.
-  - The main repository's .gitignore is temporarily replaced and restored.
-  - This plugin does not initialize the inverse repository automatically.
+Runs Git commands in the inverse repository (.gitinverse), which tracks
+only files ignored by the main repository. Temporarily inverts .gitignore
+rules so normally ignored files become trackable.
 EOF
   exit 0
   ;;
