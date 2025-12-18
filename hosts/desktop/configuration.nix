@@ -129,9 +129,9 @@
   };
   services = {
     ollama = {
+      acceleration = "cuda";
       enable = true;
       loadModels = [ "gemma3:12b" ];
-      package = pkgs.ollama-cuda;
       syncModels = true;
     };
     openssh = {

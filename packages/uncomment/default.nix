@@ -16,8 +16,8 @@ pkgs.stdenv.mkDerivation {
   pname = "uncomment";
   sourceRoot = ".";
   src = pkgs.fetchurl {
-    sha256 = "JiV87+ETfCMokAai6V62LnaEbUKQ/PsyAvvqkfO5M+o=";
-    url = "https://github.com/Goldziher/uncomment/releases/download/v2.9.2/uncomment-x86_64-unknown-linux-gnu.tar.gz";
+    sha256 = "i0x/CKFsLx1OX5gLsJChp8XerX60/zy1UwpgRE5NJj0=";
+    url = "https://github.com/Goldziher/uncomment/releases/download/v2.10.3/uncomment-x86_64-unknown-linux-gnu.tar.gz";
   };
-  version = "2.9.2";
+  version = "2.10.3";
 }
