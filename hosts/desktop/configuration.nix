@@ -176,6 +176,7 @@
     mutableUsers = false;
     users.pbizopoulos = {
       extraGroups = [
+        "docker"
         "podman"
         "wheel"
       ];
@@ -199,10 +200,8 @@
   };
   virtualisation = {
     containers.enable = true;
-    podman = {
-      dockerCompat = true;
-      enable = true;
-    };
+    docker.enable = true;
+    podman.enable = true;
     vmVariantWithDisko = {
       disko.devices.disk.main.content.partitions = {
         home.size = pkgs.lib.mkForce "500M";
