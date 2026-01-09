@@ -190,7 +190,10 @@
     };
   };
   virtualisation = {
-    docker.enable = true;
+    docker = {
+      daemon.settings.data-root = "/nix/docker";
+      enable = true;
+    };
     vmVariantWithDisko = {
       disko.devices.disk.main.content.partitions = {
         home.size = pkgs.lib.mkForce "500M";
