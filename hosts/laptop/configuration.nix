@@ -83,7 +83,7 @@
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.12.63" ];
+    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.12.64" ];
   };
   preservation = {
     enable = true;
@@ -168,7 +168,10 @@
   users = {
     mutableUsers = false;
     users.pbizopoulos = {
-      extraGroups = [ "wheel" ];
+      extraGroups = [
+        "docker"
+        "wheel"
+      ];
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
@@ -186,21 +189,24 @@
       ];
     };
   };
-  virtualisation.vmVariantWithDisko = {
-    disko.devices.disk.main.content.partitions = {
-      home.size = pkgs.lib.mkForce "500M";
-      swap.size = pkgs.lib.mkForce "1M";
-    };
-    users.users.pbizopoulos = {
-      hashedPasswordFile = pkgs.lib.mkForce null;
-      password = "password";
-    };
-    virtualisation = {
-      fileSystems = {
-        "/home".neededForBoot = true;
-        "/persistent".neededForBoot = true;
+  virtualisation = {
+    docker.enable = true;
+    vmVariantWithDisko = {
+      disko.devices.disk.main.content.partitions = {
+        home.size = pkgs.lib.mkForce "500M";
+        swap.size = pkgs.lib.mkForce "1M";
       };
-      graphics = false;
+      users.users.pbizopoulos = {
+        hashedPasswordFile = pkgs.lib.mkForce null;
+        password = "password";
+      };
+      virtualisation = {
+        fileSystems = {
+          "/home".neededForBoot = true;
+          "/persistent".neededForBoot = true;
+        };
+        graphics = false;
+      };
     };
   };
 }

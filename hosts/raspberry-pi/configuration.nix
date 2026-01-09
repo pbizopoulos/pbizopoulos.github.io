@@ -29,9 +29,7 @@
   programs = {
     bash.promptInit = "";
     git = {
-      config = {
-        init.defaultBranch = "main";
-      };
+      config.init.defaultBranch = "main";
       enable = true;
     };
   };
