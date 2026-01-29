@@ -1,7 +1,7 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.stdenv.mkDerivation {
+pkgs.stdenv.mkDerivation rec {
   buildInputs = [ pkgs.stdenv.cc.cc.lib ];
   installPhase = ''
     runHook preInstall
@@ -9,15 +9,13 @@ pkgs.stdenv.mkDerivation {
     cp uncomment $out/bin/uncomment
     runHook postInstall
   '';
-  meta = with pkgs.lib; {
-    mainProgram = "uncomment";
-  };
+  meta.mainProgram = pname;
   nativeBuildInputs = [ pkgs.autoPatchelfHook ];
   pname = "uncomment";
   sourceRoot = ".";
   src = pkgs.fetchurl {
-    sha256 = "i0x/CKFsLx1OX5gLsJChp8XerX60/zy1UwpgRE5NJj0=";
-    url = "https://github.com/Goldziher/uncomment/releases/download/v2.10.3/uncomment-x86_64-unknown-linux-gnu.tar.gz";
+    sha256 = "N2/H+2BG9kaKO3hXT4C35JEXA75AFP9B9oisKlmIU/s=";
+    url = "https://github.com/Goldziher/uncomment/releases/download/v2.10.4/uncomment-x86_64-unknown-linux-gnu.tar.gz";
   };
-  version = "2.10.3";
+  version = "2.10.4";
 }
