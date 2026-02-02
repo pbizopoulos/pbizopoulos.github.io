@@ -45,7 +45,7 @@ in
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.12.66" ];
+    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.12.68" ];
   };
   users.motd = "Run 'install-nixos <hostname> <username> <disk>'";
   virtualisation.vmVariant.virtualisation.graphics = false;
