@@ -3,7 +3,7 @@
 }:
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
-    cc -o fswm main.c -O3 -std=c89 -Werror -lxcb -lxcb-keysyms \
+    cc -o fswm main.c -O3 -std=c89 -lxcb -lxcb-keysyms \
     -Waggressive-loop-optimizations \
     -Wall \
     -Walloc-zero \
@@ -15,16 +15,16 @@ pkgs.stdenv.mkDerivation rec {
     -Wbuiltin-macro-redefined \
     -Wc90-c99-compat \
     -Wc99-c11-compat \
-    -Wcast-align=strict \
     -Wcast-align \
+    -Wcast-align=strict \
     -Wcast-qual \
     -Wconversion \
     -Wcoverage-mismatch \
     -Wcpp \
     -Wdate-time \
     -Wdeclaration-after-statement \
-    -Wdeprecated-declarations \
     -Wdeprecated \
+    -Wdeprecated-declarations \
     -Wdesignated-init \
     -Wdisabled-optimization \
     -Wdiscarded-array-qualifiers \
@@ -33,6 +33,7 @@ pkgs.stdenv.mkDerivation rec {
     -Wdouble-promotion \
     -Wduplicated-branches \
     -Wduplicated-cond \
+    -Werror \
     -Wextra \
     -Wfloat-equal \
     -Wformat-signedness \
@@ -60,8 +61,8 @@ pkgs.stdenv.mkDerivation rec {
     -Wold-style-definition \
     -Woverflow \
     -Woverride-init-side-effects \
-    -Wpacked-bitfield-compat \
     -Wpacked \
+    -Wpacked-bitfield-compat \
     -Wpedantic \
     -Wpointer-compare \
     -Wpointer-to-int-cast \
@@ -96,7 +97,7 @@ pkgs.stdenv.mkDerivation rec {
     -Wvla \
     -Wwrite-strings
     # -fanalyzer \
-    # -Waggregate-return
+    # -Waggregate-return \
     # -Wtraditional-conversion
   '';
   installPhase = ''
@@ -106,9 +107,9 @@ pkgs.stdenv.mkDerivation rec {
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [
-    pkgs.xorg.libX11
-    pkgs.xorg.libxcb
-    pkgs.xorg.xcbutilkeysyms
+    pkgs.libX11
+    pkgs.libxcb
+    pkgs.xcbutilkeysyms
   ];
   pname = builtins.baseNameOf ./.;
   src = ./.;
