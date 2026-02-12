@@ -2,7 +2,6 @@
   pkgs ? import <nixpkgs> { },
 }:
 pkgs.stdenv.mkDerivation rec {
-  buildInputs = [ pkgs.stdenv.cc.cc.lib ];
   installPhase = ''
     runHook preInstall
     mkdir -p $out/bin
