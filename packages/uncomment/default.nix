@@ -5,7 +5,7 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/bin
-    cp uncomment $out/bin/uncomment
+    cp ${pname} $out/bin/${pname}
     runHook postInstall
   '';
   meta.mainProgram = pname;
