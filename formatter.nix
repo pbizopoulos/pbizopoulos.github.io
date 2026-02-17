@@ -36,6 +36,7 @@ let
     projectRootFile = "flake.nix";
     settings = {
       formatter = {
+        biome.options = [ "--max-diagnostics=none" ];
         mypy = {
           command = pkgs.mypy;
           includes = [ "*.py" ];

@@ -1,7 +1,7 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.python312Packages.buildPythonPackage rec {
+pkgs.python313Packages.buildPythonPackage rec {
   installPhase = ''
     mkdir -p $out/bin
     cp ./main.py $out/bin/${pname}
@@ -10,8 +10,8 @@ pkgs.python312Packages.buildPythonPackage rec {
   meta.mainProgram = pname;
   pname = builtins.baseNameOf src;
   propagatedBuildInputs = [
-    pkgs.python312Packages.fire
-    pkgs.python312Packages.libcst
+    pkgs.python313Packages.fire
+    pkgs.python313Packages.libcst
   ];
   pyproject = false;
   src = ./.;

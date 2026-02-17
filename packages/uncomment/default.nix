@@ -13,8 +13,8 @@ pkgs.stdenv.mkDerivation rec {
   pname = "uncomment";
   sourceRoot = ".";
   src = pkgs.fetchurl {
-    sha256 = "N2/H+2BG9kaKO3hXT4C35JEXA75AFP9B9oisKlmIU/s=";
-    url = "https://github.com/Goldziher/uncomment/releases/download/v2.10.4/uncomment-x86_64-unknown-linux-gnu.tar.gz";
+    sha256 = "sha256-EuRPTjg30QpIVw6ANblMtk9Rfwdnu+eWpCxdfOXIyvc=";
+    url = "https://github.com/Goldziher/uncomment/releases/download/v2.11.0/uncomment-x86_64-unknown-linux-gnu.tar.gz";
   };
-  version = "2.10.4";
+  version = "2.11.0";
 }
