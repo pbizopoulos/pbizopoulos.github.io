@@ -12,7 +12,6 @@ pkgs.haskellPackages.mkDerivation rec {
     pkgs.haskellPackages.temporary
     pkgs.haskellPackages.text
   ];
-  isExecutable = true;
   license = pkgs.lib.licenses.mit;
   mainProgram = "${pname}";
   pname = builtins.baseNameOf ./.;
