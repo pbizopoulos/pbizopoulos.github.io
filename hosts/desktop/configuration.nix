@@ -128,6 +128,12 @@
     slock.enable = true;
   };
   services = {
+    ollama = {
+      enable = true;
+      loadModels = [ "gemma3:12b" ];
+      package = pkgs.ollama-cuda;
+      syncModels = true;
+    };
     openssh = {
       enable = true;
       hostKeys = [
@@ -201,6 +207,7 @@
         home.size = pkgs.lib.mkForce "500M";
         swap.size = pkgs.lib.mkForce "1M";
       };
+      ollama.enable = false;
       users.users.pbizopoulos = {
         hashedPasswordFile = pkgs.lib.mkForce null;
         password = "password";
