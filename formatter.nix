@@ -11,6 +11,7 @@ let
       actionlint.enable = true;
       beautysh.enable = true;
       biome.enable = true;
+      biome.formatUnsafe = true;
       clang-format.enable = true;
       deadnix.enable = true;
       hlint.enable = true;
