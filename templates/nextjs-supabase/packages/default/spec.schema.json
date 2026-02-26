@@ -57,7 +57,7 @@
           "when": [
             {
               "type": "when",
-              "statement": "I click 'Sign In' and then 'Sign Up'"
+              "statement": "I click 'Sign In' and then 'Don't have an account? Sign Up'"
             },
             {
               "type": "and",
@@ -65,7 +65,7 @@
             },
             {
               "type": "and",
-              "statement": "I click the 'Sign Up' button"
+              "statement": "I click the 'Create Account' button"
             }
           ],
           "then": [
@@ -109,23 +109,148 @@
           ]
         },
         {
-          "name": "Data Integrity & Row Level Security",
+          "name": "Public Identity Profile Resolution",
           "given": [
             {
               "type": "given",
-              "statement": "The application is running"
+              "statement": "A user with username 'johndoe' exists"
             }
           ],
           "when": [
             {
               "type": "when",
-              "statement": "I view the landing page"
+              "statement": "I navigate to the profile page at '/johndoe'"
             }
           ],
           "then": [
             {
               "type": "then",
-              "statement": "The branding and call to action are clearly visible"
+              "statement": "I should see the 'johndoe' profile heading"
+            },
+            {
+              "type": "and",
+              "statement": "I should see the message 'This is a minimal profile page.'"
+            }
+          ]
+        },
+        {
+          "name": "Resilient Application Recovery & Error States",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am on the home page"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I navigate to a non-existent user profile at '/non-existent-user'"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "I should see the 'Page Not Found' heading"
+            },
+            {
+              "type": "and",
+              "statement": "I should see a 'Return Home' link"
+            }
+          ]
+        },
+        {
+          "name": "Secure Username Policy Enforcement",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am on the sign-up form"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I enter an invalid username (too short, too long, or invalid characters)"
+            },
+            {
+              "type": "and",
+              "statement": "I click the 'Create Account' button"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "I should see an error message describing the username requirements"
+            }
+          ]
+        },
+        {
+          "name": "Responsive Design & Mobile Accessibility",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am on the home page"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I view the page on a mobile viewport"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "The layout should adapt to the screen size"
+            },
+            {
+              "type": "and",
+              "statement": "The branding and navigation should remain accessible"
+            }
+          ]
+        },
+        {
+          "name": "Application Performance Budget",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am a user navigating the application"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "The page is loaded"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "The page should load within the performance budget"
+            }
+          ]
+        },
+        {
+          "name": "Global Error Handling",
+          "given": [
+            {
+              "type": "given",
+              "statement": "An unexpected application error occurs"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "The error page is rendered"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "I should see 'Something went wrong!'"
+            },
+            {
+              "type": "and",
+              "statement": "I should see a 'Try again' button"
             }
           ]
         }
