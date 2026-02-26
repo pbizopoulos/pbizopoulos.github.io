@@ -10,8 +10,8 @@ export async function GET(request: Request) {
 	if (code) {
 		const cookieStore = await cookies();
 		const supabase = createServerClient(
-			process.env["NEXT_PUBLIC_SUPABASE_URL"]!,
-			process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"]!,
+			process.env.NEXT_PUBLIC_SUPABASE_URL!,
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 			{
 				global: {
 					fetch: (url, options) => {
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 		const { error } = await supabase.auth.exchangeCodeForSession(code);
 		if (!error) {
 			const forwardedHost = request.headers.get("x-forwarded-host");
-			const isLocalEnv = process.env["NODE_ENV"] === "development";
+			const isLocalEnv = process.env.NODE_ENV === "development";
 
 			if (isLocalEnv) {
 				return NextResponse.redirect(`${origin}${next}`);

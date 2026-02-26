@@ -32,7 +32,3 @@ npx playwright show-report
 
 # Update all dependencies
 npx npm-check-updates -u
-
-# Various
-find . -exec nix run github:pbizopoulos/pbizopoulos.github.io#remove-empty-lines {} +
-find . -exec nix run github:pbizopoulos/pbizopoulos.github.io#uncomment -- --remove-doc {} +

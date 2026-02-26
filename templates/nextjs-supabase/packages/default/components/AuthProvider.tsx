@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		string | null
 	>(null);
 
-	const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] || "";
-	const supabaseKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] || "";
+	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+	const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 	const [supabase] = useState(() =>
 		createBrowserClient(supabaseUrl, supabaseKey, {

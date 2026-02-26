@@ -29,8 +29,8 @@ describe("Supabase", () => {
 	});
 
 	it("should create a client with cookies by default", async () => {
-		process.env["NEXT_PUBLIC_SUPABASE_URL"] = "https://example.com";
-		process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = "anon-key";
+		process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.com";
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 
 		// biome-ignore lint/suspicious/noExplicitAny: accessing mock properties
 		const supabaseClient = (await createClient()) as any;
@@ -43,8 +43,8 @@ describe("Supabase", () => {
 	});
 
 	it("should create a client without cookies when useCookies is false", async () => {
-		process.env["NEXT_PUBLIC_SUPABASE_URL"] = "https://example.com";
-		process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = "anon-key";
+		process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.com";
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 
 		// biome-ignore lint/suspicious/noExplicitAny: accessing mock properties
 		const supabaseClient = (await createClient(false)) as any;
@@ -53,13 +53,13 @@ describe("Supabase", () => {
 	});
 
 	it("should throw error if env vars are missing", async () => {
-		process.env["NEXT_PUBLIC_SUPABASE_URL"] = "";
+		process.env.NEXT_PUBLIC_SUPABASE_URL = "";
 		await expect(createClient()).rejects.toThrow(
 			"Missing env NEXT_PUBLIC_SUPABASE_URL",
 		);
 
-		process.env["NEXT_PUBLIC_SUPABASE_URL"] = "https://example.com";
-		process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = "";
+		process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.com";
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "";
 		await expect(createClient()).rejects.toThrow(
 			"Missing env NEXT_PUBLIC_SUPABASE_ANON_KEY",
 		);

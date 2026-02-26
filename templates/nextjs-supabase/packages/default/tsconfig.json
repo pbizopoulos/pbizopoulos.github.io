@@ -26,7 +26,7 @@
 		"strict": true,
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
-		"noPropertyAccessFromIndexSignature": true,
+		"noPropertyAccessFromIndexSignature": false,
 		"incremental": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,

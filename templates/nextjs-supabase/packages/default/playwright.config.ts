@@ -29,7 +29,7 @@ try {
 export default defineConfig({
 	testDir: "./tests/e2e",
 	fullyParallel: true,
-	forbidOnly: !!process.env["CI"],
+	forbidOnly: !!process.env.CI,
 	retries: 2,
 	workers: 2,
 	reporter: "list",
@@ -61,9 +61,9 @@ export default defineConfig({
 		})(),
 		url: "http://localhost:3000",
 		env: {
-			NEXT_PUBLIC_SUPABASE_URL: process.env["NEXT_PUBLIC_SUPABASE_URL"] || "",
+			NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
 			NEXT_PUBLIC_SUPABASE_ANON_KEY:
-				process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] || "",
+				process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
 		},
 		reuseExistingServer: true,
 		timeout: 120 * 1000,
