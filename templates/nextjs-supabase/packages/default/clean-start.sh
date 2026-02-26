@@ -5,6 +5,8 @@ rm -rf node_modules/ .next/
 find . -exec nix run github:pbizopoulos/pbizopoulos.github.io#remove-empty-lines {} + || true
 find . -exec nix run github:pbizopoulos/pbizopoulos.github.io#uncomment -- --remove-doc {} +
 nix fmt
+nix develop -c supabase stop
+nix develop -c supabase start
 nix develop -c npm install
 nix develop -c supabase db lint --fail-on warning
 nix develop -c npx tsc

@@ -1,34 +1,35 @@
 # Run Locally
 
-# Copy .env.local from http://localhost:54323/project/default/settings/log-drains?showConnect=true&connectTab=frameworks to .env
+1. Install dependencies:
+   ```bash
+   nix develop -c npm install
+   ```
 
-# Start supabase
-nix develop -c supabase start
+2. Start Supabase:
+   ```bash
+   nix develop -c supabase start
+   ```
 
-# Reset supabase
-nix develop -c supabase db reset
+3. Set up environment variables:
+   Copy `.env.example` to `.env` and fill in the values.
+   You can find the `NEXT_PUBLIC_SUPABASE_ANON_KEY` by running:
+   ```bash
+   nix develop -c supabase status
+   ```
+   or from the Supabase Studio at http://localhost:54323/project/default/settings/api
 
-# Test supabase
-nix develop -c supabase test db
+4. Run the app:
+   ```bash
+   nix develop -c npm run dev
+   ```
 
-# Lint supabase
-nix develop -c supabase db lint --fail-on warning
+# Testing
 
-# Install dependencies
-nix develop -c npm install
+- All tests: `nix develop -c npm test`
+- Coverage: `nix develop -c npm run test:coverage`
+- Update visual baselines: `nix develop -c npm test --update-snapshots`
+- Playwright report: `nix develop -c npx playwright show-report`
 
-# Run the app
-nix develop -c npm run dev
+# Maintenance
 
-# All tests
-nix develop -c npm test
-nix develop -c npm run test:coverage
-
-# Update visual baselines
-nix develop -c npm test --update-snapshots
-
-# Open last HTML report run
-nix develop -c npx playwright show-report
-
-# Update all dependencies
-nix develop -c npx npm-check-updates -u
+- Update all dependencies: `nix develop -c npx npm-check-updates -u`
