@@ -12,6 +12,8 @@ nix develop -c supabase db lint --fail-on warning
 nix develop -c npx tsc
 nix develop -c npm run build
 nix develop -c npm test
+nix develop -c npm run test:cpd
+nix develop -c npm run test:deps
 nix develop -c npm run test:mutation
 nix develop -c npm run test:mutation:metrics
 nix build

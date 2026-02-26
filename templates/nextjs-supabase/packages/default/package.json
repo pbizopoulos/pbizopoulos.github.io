@@ -18,6 +18,8 @@
     "test:audit": "npm run build && E2E_MODE=prod playwright test --project=audit",
     "test:visual": "E2E_MODE=prod playwright test --update-snapshots",
     "test:unit": "vitest run",
+    "test:cpd": "jscpd .",
+    "test:deps": "depcruise app components lib",
     "test:coverage": "vitest run --coverage",
     "test:mutation": "stryker run",
     "test:mutation:metrics": "node scripts/mutation-metrics.js"
@@ -42,7 +44,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
+    "dependency-cruiser": "^16.10.0",
     "jsdom": "^28.1.0",
+    "jscpd": "^4.0.5",
     "mutation-testing-metrics": "^3.7.2",
     "typescript": "~5.9.3",
     "vitest": "^4.0.18"
