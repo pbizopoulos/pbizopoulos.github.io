@@ -7,9 +7,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const nextBin = join(__dirname, "../node_modules/.bin/next");
 
 const next = spawn(nextBin, ["start"], {
-	stdio: "inherit",
+  stdio: "inherit",
 });
 
 next.on("close", (code) => {
-	process.exit(code || 0);
+  process.exit(code || 0);
 });

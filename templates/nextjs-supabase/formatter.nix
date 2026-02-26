@@ -17,6 +17,7 @@ let
         enable = true;
         strict = true;
       };
+      prettier.enable = true;
       shellcheck.enable = true;
       shfmt = {
         enable = true;
@@ -29,8 +30,8 @@ let
     projectRootFile = "flake.nix";
     settings = {
       formatter = {
-        shfmt.options = [ "--posix" ];
         biome.options = [ "--max-diagnostics=none" ];
+        shfmt.options = [ "--posix" ];
       };
       global.excludes = [
         "*/prm/**"

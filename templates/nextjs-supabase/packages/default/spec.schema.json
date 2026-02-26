@@ -1,202 +1,202 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://example.org/schemas/bdd-acceptance-criteria.json",
-	"title": "BDD Acceptance Criteria Specification",
-	"description": "The complete and authoritative source of truth for platform behavior, governed by strict BDD-style acceptance criteria.",
-	"type": "object",
-	"required": ["feature", "test_coverage_percentage", "scenarios"],
-	"additionalProperties": false,
-	"specificationGuidelines": [
-		"Complete and authoritative source of truth.",
-		"No undocumented behavior, architecture, UX, or technical assumptions.",
-		"Only explicitly specified behaviors and failure modes should be implemented.",
-		"Observable behavior must exactly satisfy the criteria (technology-agnostic)."
-	],
-	"properties": {
-		"feature": {
-			"title": "Feature Name",
-			"description": "High-level name of the feature or behavior being specified.",
-			"type": "string",
-			"minLength": 1,
-			"examples": ["User Authentication", "Notes Management"]
-		},
-		"test_coverage_percentage": {
-			"title": "Test Coverage Percentage",
-			"description": "The percentage of the codebase covered by automated tests.",
-			"type": "integer",
-			"minimum": 0,
-			"maximum": 100
-		},
-		"scenarios": {
-			"title": "Acceptance Scenarios",
-			"description": "A list of authoritative scenarios that define the complete observable behavior.",
-			"type": "array",
-			"minItems": 1,
-			"items": {
-				"$ref": "#/$defs/scenario"
-			}
-		}
-	},
-	"examples": [
-		{
-			"feature": "Minimal Next.js + Supabase Application Specification",
-			"test_coverage_percentage": 100,
-			"scenarios": [
-				{
-					"name": "Omni-Channel Authentication & Profile Creation",
-					"given": [
-						{
-							"type": "given",
-							"statement": "I am on the home page"
-						},
-						{
-							"type": "and",
-							"statement": "I see the 'Welcome to the Minimal Application' branding"
-						}
-					],
-					"when": [
-						{
-							"type": "when",
-							"statement": "I click 'Sign In' and then 'Sign Up'"
-						},
-						{
-							"type": "and",
-							"statement": "I enter my username, email, and password"
-						},
-						{
-							"type": "and",
-							"statement": "I click the 'Sign Up' button"
-						}
-					],
-					"then": [
-						{
-							"type": "then",
-							"statement": "The auth form should close"
-						},
-						{
-							"type": "and",
-							"statement": "I should see my username in the user menu"
-						}
-					]
-				},
-				{
-					"name": "Secure Identity Management & Session Control",
-					"given": [
-						{
-							"type": "given",
-							"statement": "I am on the home page"
-						}
-					],
-					"when": [
-						{
-							"type": "when",
-							"statement": "I sign in with my email and password"
-						},
-						{
-							"type": "and",
-							"statement": "I open the user menu and click 'Sign Out'"
-						}
-					],
-					"then": [
-						{
-							"type": "then",
-							"statement": "I should be signed out"
-						},
-						{
-							"type": "and",
-							"statement": "The 'Sign In' button should be visible again"
-						}
-					]
-				},
-				{
-					"name": "Data Integrity & Row Level Security",
-					"given": [
-						{
-							"type": "given",
-							"statement": "The application is running"
-						}
-					],
-					"when": [
-						{
-							"type": "when",
-							"statement": "I view the landing page"
-						}
-					],
-					"then": [
-						{
-							"type": "then",
-							"statement": "The branding and call to action are clearly visible"
-						}
-					]
-				}
-			]
-		}
-	],
-	"$defs": {
-		"scenario": {
-			"title": "Behavioral Scenario",
-			"description": "A single observable behavior defined by conditions, triggers, and outcomes.",
-			"type": "object",
-			"required": ["name", "given", "when", "then"],
-			"additionalProperties": false,
-			"properties": {
-				"name": {
-					"title": "Scenario Name",
-					"description": "Descriptive name of the success or failure scenario.",
-					"type": "string",
-					"minLength": 1,
-					"examples": ["Successful login", "Password mismatch error"]
-				},
-				"given": {
-					"title": "Givens",
-					"description": "Initial conditions and preconditions required for the scenario.",
-					"type": "array",
-					"minItems": 1,
-					"items": {
-						"$ref": "#/$defs/clause"
-					}
-				},
-				"when": {
-					"title": "Thens",
-					"description": "Events and actions that trigger the scenario.",
-					"type": "array",
-					"minItems": 1,
-					"items": {
-						"$ref": "#/$defs/clause"
-					}
-				},
-				"then": {
-					"title": "Thens",
-					"description": "Expected outcomes and observable changes in system state.",
-					"type": "array",
-					"minItems": 1,
-					"items": {
-						"$ref": "#/$defs/clause"
-					}
-				}
-			}
-		},
-		"clause": {
-			"title": "Behavioral Clause",
-			"description": "A single atomic statement forming part of a BDD scenario.",
-			"type": "object",
-			"required": ["type", "statement"],
-			"additionalProperties": false,
-			"properties": {
-				"type": {
-					"title": "Clause Type",
-					"description": "The logic role of the clause in the BDD structure.",
-					"type": "string",
-					"enum": ["given", "and", "but", "when", "then"]
-				},
-				"statement": {
-					"title": "Clause Statement",
-					"description": "The descriptive content of the behavior or condition.",
-					"type": "string",
-					"minLength": 1,
-					"examples": ["I am a visitor", "I click 'Publish'"]
-				}
-			}
-		}
-	}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/bdd-acceptance-criteria.json",
+  "title": "BDD Acceptance Criteria Specification",
+  "description": "The complete and authoritative source of truth for platform behavior, governed by strict BDD-style acceptance criteria.",
+  "type": "object",
+  "required": ["feature", "test_coverage_percentage", "scenarios"],
+  "additionalProperties": false,
+  "specificationGuidelines": [
+    "Complete and authoritative source of truth.",
+    "No undocumented behavior, architecture, UX, or technical assumptions.",
+    "Only explicitly specified behaviors and failure modes should be implemented.",
+    "Observable behavior must exactly satisfy the criteria (technology-agnostic)."
+  ],
+  "properties": {
+    "feature": {
+      "title": "Feature Name",
+      "description": "High-level name of the feature or behavior being specified.",
+      "type": "string",
+      "minLength": 1,
+      "examples": ["User Authentication", "Notes Management"]
+    },
+    "test_coverage_percentage": {
+      "title": "Test Coverage Percentage",
+      "description": "The percentage of the codebase covered by automated tests.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "scenarios": {
+      "title": "Acceptance Scenarios",
+      "description": "A list of authoritative scenarios that define the complete observable behavior.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "examples": [
+    {
+      "feature": "Minimal Next.js + Supabase Application Specification",
+      "test_coverage_percentage": 100,
+      "scenarios": [
+        {
+          "name": "Omni-Channel Authentication & Profile Creation",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am on the home page"
+            },
+            {
+              "type": "and",
+              "statement": "I see the 'Welcome to the Minimal Application' branding"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I click 'Sign In' and then 'Sign Up'"
+            },
+            {
+              "type": "and",
+              "statement": "I enter my username, email, and password"
+            },
+            {
+              "type": "and",
+              "statement": "I click the 'Sign Up' button"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "The auth form should close"
+            },
+            {
+              "type": "and",
+              "statement": "I should see my username in the user menu"
+            }
+          ]
+        },
+        {
+          "name": "Secure Identity Management & Session Control",
+          "given": [
+            {
+              "type": "given",
+              "statement": "I am on the home page"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I sign in with my email and password"
+            },
+            {
+              "type": "and",
+              "statement": "I open the user menu and click 'Sign Out'"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "I should be signed out"
+            },
+            {
+              "type": "and",
+              "statement": "The 'Sign In' button should be visible again"
+            }
+          ]
+        },
+        {
+          "name": "Data Integrity & Row Level Security",
+          "given": [
+            {
+              "type": "given",
+              "statement": "The application is running"
+            }
+          ],
+          "when": [
+            {
+              "type": "when",
+              "statement": "I view the landing page"
+            }
+          ],
+          "then": [
+            {
+              "type": "then",
+              "statement": "The branding and call to action are clearly visible"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "scenario": {
+      "title": "Behavioral Scenario",
+      "description": "A single observable behavior defined by conditions, triggers, and outcomes.",
+      "type": "object",
+      "required": ["name", "given", "when", "then"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Scenario Name",
+          "description": "Descriptive name of the success or failure scenario.",
+          "type": "string",
+          "minLength": 1,
+          "examples": ["Successful login", "Password mismatch error"]
+        },
+        "given": {
+          "title": "Givens",
+          "description": "Initial conditions and preconditions required for the scenario.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/clause"
+          }
+        },
+        "when": {
+          "title": "Thens",
+          "description": "Events and actions that trigger the scenario.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/clause"
+          }
+        },
+        "then": {
+          "title": "Thens",
+          "description": "Expected outcomes and observable changes in system state.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/clause"
+          }
+        }
+      }
+    },
+    "clause": {
+      "title": "Behavioral Clause",
+      "description": "A single atomic statement forming part of a BDD scenario.",
+      "type": "object",
+      "required": ["type", "statement"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "title": "Clause Type",
+          "description": "The logic role of the clause in the BDD structure.",
+          "type": "string",
+          "enum": ["given", "and", "but", "when", "then"]
+        },
+        "statement": {
+          "title": "Clause Statement",
+          "description": "The descriptive content of the behavior or condition.",
+          "type": "string",
+          "minLength": 1,
+          "examples": ["I am a visitor", "I click 'Publish'"]
+        }
+      }
+    }
+  }
 }
