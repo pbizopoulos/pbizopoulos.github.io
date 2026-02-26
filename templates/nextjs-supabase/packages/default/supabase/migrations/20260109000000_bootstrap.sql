@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS public.users (
     auth_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
     username TEXT UNIQUE NOT NULL CHECK (username ~* '^[a-z0-9-]+$'),
     full_name TEXT,
-    avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -33,12 +32,11 @@ BEGIN
     new_username := 'user-' || substr(md5(random()::text), 1, 6);
   END IF;
 
-  INSERT INTO public.users (auth_id, username, full_name, avatar_url)
+  INSERT INTO public.users (auth_id, username, full_name)
   VALUES (
     NEW.id,
     new_username,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'avatar_url'
+    NEW.raw_user_meta_data->>'full_name'
   );
 
   RETURN NEW;

@@ -86,32 +86,40 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 	};
 
 	return (
-		<div className="w-full max-w-sm" data-testid="auth-form">
-			<h1 className="text-2xl font-bold mb-1 tracking-tight">
-				{mode === "signin" ? "Sign In" : "Sign Up"}
-			</h1>
-			<p className="text-neutral-500 mb-8 text-sm">
-				{mode === "signin" ? "Welcome back" : "Create a new account"}
-			</p>
+		<div data-testid="auth-form">
+			<h1>{mode === "signin" ? "Sign In" : "Sign Up"}</h1>
+			<p>{mode === "signin" ? "Welcome back" : "Create a new account"}</p>
 
 			{message && (
 				<div
-					className={`p-3 rounded-lg mb-6 text-sm font-medium ${
-						message.type === "error"
-							? "bg-red-50 text-red-600 border border-red-100"
-							: "bg-green-50 text-green-600 border border-green-100"
-					}`}
+					style={{
+						padding: "0.75rem",
+						borderRadius: "0.5rem",
+						marginBottom: "1.5rem",
+						fontSize: "0.875rem",
+						backgroundColor: message.type === "error" ? "#fef2f2" : "#f0fdf4",
+						color: message.type === "error" ? "#dc2626" : "#16a34a",
+						border: `1px solid ${message.type === "error" ? "#fee2e2" : "#dcfce7"}`,
+					}}
 				>
 					{message.text}
 				</div>
 			)}
 
-			<form onSubmit={handleAuth} className="space-y-4">
+			<form
+				onSubmit={handleAuth}
+				style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+			>
 				{mode === "signup" && (
 					<div>
 						<label
 							htmlFor="name"
-							className="block text-xs font-medium text-neutral-700 mb-1 uppercase tracking-wide"
+							style={{
+								display: "block",
+								fontSize: "0.75rem",
+								fontWeight: "500",
+								marginBottom: "0.25rem",
+							}}
 						>
 							Username
 						</label>
@@ -126,7 +134,6 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 									.replace(/[^a-z0-9-]/g, "");
 								setName(sanitizedUsername);
 							}}
-							className="w-full bg-white border border-neutral-200 rounded-lg px-4 py-2 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
 							placeholder="username"
 						/>
 					</div>
@@ -134,7 +141,12 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 				<div>
 					<label
 						htmlFor="email"
-						className="block text-xs font-medium text-neutral-700 mb-1 uppercase tracking-wide"
+						style={{
+							display: "block",
+							fontSize: "0.75rem",
+							fontWeight: "500",
+							marginBottom: "0.25rem",
+						}}
 					>
 						Email
 					</label>
@@ -144,14 +156,18 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 						required
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="w-full bg-white border border-neutral-200 rounded-lg px-4 py-2 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
 						placeholder="you@example.com"
 					/>
 				</div>
 				<div>
 					<label
 						htmlFor="password"
-						className="block text-xs font-medium text-neutral-700 mb-1 uppercase tracking-wide"
+						style={{
+							display: "block",
+							fontSize: "0.75rem",
+							fontWeight: "500",
+							marginBottom: "0.25rem",
+						}}
 					>
 						Password
 					</label>
@@ -161,7 +177,6 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 						required
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
-						className="w-full bg-white border border-neutral-200 rounded-lg px-4 py-2 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
 						placeholder="••••••••"
 					/>
 				</div>
@@ -170,7 +185,14 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 					type="submit"
 					data-testid="auth-submit"
 					disabled={loading}
-					className="w-full bg-black text-white rounded-md py-2 font-medium hover:bg-neutral-800 transition-all disabled:opacity-50"
+					style={{
+						backgroundColor: "#000",
+						color: "#fff",
+						border: "none",
+						padding: "0.5rem",
+						borderRadius: "0.25rem",
+						opacity: loading ? 0.5 : 1,
+					}}
 				>
 					{loading
 						? "Processing..."
@@ -180,13 +202,24 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 				</button>
 			</form>
 
-			<div className="mt-6 text-center text-sm">
+			<div
+				style={{
+					marginTop: "1.5rem",
+					textAlign: "center",
+					fontSize: "0.875rem",
+				}}
+			>
 				<button
 					type="button"
 					onClick={() => {
 						setMode(mode === "signin" ? "signup" : "signin");
 					}}
-					className="text-neutral-500 hover:text-black underline underline-offset-4"
+					style={{
+						background: "none",
+						border: "none",
+						textDecoration: "underline",
+						color: "#6b7280",
+					}}
 				>
 					{mode === "signin"
 						? "Don't have an account? Sign Up"

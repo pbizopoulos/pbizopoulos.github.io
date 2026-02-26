@@ -2,17 +2,60 @@ import Link from "next/link";
 
 export default function NotFound() {
 	return (
-		<div className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
-			<div className="bg-gray-100 w-16 h-16 flex items-center justify-center rounded-full mb-4 mx-auto">
-				<span className="text-2xl font-bold text-gray-500">?</span>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				justifyContent: "center",
+				minHeight: "50vh",
+				padding: "0 1rem",
+				textAlign: "center",
+			}}
+		>
+			<div
+				style={{
+					backgroundColor: "#f3f4f6",
+					width: "4rem",
+					height: "4rem",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					borderRadius: "50%",
+					marginBottom: "1rem",
+					margin: "0 auto",
+				}}
+			>
+				<span
+					style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#6b7280" }}
+				>
+					?
+				</span>
 			</div>
-			<h2 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h2>
-			<p className="text-gray-600 mb-6 max-w-md">
+			<h2
+				style={{
+					fontSize: "1.5rem",
+					fontWeight: "bold",
+					color: "#111827",
+					marginBottom: "0.5rem",
+				}}
+			>
+				Page Not Found
+			</h2>
+			<p
+				style={{ color: "#4b5563", marginBottom: "1.5rem", maxWidth: "28rem" }}
+			>
 				The page you are looking for does not exist or has been moved.
 			</p>
 			<Link
 				href="/"
-				className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+				style={{
+					padding: "0.5rem 1rem",
+					backgroundColor: "#111827",
+					color: "#fff",
+					borderRadius: "0.5rem",
+					textDecoration: "none",
+				}}
 			>
 				Return Home
 			</Link>

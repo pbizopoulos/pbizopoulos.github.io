@@ -14,19 +14,60 @@ export default function ErrorPage({
 	}, [error]);
 
 	return (
-		<div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-			<div className="text-center max-w-md">
-				<div className="bg-red-50 w-16 h-16 flex items-center justify-center rounded-full mb-4 mx-auto">
-					<span className="text-2xl font-bold text-red-500">!</span>
+		<div
+			style={{
+				minHeight: "100vh",
+				backgroundColor: "#fff",
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				justifyContent: "center",
+				padding: "1rem",
+			}}
+		>
+			<div style={{ textAlign: "center", maxWidth: "28rem" }}>
+				<div
+					style={{
+						backgroundColor: "#fef2f2",
+						width: "4rem",
+						height: "4rem",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						borderRadius: "50%",
+						marginBottom: "1rem",
+						margin: "0 auto",
+					}}
+				>
+					<span
+						style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#ef4444" }}
+					>
+						!
+					</span>
 				</div>
-				<h2 className="text-2xl font-bold mb-4">Something went wrong!</h2>
-				<p className="text-neutral-500 mb-8">
+				<h2
+					style={{
+						fontSize: "1.5rem",
+						fontWeight: "bold",
+						marginBottom: "1rem",
+					}}
+				>
+					Something went wrong!
+				</h2>
+				<p style={{ color: "#6b7280", marginBottom: "2rem" }}>
 					We apologize for the inconvenience. An unexpected error has occurred.
 				</p>
 				<button
 					type="button"
 					onClick={() => reset()}
-					className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+					style={{
+						padding: "0.5rem 1rem",
+						backgroundColor: "#111827",
+						color: "#fff",
+						borderRadius: "0.5rem",
+						border: "none",
+						cursor: "pointer",
+					}}
 				>
 					Try again
 				</button>

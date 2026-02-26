@@ -23,34 +23,34 @@ export default function UserAvatar({
 
 	return (
 		<div
-			className={`rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 ${className}`}
+			className={className}
 			style={{
 				width: size,
 				height: size,
 				backgroundColor: bgColor,
+				borderRadius: "50%",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				overflow: "hidden",
+				flexShrink: 0,
 			}}
 		>
 			{username ? (
-				<span className="text-white font-medium text-xs leading-none">
+				<span
+					style={{
+						color: "#fff",
+						fontWeight: "500",
+						fontSize: "0.75rem",
+						lineHeight: 1,
+					}}
+				>
 					{initials}
 				</span>
 			) : (
-				<div className="bg-neutral-100 w-full h-full flex items-center justify-center text-neutral-400">
-					<svg
-						width={size * 0.6}
-						height={size * 0.6}
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-						<circle cx="12" cy="7" r="4" />
-					</svg>
-				</div>
+				<div
+					style={{ backgroundColor: "#f3f4f6", width: "100%", height: "100%" }}
+				/>
 			)}
 		</div>
 	);

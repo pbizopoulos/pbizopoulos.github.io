@@ -59,18 +59,46 @@ export default function AuthModal() {
 	if (!isAuthModalOpen) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+		<div
+			style={{
+				position: "fixed",
+				inset: 0,
+				zIndex: 50,
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				padding: "1rem",
+				backgroundColor: "rgba(0,0,0,0.5)",
+			}}
+		>
 			<div
 				ref={modalRef}
-				className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-200"
+				style={{
+					position: "relative",
+					width: "100%",
+					maxWidth: "24rem",
+					backgroundColor: "#fff",
+					borderRadius: "1rem",
+					padding: "2rem",
+					boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+				}}
 			>
 				<button
 					type="button"
 					onClick={handleClose}
-					className="absolute top-4 right-4 p-1 text-neutral-400 hover:text-black transition-colors"
+					style={{
+						position: "absolute",
+						top: "1rem",
+						right: "1rem",
+						background: "none",
+						border: "none",
+						fontSize: "1.5rem",
+						cursor: "pointer",
+						color: "#9ca3af",
+					}}
 					aria-label="Close modal"
 				>
-					<span className="text-xl leading-none">×</span>
+					×
 				</button>
 				<AuthForm onSuccess={handleSuccess} />
 			</div>
