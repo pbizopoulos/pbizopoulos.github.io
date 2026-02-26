@@ -65,6 +65,13 @@ describe("Header Component", () => {
 		expect(screen.getByRole("button", { name: /sign in/i })).toBeDefined();
 	});
 
+	it("should call handleClickOutside when not logged in", async () => {
+		render(<Header />);
+		await act(async () => {
+			fireEvent.mouseDown(document.body);
+		});
+	});
+
 	it("opens auth modal when sign in clicked", async () => {
 		render(<Header />);
 		await act(async () => {
@@ -82,6 +89,18 @@ describe("Header Component", () => {
 				openAuthModal: mockOpenAuthModal,
 				loading: false,
 			} as unknown as ReturnType<typeof useAuth>);
+		});
+
+		it("shows user avatar even when profile is missing", () => {
+			mockAccessUser.mockReturnValue({
+				user: { id: "123" },
+				profile: null,
+				signOut: mockSignOut,
+				openAuthModal: mockOpenAuthModal,
+				loading: false,
+			} as unknown as ReturnType<typeof useAuth>);
+			render(<Header />);
+			expect(screen.getByTestId("user-avatar")).toBeDefined();
 		});
 
 		it("shows user avatar when logged in", () => {

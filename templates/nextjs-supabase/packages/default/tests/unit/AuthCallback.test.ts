@@ -70,13 +70,17 @@ describe("Auth Callback route", () => {
 
 		const headersObj = new Headers();
 		headersObj.set("Authorization", "Bearer invalid");
+		headersObj.set("apikey", "invalid");
 		await capturedOptions.global.fetch("url", { headers: headersObj });
 
 		mockCookieStore.getAll.mockReturnValue([
 			{ name: "not-sb", value: "val" },
 			{ name: "sb-valid", value: "a.b.c" },
 			{ name: "sb-invalid-no-dots", value: "invalid" },
+			{ name: "sb-invalid-one-dot", value: "a.b" },
 			{ name: "sb-no-value", value: "" },
+			{ name: "sb-undefined-value", value: undefined },
+			{ name: "sb-null-value", value: null },
 		]);
 		const filtered = capturedOptions.cookies.getAll();
 		expect(filtered).toHaveLength(2);

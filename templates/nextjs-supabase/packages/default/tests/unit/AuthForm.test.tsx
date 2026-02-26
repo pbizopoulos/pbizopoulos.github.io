@@ -87,6 +87,14 @@ describe("AuthForm", () => {
 		expect(
 			screen.getByRole("button", { name: "Create Account" }),
 		).toBeDefined();
+
+		fireEvent.click(
+			screen.getByRole("button", { name: /Already have an account?/ }),
+		);
+		await waitFor(() => {
+			const headings = screen.getAllByRole("heading", { name: "Sign In" });
+			expect(headings[0]).toBeDefined();
+		});
 	});
 
 	it("should validate username in sign up mode", async () => {

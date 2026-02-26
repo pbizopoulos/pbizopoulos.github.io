@@ -550,13 +550,20 @@ describe("AuthProvider", () => {
 			mockGlobalFetch.mock.calls[1]?.[1].headers.get("Authorization"),
 		).toBe("Bearer a.b.c");
 
+		await customFetch("url", { headers: { "X-Test": "Value" } });
+		expect(
+			mockGlobalFetch.mock.calls[
+				mockGlobalFetch.mock.calls.length - 1
+			]?.[1].headers.get("X-Test"),
+		).toBe("Value");
+
 		const headers3 = { apikey: "invalid-key" };
 		await customFetch("url", { headers: headers3 });
-		expect(mockGlobalFetch.mock.calls[2]?.[1].headers.get("apikey")).toBeNull();
+		expect(mockGlobalFetch.mock.calls[3]?.[1].headers.get("apikey")).toBeNull();
 
 		const headers4 = { apikey: "a.b.c" };
 		await customFetch("url", { headers: headers4 });
-		expect(mockGlobalFetch.mock.calls[3]?.[1].headers.get("apikey")).toBe(
+		expect(mockGlobalFetch.mock.calls[4]?.[1].headers.get("apikey")).toBe(
 			"a.b.c",
 		);
 	});
@@ -581,17 +588,61 @@ describe("AuthProvider", () => {
 			value: "",
 		});
 
-		cookies.set?.("test-cookie", "test-value", { path: "/", maxAge: 3600 });
+		cookies.set?.("test-cookie", "test-value", {
+			path: "/",
+			maxAge: 3600,
+			domain: "localhost",
+			sameSite: "strict",
+			secure: true,
+		});
 		expect(document.cookie).toContain("test-cookie=test-value");
 		expect(document.cookie).toContain("path=/");
 		expect(document.cookie).toContain("max-age=3600");
+		expect(document.cookie).toContain("domain=localhost");
+		expect(document.cookie).toContain("samesite=strict");
+		expect(document.cookie).not.toContain("secure");
+
+		const originalLocation = window.location;
+		delete (window as any).location;
+		window.location = { ...originalLocation, protocol: "https:" };
+
+		cookies.set?.("secure-cookie", "val", { secure: true });
+		expect(document.cookie).toContain("secure");
+
+		window.location = originalLocation;
 
 		// biome-ignore lint/suspicious/noDocumentCookie: Test helper
 		document.cookie = "other=123; test-cookie=test-value; third=456";
 		expect(cookies.get?.("test-cookie")).toBe("test-value");
 		expect(cookies.get?.("non-existent")).toBe("");
 
-		cookies.remove?.("test-cookie", { path: "/" });
+		cookies.remove?.("test-cookie", { path: "/", domain: "localhost" });
 		expect(document.cookie).toContain("test-cookie=; max-age=0");
+		expect(document.cookie).toContain("path=/");
+		expect(document.cookie).toContain("domain=localhost");
+	});
+
+	it("should return empty or do nothing if document is undefined", async () => {
+		await act(async () => {
+			render(
+				<AuthProvider>
+					<div>Test</div>
+				</AuthProvider>,
+			);
+		});
+
+		const config = vi.mocked(ssr.createBrowserClient).mock.calls[0]?.[2];
+		const cookies = config?.cookies;
+		if (!cookies) throw new Error("config.cookies is undefined");
+
+		const originalDocument = global.document;
+		// @ts-expect-error
+		delete global.document;
+
+		expect(cookies.get?.("any")).toBe("");
+		cookies.set?.("any", "any", {});
+		cookies.remove?.("any", {});
+
+		global.document = originalDocument;
 	});
 });

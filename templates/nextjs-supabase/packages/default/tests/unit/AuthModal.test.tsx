@@ -5,15 +5,16 @@ import {
 	screen,
 	within,
 } from "@testing-library/react";
+import * as navigation from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthModal from "../../components/AuthModal";
 import * as authProvider from "../../components/AuthProvider";
 
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({
+	useRouter: vi.fn(() => ({
 		push: vi.fn(),
-	}),
-	usePathname: () => "/",
+	})),
+	usePathname: vi.fn(() => "/"),
 }));
 
 vi.mock("../../components/AuthProvider", () => ({
@@ -32,6 +33,7 @@ vi.mock("../../components/AuthForm", () => ({
 
 describe("AuthModal", () => {
 	const closeAuthModal = vi.fn();
+	const mockPush = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -39,7 +41,14 @@ describe("AuthModal", () => {
 		vi.mocked(authProvider.useAuth).mockReturnValue({
 			isAuthModalOpen: true,
 			closeAuthModal,
+			user: null,
+			authModalRedirectPath: null,
 		} as unknown as ReturnType<typeof authProvider.useAuth>);
+
+		vi.mocked(navigation.useRouter).mockReturnValue({
+			push: mockPush,
+		} as any);
+		vi.mocked(navigation.usePathname).mockReturnValue("/");
 	});
 
 	afterEach(() => {
@@ -64,6 +73,25 @@ describe("AuthModal", () => {
 		render(<AuthModal />);
 		fireEvent.click(screen.getByLabelText("Close modal"));
 		expect(closeAuthModal).toHaveBeenCalled();
+	});
+
+	it("should redirect on close if on protected route without user", () => {
+		vi.mocked(navigation.usePathname).mockReturnValue("/profile/edit");
+		render(<AuthModal />);
+		fireEvent.click(screen.getByLabelText("Close modal"));
+		expect(mockPush).toHaveBeenCalledWith("/");
+	});
+
+	it("should redirect on form success if redirect path is set", () => {
+		vi.mocked(authProvider.useAuth).mockReturnValue({
+			isAuthModalOpen: true,
+			closeAuthModal,
+			authModalRedirectPath: "/dashboard",
+		} as unknown as ReturnType<typeof authProvider.useAuth>);
+		render(<AuthModal />);
+		const form = screen.getByTestId("auth-form-mock");
+		fireEvent.click(within(form).getByText("Close Form Mock"));
+		expect(mockPush).toHaveBeenCalledWith("/dashboard");
 	});
 
 	it("should close on form success", () => {

@@ -72,7 +72,9 @@ export async function createClient(useCookies = true) {
 					cookiesToSet.forEach(({ name, value, options }) => {
 						cookieStore.set(name, value, options);
 					});
-				} catch {}
+				} catch {
+					return;
+				}
 			},
 		},
 	});

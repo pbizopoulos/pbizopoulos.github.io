@@ -47,6 +47,7 @@ describe("Supabase", () => {
 		expect(supabaseClient.key).toBe("anon-key");
 		expect(supabaseClient.options.cookies).toBeDefined();
 		expect(supabaseClient.options.cookies.getAll).toBeDefined();
+		expect(supabaseClient.options.cookies.getAll()).toEqual([]);
 		expect(supabaseClient.options.cookies.setAll).toBeDefined();
 	});
 
@@ -57,7 +58,9 @@ describe("Supabase", () => {
 		const supabaseClient = (await createClient(false)) as any;
 		expect(supabaseClient).toBeDefined();
 		expect(supabaseClient.options.cookies.getAll()).toEqual([]);
-		supabaseClient.options.cookies.setAll();
+		supabaseClient.options.cookies.setAll([
+			{ name: "test", value: "val", options: {} },
+		]);
 	});
 
 	it("should handle cookie store error and fallback to client without cookies", async () => {
@@ -113,6 +116,14 @@ describe("Supabase", () => {
 		const headersObj = new Headers();
 		headersObj.set("Authorization", "Bearer a.b.c");
 		await customFetch("url", { headers: headersObj });
+
+		await customFetch("url");
+
+		await customFetch("url", {});
+
+		await customFetch("url", { headers: { apikey: "a.b.c" } });
+
+		await customFetch("url", { headers: { apikey: "invalid" } });
 	});
 
 	it("should test setAll cookies", async () => {

@@ -4,7 +4,7 @@
 	"title": "BDD Acceptance Criteria Specification",
 	"description": "The complete and authoritative source of truth for platform behavior, governed by strict BDD-style acceptance criteria.",
 	"type": "object",
-	"required": ["feature", "scenarios"],
+	"required": ["feature", "test_coverage_percentage", "scenarios"],
 	"additionalProperties": false,
 	"specificationGuidelines": [
 		"Complete and authoritative source of truth.",
@@ -20,6 +20,13 @@
 			"minLength": 1,
 			"examples": ["User Authentication", "Notes Management"]
 		},
+		"test_coverage_percentage": {
+			"title": "Test Coverage Percentage",
+			"description": "The percentage of the codebase covered by automated tests.",
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 100
+		},
 		"scenarios": {
 			"title": "Acceptance Scenarios",
 			"description": "A list of authoritative scenarios that define the complete observable behavior.",
@@ -33,6 +40,7 @@
 	"examples": [
 		{
 			"feature": "Minimal Next.js + Supabase Application Specification",
+			"test_coverage_percentage": 100,
 			"scenarios": [
 				{
 					"name": "Omni-Channel Authentication & Profile Creation",
