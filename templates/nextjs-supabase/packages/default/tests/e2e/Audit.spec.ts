@@ -10,13 +10,13 @@ test.describe("Lighthouse-style Performance Audits", () => {
 			const getPaintMetric = (name: string) =>
 				new Promise<number>((resolve) => {
 					const entries = performance.getEntriesByName(name);
-					if (entries.length > 0) {
+					if (entries.length > 0 && entries[0]) {
 						resolve(entries[0].startTime);
 						return;
 					}
 					const observer = new PerformanceObserver((list) => {
 						const paintEntries = list.getEntriesByName(name);
-						if (paintEntries.length > 0) {
+						if (paintEntries.length > 0 && paintEntries[0]) {
 							observer.disconnect();
 							resolve(paintEntries[0].startTime);
 						}

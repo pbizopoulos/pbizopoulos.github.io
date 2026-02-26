@@ -7,7 +7,6 @@ test.describe("Minimal App Acceptance Tests", () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.route("**/auth/v1/user*", async (route) => {
-			const _isPost = route.request().method() === "POST";
 			if (route.request().headers().authorization?.includes("Bearer")) {
 				await route.fulfill({
 					status: 200,

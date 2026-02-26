@@ -52,7 +52,11 @@ describe("Auth Callback route", () => {
 		});
 
 		let capturedOptions: any;
-		vi.mocked(createServerClient).mockImplementation(((_url, _key, options) => {
+		vi.mocked(createServerClient).mockImplementation(((
+			_url: string,
+			_key: string,
+			options: any,
+		) => {
 			capturedOptions = options;
 			return mockSupabase;
 		}) as any);

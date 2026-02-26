@@ -604,12 +604,12 @@ describe("AuthProvider", () => {
 
 		const originalLocation = window.location;
 		delete (window as any).location;
-		window.location = { ...originalLocation, protocol: "https:" };
+		window.location = { ...originalLocation, protocol: "https:" } as any;
 
 		cookies.set?.("secure-cookie", "val", { secure: true });
 		expect(document.cookie).toContain("secure");
 
-		window.location = originalLocation;
+		window.location = originalLocation as any;
 
 		// biome-ignore lint/suspicious/noDocumentCookie: Test helper
 		document.cookie = "other=123; test-cookie=test-value; third=456";
