@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { toast } from "sonner";
 import { isValidUsername, SLUG_MAX_LENGTH } from "../lib/validation";
 import { useAuth } from "./AuthProvider";
 
@@ -24,6 +23,10 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 	const [password, setPassword] = useState("");
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [message, setMessage] = useState<{
+		type: "success" | "error";
+		text: string;
+	} | null>(null);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const redirect = searchParams.get("redirect") || "/";
@@ -33,12 +36,14 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 	const handleAuth = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setLoading(true);
+		setMessage(null);
 
 		if (mode === "signup") {
 			if (!isValidUsername(name)) {
-				toast.error(
-					`Invalid username: must be a valid slug between 3 and ${SLUG_MAX_LENGTH} characters`,
-				);
+				setMessage({
+					type: "error",
+					text: `Invalid username: must be a valid slug between 3 and ${SLUG_MAX_LENGTH} characters`,
+				});
 				setLoading(false);
 				return;
 			}
@@ -53,12 +58,15 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 			});
 
 			if (error) {
-				toast.error(error.message);
+				setMessage({ type: "error", text: error.message });
 			} else if (data.user && !data.session) {
-				toast.success("Please check your email to verify your account.");
+				setMessage({
+					type: "success",
+					text: "Please check your email to verify your account.",
+				});
 				setLoading(false);
 			} else {
-				toast.success("Account created successfully!");
+				setMessage({ type: "success", text: "Account created successfully!" });
 				onSuccess ? onSuccess() : router.push(redirect);
 			}
 		} else {
@@ -67,10 +75,10 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 				password,
 			});
 			if (error) {
-				toast.error(error.message);
+				setMessage({ type: "error", text: error.message });
 				setLoading(false);
 			} else {
-				toast.success("Logged in successfully!");
+				setMessage({ type: "success", text: "Logged in successfully!" });
 				onSuccess ? onSuccess() : router.push(redirect);
 			}
 		}
@@ -85,6 +93,18 @@ function AuthFormContent({ onSuccess }: AuthFormProps) {
 			<p className="text-neutral-500 mb-8 text-sm">
 				{mode === "signin" ? "Welcome back" : "Create a new account"}
 			</p>
+
+			{message && (
+				<div
+					className={`p-3 rounded-lg mb-6 text-sm font-medium ${
+						message.type === "error"
+							? "bg-red-50 text-red-600 border border-red-100"
+							: "bg-green-50 text-green-600 border border-green-100"
+					}`}
+				>
+					{message.text}
+				</div>
+			)}
 
 			<form onSubmit={handleAuth} className="space-y-4">
 				{mode === "signup" && (

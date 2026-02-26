@@ -25,9 +25,7 @@ test.describe("Authentication", () => {
 
 		await page.getByTestId("auth-submit").click();
 
-		await expect(
-			page.locator(".sonner-toast").or(page.getByText(/invalid/i)),
-		).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText(/invalid/i)).toBeVisible({ timeout: 10000 });
 	});
 
 	test("should require email and password", async ({ page }) => {

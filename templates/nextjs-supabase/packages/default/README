@@ -3,32 +3,32 @@
 # Copy .env.local from http://localhost:54323/project/default/settings/log-drains?showConnect=true&connectTab=frameworks to .env
 
 # Start supabase
-supabase start
+nix develop -c supabase start
 
 # Reset supabase
-supabase db reset
+nix develop -c supabase db reset
 
 # Test supabase
-supabase test db
+nix develop -c supabase test db
 
 # Lint supabase
-supabase db lint --fail-on warning
+nix develop -c supabase db lint --fail-on warning
 
 # Install dependencies
-npm install
+nix develop -c npm install
 
 # Run the app
-npm run dev
+nix develop -c npm run dev
 
 # All tests
-npm test
-npm run test:coverage
+nix develop -c npm test
+nix develop -c npm run test:coverage
 
 # Update visual baselines
-npm test --update-snapshots
+nix develop -c npm test --update-snapshots
 
 # Open last HTML report run
-npx playwright show-report
+nix develop -c npx playwright show-report
 
 # Update all dependencies
-npx npm-check-updates -u
+nix develop -c npx npm-check-updates -u

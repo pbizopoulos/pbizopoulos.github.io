@@ -7,17 +7,9 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import * as navigation from "next/navigation";
-import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthForm from "../../components/AuthForm";
 import * as authProvider from "../../components/AuthProvider";
-
-vi.mock("sonner", () => ({
-	toast: {
-		success: vi.fn(),
-		error: vi.fn(),
-	},
-}));
 
 vi.mock("next/navigation", () => ({
 	useRouter: vi.fn(),
@@ -116,9 +108,9 @@ describe("AuthForm", () => {
 		if (form) fireEvent.submit(form);
 
 		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith(
-				expect.stringContaining("Invalid username: must be a valid slug"),
-			);
+			expect(
+				screen.getByText(/Invalid username: must be a valid slug/),
+			).toBeDefined();
 		});
 		expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
 	});
@@ -151,9 +143,9 @@ describe("AuthForm", () => {
 		if (form) fireEvent.submit(form);
 
 		await waitFor(() => {
-			expect(toast.success).toHaveBeenCalledWith(
-				expect.stringContaining("Please check your email to verify"),
-			);
+			expect(
+				screen.getByText(/Please check your email to verify/),
+			).toBeDefined();
 		});
 	});
 
@@ -205,7 +197,7 @@ describe("AuthForm", () => {
 		if (form) fireEvent.submit(form);
 
 		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("Invalid login credentials");
+			expect(screen.getByText("Invalid login credentials")).toBeDefined();
 		});
 	});
 	it("should handle signup error", async () => {
@@ -235,7 +227,7 @@ describe("AuthForm", () => {
 		if (form) fireEvent.submit(form);
 
 		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("User already exists");
+			expect(screen.getByText("User already exists")).toBeDefined();
 		});
 	});
 

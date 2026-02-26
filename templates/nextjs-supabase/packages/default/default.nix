@@ -6,7 +6,7 @@ pkgs.buildNpmPackage rec {
     pkgs.openssl
     pkgs.supabase-cli
   ];
-  npmDepsHash = "sha256-Ph0YqEvRDuAe3t64yLVkkGYwp7QDfAFgtvd+xRouQjI=";
+  npmDepsHash = "sha256-TbW7m1es85i9FYSZKCzCzwUzRPrjtz4d5Eal+L8FHMg=";
   pname = builtins.baseNameOf src;
   env = {
     NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";

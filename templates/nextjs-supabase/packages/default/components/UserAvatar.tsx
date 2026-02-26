@@ -1,5 +1,3 @@
-import { User } from "lucide-react";
-
 export function getAvatarColor(str: string): string {
 	let hash = 0;
 	for (let charIndex = 0; charIndex < str.length; charIndex++) {
@@ -38,7 +36,20 @@ export default function UserAvatar({
 				</span>
 			) : (
 				<div className="bg-neutral-100 w-full h-full flex items-center justify-center text-neutral-400">
-					<User size={size * 0.6} />
+					<svg
+						width={size * 0.6}
+						height={size * 0.6}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+						<circle cx="12" cy="7" r="4" />
+					</svg>
 				</div>
 			)}
 		</div>

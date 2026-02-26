@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type React from "react";
 import "./globals.css";
 import localFont from "next/font/local";
-import { Toaster } from "sonner";
 import AuthModal from "../components/AuthModal";
 import { AuthProvider } from "../components/AuthProvider";
 import Header from "../components/Header";
@@ -53,7 +52,6 @@ export default function RootLayout({
 					<Header />
 					<AuthModal />
 					{children}
-					<Toaster position="bottom-right" />
 				</AuthProvider>
 			</body>
 		</html>

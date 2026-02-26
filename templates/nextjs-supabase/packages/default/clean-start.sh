@@ -8,3 +8,4 @@ nix fmt
 nix develop -c npm install
 nix develop -c npm run build
 nix develop -c npm test
+nix build
