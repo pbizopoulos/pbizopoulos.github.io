@@ -27,7 +27,9 @@ export default async function Page({
 						{userProfile.username?.[0]?.toUpperCase()}
 					</div>
 					<div>
-						<h1 className="text-3xl font-bold tracking-tight">{userProfile.username}</h1>
+						<h1 className="text-3xl font-bold tracking-tight">
+							{userProfile.username}
+						</h1>
 						{userProfile.full_name && (
 							<p className="text-neutral-500">{userProfile.full_name}</p>
 						)}

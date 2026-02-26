@@ -96,7 +96,9 @@ export default function Header() {
 							>
 								<div className="px-4 py-2 text-sm text-neutral-500 border-b border-neutral-100">
 									Signed in as <br />
-									<span className="text-neutral-900 font-medium">{profile?.username}</span>
+									<span className="text-neutral-900 font-medium">
+										{profile?.username}
+									</span>
 								</div>
 								<button
 									type="button"

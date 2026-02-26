@@ -1,16 +1,13 @@
 BEGIN;
 SELECT plan(5);
 
--- Table existence
 SELECT has_table( 'users' );
 SELECT has_column( 'users', 'id' );
 SELECT has_column( 'users', 'auth_id' );
 SELECT has_column( 'users', 'username' );
 
--- Set up test data for trigger tests
 INSERT INTO auth.users (id, email) VALUES ('00000000-0000-0000-0000-ffffffffffff', 'trigger_test@example.com');
 
--- updated_at trigger on users
 SELECT lives_ok(
   $$
     DO $body$

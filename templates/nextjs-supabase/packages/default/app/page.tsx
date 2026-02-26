@@ -4,7 +4,9 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
 
 	return (
 		<main className="min-h-screen bg-white text-neutral-900 p-6 md:p-12">

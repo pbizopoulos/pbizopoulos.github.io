@@ -7,10 +7,10 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import * as navigation from "next/navigation";
+import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthForm from "../../components/AuthForm";
 import * as authProvider from "../../components/AuthProvider";
-import { toast } from "sonner";
 
 vi.mock("sonner", () => ({
 	toast: {
