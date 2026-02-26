@@ -50,6 +50,11 @@ export default defineConfig({
 			use: { ...devices["Desktop Chrome"] },
 			testMatch: /.*\.spec\.ts/,
 		},
+		{
+			name: "audit",
+			use: { ...devices["Desktop Chrome"] },
+			testMatch: /Audit\.spec\.ts/,
+		},
 	],
 
 	webServer: {

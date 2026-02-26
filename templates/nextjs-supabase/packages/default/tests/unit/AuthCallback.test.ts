@@ -44,6 +44,49 @@ describe("Auth Callback route", () => {
 		);
 	});
 
+	it("should test the custom fetch and cookie handling in createServerClient", async () => {
+		vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321");
+		vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "key");
+		vi.mocked(mockSupabase.auth.exchangeCodeForSession).mockResolvedValue({
+			error: null,
+		});
+
+		let capturedOptions: any;
+		vi.mocked(createServerClient).mockImplementation(((_url, _key, options) => {
+			capturedOptions = options;
+			return mockSupabase;
+		}) as any);
+
+		const req = {
+			url: "http://localhost:3000/auth/callback?code=123",
+			headers: new Headers(),
+		} as unknown as Request;
+		await GET(req);
+
+		global.fetch = vi.fn().mockResolvedValue({} as any);
+		await capturedOptions.global.fetch("url", {
+			headers: { Authorization: "Bearer a.b.c", apikey: "a.b.c" },
+		});
+
+		const headersObj = new Headers();
+		headersObj.set("Authorization", "Bearer invalid");
+		await capturedOptions.global.fetch("url", { headers: headersObj });
+
+		mockCookieStore.getAll.mockReturnValue([
+			{ name: "not-sb", value: "val" },
+			{ name: "sb-valid", value: "a.b.c" },
+			{ name: "sb-invalid-no-dots", value: "invalid" },
+			{ name: "sb-no-value", value: "" },
+		]);
+		const filtered = capturedOptions.cookies.getAll();
+		expect(filtered).toHaveLength(2);
+
+		capturedOptions.cookies.setAll([
+			{ name: "test", value: "val", options: {} },
+		]);
+		expect(mockCookieStore.set).toHaveBeenCalledWith("test", "val", {});
+	});
+
 	it("should redirect to login if no code is present", async () => {
 		const req = {
 			url: "http://localhost:3000/auth/callback",

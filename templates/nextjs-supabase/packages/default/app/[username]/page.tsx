@@ -17,7 +17,10 @@ export default async function Page({
 		.eq("username", username)
 		.maybeSingle();
 
-	if (!userProfile) notFound();
+	if (!userProfile) {
+		notFound();
+		return null;
+	}
 
 	return (
 		<div className="min-h-screen bg-white text-neutral-900 p-6 md:p-12">

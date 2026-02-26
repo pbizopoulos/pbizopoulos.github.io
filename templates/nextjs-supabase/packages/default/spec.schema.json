@@ -35,81 +35,89 @@
 			"feature": "Minimal Next.js + Supabase Application Specification",
 			"scenarios": [
 				{
-					"name": "Omni-Channel Authentication & Branding",
+					"name": "Omni-Channel Authentication & Profile Creation",
 					"given": [
 						{
 							"type": "given",
-							"statement": "I am on any device (Desktop, Tablet, or Mobile)"
+							"statement": "I am on the home page"
 						},
 						{
 							"type": "and",
-							"statement": "I see the 'Minimal App' branding and clean aesthetic"
+							"statement": "I see the 'Welcome to the Minimal Application' branding"
 						}
 					],
 					"when": [
 						{
 							"type": "when",
-							"statement": "I enter my credentials into the responsive Auth Modal"
+							"statement": "I click 'Sign In' and then 'Sign Up'"
 						},
 						{
 							"type": "and",
-							"statement": "I trigger the 'Sign In' or 'Sign Up' flow"
+							"statement": "I enter my username, email, and password"
+						},
+						{
+							"type": "and",
+							"statement": "I click the 'Sign Up' button"
 						}
 					],
 					"then": [
 						{
 							"type": "then",
-							"statement": "I should see my personal workspace with profile loading"
+							"statement": "The auth form should close"
 						},
 						{
 							"type": "and",
-							"statement": "I should receive real-time toast notifications for login success"
+							"statement": "I should see my username in the user menu"
 						}
 					]
 				},
 				{
-					"name": "User Profile Access",
+					"name": "Secure Identity Management & Session Control",
 					"given": [
 						{
 							"type": "given",
-							"statement": "I am a registered user"
+							"statement": "I am on the home page"
 						}
 					],
 					"when": [
 						{
 							"type": "when",
-							"statement": "I navigate to my profile page"
+							"statement": "I sign in with my email and password"
+						},
+						{
+							"type": "and",
+							"statement": "I open the user menu and click 'Sign Out'"
 						}
 					],
 					"then": [
 						{
 							"type": "then",
-							"statement": "I should see my username and account details"
+							"statement": "I should be signed out"
+						},
+						{
+							"type": "and",
+							"statement": "The 'Sign In' button should be visible again"
 						}
 					]
 				},
 				{
-					"name": "Platform Integrity & Performance Resilience",
+					"name": "Data Integrity & Row Level Security",
 					"given": [
 						{
 							"type": "given",
-							"statement": "The platform is under heavy load or audit"
+							"statement": "The application is running"
 						}
 					],
 					"when": [
 						{
 							"type": "when",
-							"statement": "I navigate to missing routes (404)"
+							"statement": "I view the landing page"
 						}
 					],
 					"then": [
 						{
 							"type": "then",
-							"statement": "I should see meaningful 404 pages"
-						},
-						{
-							"type": "and",
-							"statement": "Performance metrics must maintain high accessibility standards"
+							"statement": "The branding and call to action are clearly visible"
 						}
 					]
 				}
