@@ -3,12 +3,15 @@
 .env
 .env.local.bak
 .next/
+.stryker-tmp/
+clean-start.log
 coverage/
 lighthouse-reports/
 next-env.d.ts
 node_modules
 playwright-report/
 repomix-output.xml
+reports/
 result
 test-results/
 tsconfig.tsbuildinfo
