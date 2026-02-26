@@ -7,7 +7,7 @@ pkgs.buildNpmPackage rec {
     pkgs.supabase-cli
   ];
   npmDepsHash = "sha256-TbW7m1es85i9FYSZKCzCzwUzRPrjtz4d5Eal+L8FHMg=";
-  pname = builtins.baseNameOf src;
+  pname = "nextjs-supabase";
   env = {
     NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
     NEXT_PUBLIC_SUPABASE_ANON_KEY = "build-placeholder";
