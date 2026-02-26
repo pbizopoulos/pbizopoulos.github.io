@@ -1,0 +1,14 @@
+*.local
+*.swp
+.env
+.env.local.bak
+.next/
+coverage/
+lighthouse-reports/
+next-env.d.ts
+node_modules
+playwright-report/
+repomix-output.xml
+result
+test-results/
+tsconfig.tsbuildinfo
