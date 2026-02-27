@@ -7,10 +7,8 @@ export default {
   },
   checkers: ["typescript"],
   tsconfigFile: "tsconfig.json",
-  mutator: {
-    excludedMutators: ["BooleanLiteral", "StringLiteral"],
-    ignoreStatic: true,
-  },
+  excludedMutators: ["BooleanLiteral", "StringLiteral"],
+  ignoreStatic: true,
   mutate: [
     "lib/**/*.ts",
     "components/**/*.tsx",
