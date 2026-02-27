@@ -7,6 +7,7 @@
   "required": [
     "specification_principles",
     "feature",
+    "software_requirements",
     "initialization_command",
     "verification_command",
     "extra_allowed_commands",
@@ -44,6 +45,14 @@
       "type": "string",
       "minLength": 1,
       "examples": ["User Authentication", "Notes Management"]
+    },
+    "software_requirements": {
+      "title": "Software Requirements",
+      "description": "A list of software required to run and verify the codebase.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "initialization_command": {
       "title": "Initialization Command",
@@ -97,6 +106,7 @@
         "The observable behavior is identical to the behavior_acceptance_criteria."
       ],
       "feature": "Minimal Next.js + Supabase Application Specification",
+      "software_requirements": ["nix", "git"],
       "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
       "verification_command": "./test.sh",
       "extra_allowed_commands": [

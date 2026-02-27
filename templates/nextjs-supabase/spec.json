@@ -10,6 +10,7 @@
     "The observable behavior is identical to the behavior_acceptance_criteria."
   ],
   "feature": "Minimal Next.js + Supabase Application Specification",
+  "software_requirements": ["nix", "git"],
   "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
   "verification_command": "./test.sh",
   "extra_allowed_commands": [
