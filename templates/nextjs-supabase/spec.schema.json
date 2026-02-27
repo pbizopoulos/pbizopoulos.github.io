@@ -1,10 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
-  "title": "BDD Acceptance Criteria Specification",
-  "description": "The complete and authoritative source of truth for platform behavior, governed by strict BDD-style acceptance criteria.",
+  "title": "LLM-Actionable BDD Acceptance Criteria Specification",
+  "description": "The complete and authoritative source of truth for platform behavior, designed to be used as a direct input prompt for an LLM to generate or update corresponding code.",
   "type": "object",
   "required": [
+    "llm_prompt_directives",
     "feature",
     "repository_initialization_command",
     "acceptance_criteria_enforcement_loop",
@@ -19,6 +20,23 @@
     "Observable behavior must exactly satisfy the criteria (technology-agnostic)."
   ],
   "properties": {
+    "llm_prompt_directives": {
+      "title": "LLM Prompt Directives",
+      "description": "The operational context and rules for the LLM implementation agent.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "const": [
+        "You are a senior software engineer and BDD expert.",
+        "Your task is to implement or update the feature described in this JSON specification.",
+        "Treat this JSON as the absolute source of truth; any behavior or technical detail not specified here should not be implemented.",
+        "Use the provided repository initialization command to establish the environment if necessary.",
+        "Continuously run the acceptance criteria enforcement loop to verify your work.",
+        "Prioritize type safety, clean code, and exhaustive test coverage for all specified scenarios.",
+        "Ensure the final implementation exactly matches the observable behavior defined in the behavior_acceptance_criteria."
+      ]
+    },
     "feature": {
       "title": "Feature Name",
       "description": "High-level name of the feature or behavior being specified.",
@@ -60,6 +78,15 @@
   "examples": [
     {
       "$schema": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
+      "llm_prompt_directives": [
+        "You are a senior software engineer and BDD expert.",
+        "Your task is to implement or update the feature described in this JSON specification.",
+        "Treat this JSON as the absolute source of truth; any behavior or technical detail not specified here should not be implemented.",
+        "Use the provided repository initialization command to establish the environment if necessary.",
+        "Continuously run the acceptance criteria enforcement loop to verify your work.",
+        "Prioritize type safety, clean code, and exhaustive test coverage for all specified scenarios.",
+        "Ensure the final implementation exactly matches the observable behavior defined in the behavior_acceptance_criteria."
+      ],
       "feature": "Minimal Next.js + Supabase Application Specification",
       "repository_initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
       "acceptance_criteria_enforcement_loop": "./test.sh",
