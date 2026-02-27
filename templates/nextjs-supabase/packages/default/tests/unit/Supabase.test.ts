@@ -71,6 +71,7 @@ describe("Supabase", () => {
     const supabaseClient = (await createClient()) as any;
     expect(supabaseClient).toBeDefined();
     expect(supabaseClient.options.cookies.getAll()).toEqual([]);
+    supabaseClient.options.cookies.setAll([]);
   });
 
   it("should throw error if env vars are missing", async () => {

@@ -77,6 +77,11 @@ describe("Auth Callback route", () => {
     headersObj.set("apikey", "invalid");
     await capturedOptions.global.fetch("url", { headers: headersObj });
 
+    await capturedOptions.global.fetch("url", { headers: {} });
+
+    await capturedOptions.global.fetch("url");
+    await capturedOptions.global.fetch("url", {});
+
     mockCookieStore.getAll.mockReturnValue([
       { name: "not-sb", value: "val" },
       { name: "sb-valid", value: "a.b.c" },

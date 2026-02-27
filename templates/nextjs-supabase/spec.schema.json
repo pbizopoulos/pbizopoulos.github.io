@@ -1,10 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/schemas/bdd-acceptance-criteria.json",
+  "$id": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
   "title": "BDD Acceptance Criteria Specification",
   "description": "The complete and authoritative source of truth for platform behavior, governed by strict BDD-style acceptance criteria.",
   "type": "object",
-  "required": ["feature", "test_coverage_percentage", "scenarios"],
+  "required": [
+    "feature",
+    "repository_initialization_command",
+    "repository_test_command",
+    "implementation_acceptance_criteria",
+    "behavior_acceptance_criteria"
+  ],
   "additionalProperties": false,
   "specificationGuidelines": [
     "Complete and authoritative source of truth.",
@@ -20,28 +26,53 @@
       "minLength": 1,
       "examples": ["User Authentication", "Notes Management"]
     },
-    "test_coverage_percentage": {
-      "title": "Test Coverage Percentage",
-      "description": "The percentage of the codebase covered by automated tests.",
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 100
+    "repository_initialization_command": {
+      "title": "Repository Initialization Command",
+      "description": "The command used to initialize the repository from a template.",
+      "type": "string",
+      "const": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase"
     },
-    "scenarios": {
-      "title": "Acceptance Scenarios",
+    "repository_test_command": {
+      "title": "Repository Test Command",
+      "description": "The command used to test the repository.",
+      "type": "string",
+      "const": "nix develop -c ./verify.sh"
+    },
+    "implementation_acceptance_criteria": {
+      "title": "Implementation Acceptance Criteria",
+      "description": "Technical requirements that the implementation must satisfy, including test coverage.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "behavior_acceptance_criteria": {
+      "title": "Behavior Acceptance Criteria",
       "description": "A list of authoritative scenarios that define the complete observable behavior.",
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/scenario"
+        "$ref": "#/$defs/behavior_scenario"
       }
     }
   },
   "examples": [
     {
+      "$schema": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
       "feature": "Minimal Next.js + Supabase Application Specification",
-      "test_coverage_percentage": 100,
-      "scenarios": [
+      "repository_initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
+      "repository_test_command": "nix develop -c ./verify.sh",
+      "implementation_acceptance_criteria": [
+        "The test coverage should be at least 95%.",
+        "The application should use Next.js for routing and server-side rendering.",
+        "The application should use Supabase for authentication and database management.",
+        "The application should use Vitest for unit testing and Playwright for E2E testing.",
+        "The application should use Nix for environment reproducibility.",
+        "The application should use TypeScript for type safety.",
+        "The application should use Vanilla CSS for styling."
+      ],
+      "behavior_acceptance_criteria": [
         {
           "name": "Omni-Channel Authentication & Profile Creation",
           "given": [
@@ -51,7 +82,7 @@
             },
             {
               "type": "and",
-              "statement": "I see the 'Welcome to the Minimal Application' branding"
+              "statement": "I see the 'Minimal App' branding"
             }
           ],
           "when": [
@@ -258,7 +289,7 @@
     }
   ],
   "$defs": {
-    "scenario": {
+    "behavior_scenario": {
       "title": "Behavioral Scenario",
       "description": "A single observable behavior defined by conditions, triggers, and outcomes.",
       "type": "object",

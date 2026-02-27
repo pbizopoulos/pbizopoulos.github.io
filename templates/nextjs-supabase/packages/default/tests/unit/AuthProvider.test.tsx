@@ -566,6 +566,15 @@ describe("AuthProvider", () => {
     expect(mockGlobalFetch.mock.calls[4]?.[1].headers.get("apikey")).toBe(
       "a.b.c",
     );
+
+    const headers5 = { Authorization: "None" };
+    await customFetch("url", { headers: headers5 });
+
+    const headers6 = { Authorization: "Bearer " };
+    await customFetch("url", { headers: headers6 });
+
+    await customFetch("url");
+    await customFetch("url", {});
   });
 
   it("should configure cookie methods correctly", async () => {
@@ -602,12 +611,18 @@ describe("AuthProvider", () => {
     expect(document.cookie).toContain("samesite=strict");
     expect(document.cookie).not.toContain("secure");
 
+    cookies.set?.("no-sec-cookie", "val", { secure: false });
+    expect(document.cookie).not.toContain("secure");
+
     const originalLocation = window.location;
     delete (window as any).location;
     window.location = { ...originalLocation, protocol: "https:" } as any;
 
-    cookies.set?.("secure-cookie", "val", { secure: true });
+    cookies.set?.("sec-cookie", "val", { secure: true });
     expect(document.cookie).toContain("secure");
+
+    cookies.set?.("not-sec-cookie", "val", { secure: false });
+    expect(document.cookie).not.toContain("secure");
 
     window.location = originalLocation as any;
 
@@ -620,6 +635,9 @@ describe("AuthProvider", () => {
     expect(document.cookie).toContain("test-cookie=; max-age=0");
     expect(document.cookie).toContain("path=/");
     expect(document.cookie).toContain("domain=localhost");
+
+    cookies.remove?.("test-cookie", {});
+    expect(document.cookie).toBe("test-cookie=; max-age=0");
   });
 
   it("should return empty or do nothing if document is undefined", async () => {
