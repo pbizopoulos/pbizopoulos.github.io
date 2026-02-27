@@ -82,7 +82,7 @@
             },
             {
               "type": "and",
-              "statement": "I see the 'Minimal App' branding"
+              "statement": "I see the 'Minimal Application' branding"
             }
           ],
           "when": [
