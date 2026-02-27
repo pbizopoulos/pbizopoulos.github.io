@@ -36,7 +36,7 @@
       "title": "Repository Test Command",
       "description": "The command used to test the repository.",
       "type": "string",
-      "const": "nix develop -c ./verify.sh"
+      "const": "./test.sh"
     },
     "implementation_acceptance_criteria": {
       "title": "Implementation Acceptance Criteria",
@@ -62,7 +62,7 @@
       "$schema": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
       "feature": "Minimal Next.js + Supabase Application Specification",
       "repository_initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
-      "repository_test_command": "nix develop -c ./verify.sh",
+      "repository_test_command": "./test.sh",
       "implementation_acceptance_criteria": [
         "The test coverage should be at least 95%.",
         "The application should use Next.js for routing and server-side rendering.",
