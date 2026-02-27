@@ -9,6 +9,7 @@
     "feature",
     "initialization_command",
     "verification_command",
+    "extra_allowed_commands",
     "implementation_acceptance_criteria",
     "behavior_acceptance_criteria"
   ],
@@ -56,6 +57,14 @@
       "type": "string",
       "const": "./test.sh"
     },
+    "extra_allowed_commands": {
+      "title": "Extra Allowed Commands",
+      "description": "A list of additional commands allowed for development and maintenance.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "implementation_acceptance_criteria": {
       "title": "Implementation Acceptance Criteria",
       "description": "Technical requirements that the implementation must satisfy, including test coverage.",
@@ -90,6 +99,9 @@
       "feature": "Minimal Next.js + Supabase Application Specification",
       "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
       "verification_command": "./test.sh",
+      "extra_allowed_commands": [
+        "nix develop -c npm run dev --prefix packages/default"
+      ],
       "implementation_acceptance_criteria": [
         "The test coverage should be at least 95%.",
         "The application should use Next.js for routing and server-side rendering.",

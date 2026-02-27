@@ -11,16 +11,15 @@ nix fmt
 nix build
 nix develop -c bash -c "
 set -e
-cd $ROOT_DIR/packages/default/
-supabase stop
-supabase start
-npm install
-supabase db lint --fail-on warning
-npx tsc
-npm run build
-npm test
-npm run test:cpd
-npm run test:deps
-npm run test:mutation
-npm run test:mutation:metrics
+supabase stop --workdir $ROOT_DIR/packages/default
+supabase start --workdir $ROOT_DIR/packages/default
+npm install --prefix $ROOT_DIR/packages/default
+supabase db lint --fail-on warning --workdir $ROOT_DIR/packages/default
+npm exec --prefix $ROOT_DIR/packages/default -- tsc -p $ROOT_DIR/packages/default
+npm run build --prefix $ROOT_DIR/packages/default
+npm test --prefix $ROOT_DIR/packages/default
+npm run test:cpd --prefix $ROOT_DIR/packages/default
+npm run test:deps --prefix $ROOT_DIR/packages/default
+npm run test:mutation --prefix $ROOT_DIR/packages/default
+npm run test:mutation:metrics --prefix $ROOT_DIR/packages/default
 "
