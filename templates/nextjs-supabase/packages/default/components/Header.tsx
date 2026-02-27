@@ -42,7 +42,7 @@ export default function Header() {
       <header>
         <div>
           <div>
-            <span>Minimal App</span>
+            <span>Minimal Application</span>
           </div>
         </div>
         <div>

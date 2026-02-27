@@ -110,7 +110,17 @@
       "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
       "verification_command": "./test.sh",
       "extra_allowed_commands": [
-        "nix develop -c npm run dev --prefix packages/default"
+        "nix develop -c supabase start --workdir packages/default",
+        "nix develop -c supabase db reset --workdir packages/default",
+        "nix develop -c supabase test db --workdir packages/default",
+        "nix develop -c supabase db lint --fail-on warning --workdir packages/default",
+        "nix develop -c npm install --prefix packages/default",
+        "nix develop -c npm run dev --prefix packages/default",
+        "nix develop -c npm test --prefix packages/default",
+        "nix develop -c npm run test:coverage --prefix packages/default",
+        "nix develop -c npm test --prefix packages/default -- --update-snapshots",
+        "nix develop -c npm exec --prefix packages/default -- playwright show-report",
+        "nix develop -c npm exec --prefix packages/default -- npm-check-updates -u"
       ],
       "implementation_acceptance_criteria": [
         "The test coverage should be at least 95%.",
