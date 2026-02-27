@@ -44,7 +44,10 @@
       "description": "High-level name of the feature or behavior being specified.",
       "type": "string",
       "minLength": 1,
-      "examples": ["User Authentication", "Notes Management"]
+      "examples": [
+        "User Authentication",
+        "Notes Management"
+      ]
     },
     "software_requirements": {
       "title": "Software Requirements",
@@ -62,7 +65,7 @@
     },
     "verification_command": {
       "title": "Verification Command",
-      "description": "The command that continuously runs test.sh and verifies implementation progress.",
+      "description": "The command that continuously runs test.sh and verifies implementation progress. The test.sh command should not output any warning/error from any of the commands.",
       "type": "string",
       "const": "./test.sh"
     },
@@ -106,7 +109,10 @@
         "The observable behavior is identical to the behavior_acceptance_criteria."
       ],
       "feature": "Minimal Next.js + Supabase Application Specification",
-      "software_requirements": ["nix", "git"],
+      "software_requirements": [
+        "nix",
+        "git"
+      ],
       "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
       "verification_command": "./test.sh",
       "extra_allowed_commands": [
@@ -129,7 +135,8 @@
         "The application should use Vitest for unit testing and Playwright for E2E testing.",
         "The application should use Nix for environment reproducibility.",
         "The application should use TypeScript for type safety.",
-        "The application should use Vanilla CSS for styling."
+        "The application should use Vanilla CSS for styling.",
+        "The test.sh command should not output any warning/error from any of the commands."
       ],
       "behavior_acceptance_criteria": [
         {
@@ -352,7 +359,12 @@
       "title": "Behavioral Scenario",
       "description": "A single observable behavior defined by conditions, triggers, and outcomes.",
       "type": "object",
-      "required": ["name", "given", "when", "then"],
+      "required": [
+        "name",
+        "given",
+        "when",
+        "then"
+      ],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -360,7 +372,10 @@
           "description": "Descriptive name of the success or failure scenario.",
           "type": "string",
           "minLength": 1,
-          "examples": ["Successful login", "Password mismatch error"]
+          "examples": [
+            "Successful login",
+            "Password mismatch error"
+          ]
         },
         "given": {
           "title": "Givens",
@@ -395,21 +410,33 @@
       "title": "Behavioral Clause",
       "description": "A single atomic statement forming part of a BDD scenario.",
       "type": "object",
-      "required": ["type", "statement"],
+      "required": [
+        "type",
+        "statement"
+      ],
       "additionalProperties": false,
       "properties": {
         "type": {
           "title": "Clause Type",
           "description": "The logic role of the clause in the BDD structure.",
           "type": "string",
-          "enum": ["given", "and", "but", "when", "then"]
+          "enum": [
+            "given",
+            "and",
+            "but",
+            "when",
+            "then"
+          ]
         },
         "statement": {
           "title": "Clause Statement",
           "description": "The descriptive content of the behavior or condition.",
           "type": "string",
           "minLength": 1,
-          "examples": ["I am a visitor", "I click 'Publish'"]
+          "examples": [
+            "I am a visitor",
+            "I click 'Publish'"
+          ]
         }
       }
     }
