@@ -5,10 +5,10 @@
   "description": "The complete and authoritative source of truth for platform behavior, designed to be used as a direct input prompt for an LLM to generate or update corresponding code.",
   "type": "object",
   "required": [
-    "llm_prompt_directives",
+    "specification_principles",
     "feature",
-    "repository_initialization_command",
-    "acceptance_criteria_enforcement_loop",
+    "initialization_command",
+    "verification_command",
     "implementation_acceptance_criteria",
     "behavior_acceptance_criteria"
   ],
@@ -20,21 +20,21 @@
     "Observable behavior must exactly satisfy the criteria (technology-agnostic)."
   ],
   "properties": {
-    "llm_prompt_directives": {
-      "title": "LLM Prompt Directives",
-      "description": "The operational context and rules for the LLM implementation agent.",
+    "specification_principles": {
+      "title": "Specification Principles",
+      "description": "The operational context and principles for the implementation.",
       "type": "array",
       "items": {
         "type": "string"
       },
       "const": [
-        "You are a senior software engineer and BDD expert.",
-        "Your task is to implement or update the feature described in this JSON specification.",
-        "Treat this JSON as the absolute source of truth; any behavior or technical detail not specified here should not be implemented.",
-        "Use the provided repository initialization command to establish the environment if necessary.",
-        "Continuously run the acceptance criteria enforcement loop to verify your work.",
-        "Prioritize type safety, clean code, and exhaustive test coverage for all specified scenarios.",
-        "Ensure the final implementation exactly matches the observable behavior defined in the behavior_acceptance_criteria."
+        "The codebase is a high-quality, BDD-verified implementation of the feature.",
+        "The implementation adheres strictly to this specification; no undocumented behavior or technical detail is present.",
+        "This JSON is the authoritative source of truth for the system's behavior and structure.",
+        "The initialization command provides a reproducible development environment.",
+        "The verification command ensures continuous compliance with all acceptance criteria.",
+        "Type safety, idiomatic patterns, and exhaustive test coverage are fundamental characteristics of the codebase.",
+        "The observable behavior is identical to the behavior_acceptance_criteria."
       ]
     },
     "feature": {
@@ -44,15 +44,15 @@
       "minLength": 1,
       "examples": ["User Authentication", "Notes Management"]
     },
-    "repository_initialization_command": {
-      "title": "Repository Initialization Command",
-      "description": "The command used to initialize the repository from a template.",
+    "initialization_command": {
+      "title": "Initialization Command",
+      "description": "The command that initializes the repository from a template.",
       "type": "string",
       "const": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase"
     },
-    "acceptance_criteria_enforcement_loop": {
-      "title": "Acceptance Criteria Enforcement Loop",
-      "description": "The command used to continuously run test.sh and fix all errors warnings.",
+    "verification_command": {
+      "title": "Verification Command",
+      "description": "The command that continuously runs test.sh and verifies implementation progress.",
       "type": "string",
       "const": "./test.sh"
     },
@@ -78,18 +78,18 @@
   "examples": [
     {
       "$schema": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
-      "llm_prompt_directives": [
-        "You are a senior software engineer and BDD expert.",
-        "Your task is to implement or update the feature described in this JSON specification.",
-        "Treat this JSON as the absolute source of truth; any behavior or technical detail not specified here should not be implemented.",
-        "Use the provided repository initialization command to establish the environment if necessary.",
-        "Continuously run the acceptance criteria enforcement loop to verify your work.",
-        "Prioritize type safety, clean code, and exhaustive test coverage for all specified scenarios.",
-        "Ensure the final implementation exactly matches the observable behavior defined in the behavior_acceptance_criteria."
+      "specification_principles": [
+        "The codebase is a high-quality, BDD-verified implementation of the feature.",
+        "The implementation adheres strictly to this specification; no undocumented behavior or technical detail is present.",
+        "This JSON is the authoritative source of truth for the system's behavior and structure.",
+        "The initialization command provides a reproducible development environment.",
+        "The verification command ensures continuous compliance with all acceptance criteria.",
+        "Type safety, idiomatic patterns, and exhaustive test coverage are fundamental characteristics of the codebase.",
+        "The observable behavior is identical to the behavior_acceptance_criteria."
       ],
       "feature": "Minimal Next.js + Supabase Application Specification",
-      "repository_initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
-      "acceptance_criteria_enforcement_loop": "./test.sh",
+      "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
+      "verification_command": "./test.sh",
       "implementation_acceptance_criteria": [
         "The test coverage should be at least 95%.",
         "The application should use Next.js for routing and server-side rendering.",

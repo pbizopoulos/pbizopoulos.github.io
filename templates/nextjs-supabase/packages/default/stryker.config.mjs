@@ -2,12 +2,13 @@ export default {
   packageManager: "npm",
   reporters: ["html", "clear-text", "progress", "json"],
   testRunner: "vitest",
+  concurrency: 4,
+  incremental: true,
   vitest: {
     configFile: "vitest.config.ts",
   },
   checkers: ["typescript"],
   tsconfigFile: "tsconfig.json",
-  excludedMutators: ["BooleanLiteral", "StringLiteral"],
   ignoreStatic: true,
   mutate: [
     "lib/**/*.ts",

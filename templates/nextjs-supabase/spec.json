@@ -1,0 +1,238 @@
+{
+  "$schema": "https://jsonschemas.com/pbizopoulos/pbizopoulos.github.io/spec.schema.json",
+  "specification_principles": [
+    "The codebase is a high-quality, BDD-verified implementation of the feature.",
+    "The implementation adheres strictly to this specification; no undocumented behavior or technical detail is present.",
+    "This JSON is the authoritative source of truth for the system's behavior and structure.",
+    "The initialization command provides a reproducible development environment.",
+    "The verification command ensures continuous compliance with all acceptance criteria.",
+    "Type safety, idiomatic patterns, and exhaustive test coverage are fundamental characteristics of the codebase.",
+    "The observable behavior is identical to the behavior_acceptance_criteria."
+  ],
+  "feature": "Minimal Next.js + Supabase Application Specification",
+  "initialization_command": "nix flake init -t github:pbizopoulos/pbizopoulos.github.io#nextjs-supabase",
+  "verification_command": "./test.sh",
+  "implementation_acceptance_criteria": [
+    "The test coverage should be at least 95%.",
+    "The application should use Next.js for routing and server-side rendering.",
+    "The application should use Supabase for authentication and database management.",
+    "The application should use Vitest for unit testing and Playwright for E2E testing.",
+    "The application should use Nix for environment reproducibility.",
+    "The application should use TypeScript for type safety.",
+    "The application should use Vanilla CSS for styling."
+  ],
+  "behavior_acceptance_criteria": [
+    {
+      "name": "Omni-Channel Authentication & Profile Creation",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am on the home page"
+        },
+        {
+          "type": "and",
+          "statement": "I see the 'Minimal Application' branding"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I click 'Sign In' and then 'Don't have an account? Sign Up'"
+        },
+        {
+          "type": "and",
+          "statement": "I enter my username, email, and password"
+        },
+        {
+          "type": "and",
+          "statement": "I click the 'Create Account' button"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "The auth form should close"
+        },
+        {
+          "type": "and",
+          "statement": "I should see my username in the user menu"
+        }
+      ]
+    },
+    {
+      "name": "Secure Identity Management & Session Control",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am on the home page"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I sign in with my email and password"
+        },
+        {
+          "type": "and",
+          "statement": "I open the user menu and click 'Sign Out'"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "I should be signed out"
+        },
+        {
+          "type": "and",
+          "statement": "The 'Sign In' button should be visible again"
+        }
+      ]
+    },
+    {
+      "name": "Public Identity Profile Resolution",
+      "given": [
+        {
+          "type": "given",
+          "statement": "A user with username 'johndoe' exists"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I navigate to the profile page at '/johndoe'"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "I should see the 'johndoe' profile heading"
+        },
+        {
+          "type": "and",
+          "statement": "I should see the message 'This is a minimal profile page.'"
+        }
+      ]
+    },
+    {
+      "name": "Resilient Application Recovery & Error States",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am on the home page"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I navigate to a non-existent user profile at '/non-existent-user'"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "I should see the 'Page Not Found' heading"
+        },
+        {
+          "type": "and",
+          "statement": "I should see a 'Return Home' link"
+        }
+      ]
+    },
+    {
+      "name": "Secure Username Policy Enforcement",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am on the sign-up form"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I enter an invalid username (too short, too long, or invalid characters)"
+        },
+        {
+          "type": "and",
+          "statement": "I click the 'Create Account' button"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "I should see an error message describing the username requirements"
+        }
+      ]
+    },
+    {
+      "name": "Responsive Design & Mobile Accessibility",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am on the home page"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "I view the page on a mobile viewport"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "The layout should adapt to the screen size"
+        },
+        {
+          "type": "and",
+          "statement": "The branding and navigation should remain accessible"
+        }
+      ]
+    },
+    {
+      "name": "Application Performance Budget",
+      "given": [
+        {
+          "type": "given",
+          "statement": "I am a user navigating the application"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "The page is loaded"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "The page should load within the performance budget"
+        }
+      ]
+    },
+    {
+      "name": "Global Error Handling",
+      "given": [
+        {
+          "type": "given",
+          "statement": "An unexpected application error occurs"
+        }
+      ],
+      "when": [
+        {
+          "type": "when",
+          "statement": "The error page is rendered"
+        }
+      ],
+      "then": [
+        {
+          "type": "then",
+          "statement": "I should see 'Something went wrong!'"
+        },
+        {
+          "type": "and",
+          "statement": "I should see a 'Try again' button"
+        }
+      ]
+    }
+  ]
+}
