@@ -9,6 +9,28 @@ from pathlib import Path
 
 import fire
 import libcst
+import ssort
+
+
+def _get_sort_key(node: libcst.FunctionDef) -> str:
+    decorator_str = ""
+    for decorator in node.decorators:
+        dec = decorator.decorator
+        if hasattr(dec, "value"):
+            if hasattr(dec.value, "value"):
+                decorator_str += dec.value.value
+            elif isinstance(dec.value, str):
+                decorator_str += dec.value
+        elif (
+            hasattr(dec, "func")
+            and hasattr(dec.func, "value")
+            and hasattr(dec.func.value, "value")
+        ):
+            decorator_str += dec.func.value.value
+    if decorator_str:
+        return f"@{decorator_str}{node.name.value}"
+    node_name_value: str = node.name.value
+    return node_name_value
 
 
 class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
@@ -75,43 +97,6 @@ class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
         return updated_node.with_changes(body=tuple(new_statements))
 
 
-class _TestCase(unittest.TestCase):
-    def test_canonicalize_python_bytes_input(self) -> None:
-        parent_path = Path(__file__).resolve().parent
-        with (parent_path / "prm/main_before.py").open() as file:
-            code_output_before = canonicalize_python(file.read().encode())
-        with (parent_path / "prm/main_after.py").open() as file:
-            code_output_after = file.read()
-        if code_output_before.decode() != code_output_after:  # type: ignore[union-attr]
-            raise AssertionError
-
-    def test_canonicalize_python_empty_input(self) -> None:
-        code_output_after = canonicalize_python(b"")
-        if code_output_after != b"":
-            raise AssertionError
-
-
-def _get_sort_key(node: libcst.FunctionDef) -> str:
-    decorator_str = ""
-    for decorator in node.decorators:
-        dec = decorator.decorator
-        if hasattr(dec, "value"):
-            if hasattr(dec.value, "value"):
-                decorator_str += dec.value.value
-            elif isinstance(dec.value, str):
-                decorator_str += dec.value
-        elif (
-            hasattr(dec, "func")
-            and hasattr(dec.func, "value")
-            and hasattr(dec.func.value, "value")
-        ):
-            decorator_str += dec.func.value.value
-    if decorator_str:
-        return f"@{decorator_str}{node.name.value}"
-    node_name_value: str = node.name.value
-    return node_name_value
-
-
 def canonicalize_python(*args: str | bytes) -> str | bytes | None:
     """Canonicalize Python.
 
@@ -128,6 +113,7 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         cst_transformer = _CSTTransformer()
         modified_tree = cst.visit(cst_transformer)
         code_unparsed: str = modified_tree.code
+        code_unparsed = ssort.ssort(code_unparsed)
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open("w") as file:
                 file.write(code_unparsed)
@@ -136,6 +122,22 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         if len(args) == 1:
             return code_unparsed.encode()
     return None
+
+
+class _TestCase(unittest.TestCase):
+    def test_canonicalize_python_bytes_input(self) -> None:
+        parent_path = Path(__file__).resolve().parent
+        with (parent_path / "prm/main_before.py").open() as file:
+            code_output_before = canonicalize_python(file.read().encode())
+        with (parent_path / "prm/main_after.py").open() as file:
+            code_output_after = file.read()
+        if code_output_before.decode() != code_output_after:  # type: ignore[union-attr]
+            raise AssertionError
+
+    def test_canonicalize_python_empty_input(self) -> None:
+        code_output_after = canonicalize_python(b"")
+        if code_output_after != b"":
+            raise AssertionError
 
 
 def main() -> None:
