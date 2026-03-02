@@ -174,7 +174,7 @@ def check_repository_directory_structure(  # noqa: C901, PLR0912
 
 
 def main() -> None:
-    """Launch check_repository_directory_structure using the Fire module."""
+    """Check repository directory structure."""
     fire.Fire(check_repository_directory_structure)
 
 
