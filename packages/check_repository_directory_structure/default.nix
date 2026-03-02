@@ -1,16 +1,22 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.python313Packages.buildPythonPackage rec {
-  installPhase = "mkdir -p $out/bin && cp ./main.py $out/bin/${pname}";
-  meta.mainProgram = pname;
-  pname = builtins.baseNameOf src;
-  propagatedBuildInputs = [
-    pkgs.python313Packages.fire
-    pkgs.python313Packages.fqdn
-    pkgs.python313Packages.gitpython
-  ];
-  pyproject = false;
+
+let
+  inherit (pkgs) rustPlatform;
+in
+
+rustPlatform.buildRustPackage rec {
+  pname = "check_repository_directory_structure";
+  version = "0.1.0";
   src = ./.;
-  version = "0.0.0";
+  nativeBuildInputs = [
+    rustPlatform.bindgenHook
+    pkgs.pkg-config
+  ];
+  buildInputs = [
+    pkgs.openssl
+    pkgs.zlib
+  ];
+  cargoHash = "sha256-SHt0+HHhpGqEebREy+eitKJJ9br4gZIaJyzA4aKq5/s=";
 }
