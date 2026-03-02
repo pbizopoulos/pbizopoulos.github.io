@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -133,6 +135,8 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
     1. Sorts alphabetically classes and functions in that order.
     2. Exception is the __init__ method which is placed in the top.
     """
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(sys.path)
     for input_str_or_bytes in args:
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open() as file:
@@ -166,10 +170,26 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open("w") as file:
                 file.write(code_unparsed)
-            if len(args) == 1:
-                return None
+            file_path = input_str_or_bytes
+        else:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tf:
+                tf.write(code_unparsed)
+                file_path = tf.name
+        subprocess.run(
+            [
+                "mypy",
+                "--explicit-package-bases",
+                "--ignore-missing-imports",
+                "--strict",
+                file_path,
+            ],
+            check=False,
+        )
+        subprocess.run(["vulture", file_path], check=False)
+        if not isinstance(input_str_or_bytes, str):
+            os.remove(file_path)
         if len(args) == 1:
-            return code_unparsed.encode()
+            return None if isinstance(input_str_or_bytes, str) else code_unparsed.encode()
     return None
 
 
