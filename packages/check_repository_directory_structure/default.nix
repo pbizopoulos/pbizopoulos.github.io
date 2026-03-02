@@ -11,6 +11,7 @@ rustPlatform.buildRustPackage rec {
   version = "0.1.0";
   src = ./.;
   nativeBuildInputs = [
+    pkgs.git
     rustPlatform.bindgenHook
     pkgs.pkg-config
   ];
@@ -18,5 +19,5 @@ rustPlatform.buildRustPackage rec {
     pkgs.openssl
     pkgs.zlib
   ];
-  cargoHash = "sha256-SHt0+HHhpGqEebREy+eitKJJ9br4gZIaJyzA4aKq5/s=";
+  cargoHash = "sha256-J32X5kYjZEhl6ooSBGuVdrDyiX1EjlpJDA/WELke2ZE=";
 }

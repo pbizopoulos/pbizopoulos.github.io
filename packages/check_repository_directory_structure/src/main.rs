@@ -32,11 +32,17 @@ fn main() {
     if std::env::var("DEBUG").as_deref() == Ok("1") {
         run_tests();
     } else {
-        check_repository_directory_structure(args.dir_name, args.fix);
+        match check_repository_directory_structure(args.dir_name, args.fix) {
+            Ok(_) => std::process::exit(0),
+            Err(warnings) => {
+                println!("{}", warnings.join("\n"));
+                std::process::exit(1);
+            }
+        }
     }
 }
 
-fn check_repository_directory_structure(dir_name: String, fix: bool) {
+fn check_repository_directory_structure(dir_name: String, fix: bool) -> Result<(), Vec<String>> {
     let mut warnings = Vec::new();
     let dir_path = Path::new(&dir_name).canonicalize().expect("Failed to canonicalize path");
     let repo = Repository::discover(&dir_path).expect("Not a git repository");
@@ -68,7 +74,7 @@ fn check_repository_directory_structure(dir_name: String, fix: bool) {
         warnings.push(format!("{}: should have 'main' as the active branch", working_dir.display()));
     }
 
-    let branches = repo.branches(None).expect("Failed to get branches");
+    let branches = repo.branches(Some(git2::BranchType::Local)).expect("Failed to get branches");
     if branches.count() != 1 {
         warnings.push(format!("{}: should have only one branch", working_dir.display()));
     }
@@ -86,12 +92,10 @@ fn check_repository_directory_structure(dir_name: String, fix: bool) {
         let path = e.path();
         if path == working_dir { return true; }
         let rel_path = path.strip_prefix(working_dir).unwrap();
-        if let Some(parent) = rel_path.parent() {
-            for component in parent.components() {
-                let s = component.as_os_str().to_str().unwrap();
-                if s == "tmp" || s == "prm" {
-                    return false;
-                }
+        for component in rel_path.components() {
+            let s = component.as_os_str().to_str().unwrap();
+            if s == "tmp" || s == "prm" || s == "target" {
+                return false;
             }
         }
         true
@@ -228,26 +232,64 @@ fn check_repository_directory_structure(dir_name: String, fix: bool) {
     }
 
     if !final_warnings.is_empty() {
-        println!("{}", final_warnings.join("\n"));
-        std::process::exit(1);
+        Err(final_warnings)
     } else {
-        std::process::exit(0);
+        Ok(())
     }
 }
 
 fn run_tests() {
-    test_hello_world();
-    test_math();
+    test_is_valid_fqdn_standalone();
+    test_is_dash_case_standalone();
+    test_check_repository_directory_structure_standalone();
 }
 
-fn test_hello_world() {
-    assert_eq!(2 + 2, 4);
-    println!("test hello_world ... ok");
+fn test_check_repository_directory_structure_standalone() {
+    use std::fs;
+    use std::process::Command;
+    let temp_dir = std::env::temp_dir().join("test-repo-structure-standalone");
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    Command::new("git").arg("init").arg("-b").arg("main").current_dir(&temp_dir).output().expect("Failed to init git");
+    Command::new("git").args(["config", "user.email", "test@example.com"]).current_dir(&temp_dir).output().unwrap();
+    Command::new("git").args(["config", "user.name", "Test User"]).current_dir(&temp_dir).output().unwrap();
+    
+    fs::write(temp_dir.join("README"), "test").unwrap();
+    Command::new("git").arg("add").arg("README").current_dir(&temp_dir).output().expect("Failed to add README");
+    Command::new("git").arg("commit").arg("-m").arg("initial commit").current_dir(&temp_dir).output().expect("Failed to commit");
+
+    // Should be Ok
+    let result = check_repository_directory_structure(temp_dir.to_str().unwrap().to_string(), false);
+    assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result.err());
+
+    // Add an unallowed file
+    fs::write(temp_dir.join("unallowed.txt"), "test").unwrap();
+    let result = check_repository_directory_structure(temp_dir.to_str().unwrap().to_string(), false);
+    assert!(result.is_err());
+
+    fs::remove_dir_all(&temp_dir).unwrap();
+    println!("test check_repository_directory_structure ... ok");
 }
 
-fn test_math() {
-    assert!(2 * 3 == 6);
-    println!("test math ... ok");
+fn test_is_valid_fqdn_standalone() {
+    assert!(is_valid_fqdn("google.com"));
+    assert!(is_valid_fqdn("a.b.co"));
+    assert!(!is_valid_fqdn("google"));
+    assert!(!is_valid_fqdn("google."));
+    assert!(!is_valid_fqdn(".com"));
+    println!("test is_valid_fqdn ... ok");
+}
+
+fn test_is_dash_case_standalone() {
+    assert!(is_dash_case("my-package"));
+    assert!(is_dash_case("my.package"));
+    assert!(is_dash_case("package123"));
+    assert!(!is_dash_case("My-Package"));
+    assert!(!is_dash_case("my_package"));
+    println!("test is_dash_case ... ok");
 }
 
 #[cfg(test)]
@@ -255,12 +297,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hello_world_test() {
-        test_hello_world();
+    fn test_is_valid_fqdn() {
+        assert!(is_valid_fqdn("google.com"));
+        assert!(is_valid_fqdn("a.b.co"));
+        assert!(!is_valid_fqdn("google"));
+        assert!(!is_valid_fqdn("google."));
+        assert!(!is_valid_fqdn(".com"));
     }
 
     #[test]
-    fn test_math_test() {
-        test_math();
+    fn test_is_dash_case() {
+        assert!(is_dash_case("my-package"));
+        assert!(is_dash_case("my.package"));
+        assert!(is_dash_case("package123"));
+        assert!(!is_dash_case("My-Package"));
+        assert!(!is_dash_case("my_package"));
+    }
+
+    #[test]
+    fn test_check_repository_directory_structure() {
+        use std::fs;
+        use std::process::Command;
+        let temp_dir = std::env::temp_dir().join("test-repo-structure");
+        if temp_dir.exists() {
+            fs::remove_dir_all(&temp_dir).unwrap();
+        }
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        Command::new("git").arg("init").arg("-b").arg("main").current_dir(&temp_dir).output().expect("Failed to init git");
+        Command::new("git").args(["config", "user.email", "test@example.com"]).current_dir(&temp_dir).output().unwrap();
+        Command::new("git").args(["config", "user.name", "Test User"]).current_dir(&temp_dir).output().unwrap();
+        
+        fs::write(temp_dir.join("README"), "test").unwrap();
+        Command::new("git").arg("add").arg("README").current_dir(&temp_dir).output().expect("Failed to add README");
+        Command::new("git").arg("commit").arg("-m").arg("initial commit").current_dir(&temp_dir).output().expect("Failed to commit");
+
+        // Should be Ok
+        let result = check_repository_directory_structure(temp_dir.to_str().unwrap().to_string(), false);
+        assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result.err());
+
+        // Add an unallowed file
+        fs::write(temp_dir.join("unallowed.txt"), "test").unwrap();
+        let result = check_repository_directory_structure(temp_dir.to_str().unwrap().to_string(), false);
+        assert!(result.is_err());
+
+        fs::remove_dir_all(&temp_dir).unwrap();
     }
 }
