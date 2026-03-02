@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import difflib
 import os
 import shutil
 import subprocess
@@ -230,8 +231,6 @@ class _TestCase(unittest.TestCase):
         with (parent_path / "prm/main_after.py").open() as file:
             code_output_after = file.read()
         if code_output_before.decode() != code_output_after:  # type: ignore[union-attr]
-            import difflib
-
             diff = difflib.unified_diff(
                 code_output_after.splitlines(),
                 code_output_before.decode().splitlines(),  # type: ignore[union-attr]
@@ -242,7 +241,6 @@ class _TestCase(unittest.TestCase):
             raise AssertionError
 
     def test_canonicalize_python_shebang(self) -> None:
-        parent_path = Path(__file__).resolve().parent
         code_input = b"#!/usr/bin/env python3\nimport os\n"
         code_output = canonicalize_python(code_input)
         if code_output != b"#!/usr/bin/env python3\nimport os\n":
