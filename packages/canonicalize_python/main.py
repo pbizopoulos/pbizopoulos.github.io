@@ -12,6 +12,17 @@ import libcst
 import ssort
 
 
+def _is_docstring(node: libcst.CSTNode) -> bool:
+    if not isinstance(node, libcst.SimpleStatementLine):
+        return False
+    if len(node.body) != 1:
+        return False
+    expr = node.body[0]
+    if not isinstance(expr, libcst.Expr):
+        return False
+    return isinstance(expr.value, (libcst.SimpleString, libcst.ConcatenatedString))
+
+
 def _get_sort_key(node: libcst.FunctionDef) -> str:
     decorator_str = ""
     for decorator in node.decorators:
@@ -34,14 +45,46 @@ def _get_sort_key(node: libcst.FunctionDef) -> str:
 
 
 class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
+    def leave_TrailingWhitespace(
+        self,
+        original_node: libcst.TrailingWhitespace,  # noqa: ARG002
+        updated_node: libcst.TrailingWhitespace,
+    ) -> libcst.TrailingWhitespace:
+        return updated_node.with_changes(comment=None)
+
+    def leave_EmptyLine(
+        self,
+        original_node: libcst.EmptyLine,  # noqa: ARG002
+        updated_node: libcst.EmptyLine,
+    ) -> libcst.EmptyLine:
+        return updated_node.with_changes(comment=None)
+
+    def leave_FunctionDef(  # noqa: N802
+        self,
+        original_node: libcst.FunctionDef,  # noqa: ARG002
+        updated_node: libcst.FunctionDef,
+    ) -> libcst.FunctionDef:
+        if updated_node.name.value.startswith("_"):
+            body = updated_node.body
+            if body.body and _is_docstring(body.body[0]):
+                return updated_node.with_changes(
+                    body=body.with_changes(body=body.body[1:]),
+                )
+        return updated_node
+
     def leave_ClassDef(  # noqa: N802
         self,
         original_node: libcst.ClassDef,  # noqa: ARG002
         updated_node: libcst.ClassDef,
     ) -> libcst.ClassDef:
-        statements = list(updated_node.body.body)
+        body = updated_node.body
+        if updated_node.name.value.startswith("_"):
+            if body.body and _is_docstring(body.body[0]):
+                body = body.with_changes(body=body.body[1:])
+
+        statements = list(body.body)
         if not statements:
-            return updated_node
+            return updated_node.with_changes(body=body)
         function_nodes = []
         other_nodes = []
         for node in statements:
@@ -59,7 +102,7 @@ class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
             init_node = sorted_functions.pop(init_index)
             sorted_functions.insert(0, init_node)
         return updated_node.with_changes(
-            body=updated_node.body.with_changes(
+            body=body.with_changes(
                 body=tuple(other_nodes + sorted_functions),
             ),
         )
@@ -107,9 +150,11 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
     for input_str_or_bytes in args:
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open() as file:
-                cst = libcst.parse_module(file.read())
+                content = file.read()
         else:
-            cst = libcst.parse_module(input_str_or_bytes.decode())
+            content = input_str_or_bytes.decode()
+        content = "\n".join([line for line in content.splitlines() if line.strip()])
+        cst = libcst.parse_module(content)
         cst_transformer = _CSTTransformer()
         modified_tree = cst.visit(cst_transformer)
         code_unparsed: str = modified_tree.code
