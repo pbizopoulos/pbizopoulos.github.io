@@ -12,17 +12,6 @@ import libcst
 import ssort
 
 
-def _is_docstring(node: libcst.CSTNode) -> bool:
-    if not isinstance(node, libcst.SimpleStatementLine):
-        return False
-    if len(node.body) != 1:
-        return False
-    expr = node.body[0]
-    if not isinstance(expr, libcst.Expr):
-        return False
-    return isinstance(expr.value, (libcst.SimpleString, libcst.ConcatenatedString))
-
-
 def _get_sort_key(node: libcst.FunctionDef) -> str:
     decorator_str = ""
     for decorator in node.decorators:
@@ -44,30 +33,27 @@ def _get_sort_key(node: libcst.FunctionDef) -> str:
     return node_name_value
 
 
-class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
-    def leave_FunctionDef(  # noqa: N802
-        self,
-        original_node: libcst.FunctionDef,  # noqa: ARG002
-        updated_node: libcst.FunctionDef,
-    ) -> libcst.FunctionDef:
-        if updated_node.name.value.startswith("_"):
-            body = updated_node.body
-            if body.body and _is_docstring(body.body[0]):
-                return updated_node.with_changes(
-                    body=body.with_changes(body=body.body[1:]),
-                )
-        return updated_node
+def _is_docstring(node: libcst.CSTNode) -> bool:
+    if not isinstance(node, libcst.SimpleStatementLine):
+        return False
+    if len(node.body) != 1:
+        return False
+    expr = node.body[0]
+    if not isinstance(expr, libcst.Expr):
+        return False
+    return isinstance(expr.value, (libcst.SimpleString, libcst.ConcatenatedString))
 
+
+class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
     def leave_ClassDef(  # noqa: N802
         self,
         original_node: libcst.ClassDef,  # noqa: ARG002
         updated_node: libcst.ClassDef,
     ) -> libcst.ClassDef:
         body = updated_node.body
-        if updated_node.name.value.startswith("_"):
+        if updated_node.name.value.startswith("_"):  # noqa: SIM102
             if body.body and _is_docstring(body.body[0]):
                 body = body.with_changes(body=body.body[1:])
-
         statements = list(body.body)
         if not statements:
             return updated_node.with_changes(body=body)
@@ -92,6 +78,19 @@ class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
                 body=tuple(other_nodes + sorted_functions),
             ),
         )
+
+    def leave_FunctionDef(  # noqa: N802
+        self,
+        original_node: libcst.FunctionDef,  # noqa: ARG002
+        updated_node: libcst.FunctionDef,
+    ) -> libcst.FunctionDef:
+        if updated_node.name.value.startswith("_"):
+            body = updated_node.body
+            if body.body and _is_docstring(body.body[0]):
+                return updated_node.with_changes(
+                    body=body.with_changes(body=body.body[1:]),
+                )
+        return updated_node
 
     def leave_Module(  # noqa: N802
         self,
