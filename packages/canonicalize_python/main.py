@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -155,8 +156,16 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         modified_tree = cst.visit(cst_transformer)
         code_unparsed: str = modified_tree.code
         code_unparsed = ssort.ssort(code_unparsed)
-        process = subprocess.run(
-            ["ruff", "check", "--select", "ALL", "--fix", "--unsafe-fixes", "-"],  # noqa: S607
+        process = subprocess.run(  # noqa: S603
+            [
+                shutil.which("ruff") or "ruff",
+                "check",
+                "--select",
+                "ALL",
+                "--fix",
+                "--unsafe-fixes",
+                "-",
+            ],
             input=code_unparsed,
             capture_output=True,
             text=True,
@@ -164,8 +173,8 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         )
         if process.stdout:
             code_unparsed = process.stdout
-        process = subprocess.run(
-            ["ruff", "format", "-"],  # noqa: S607
+        process = subprocess.run(  # noqa: S603
+            [shutil.which("ruff") or "ruff", "format", "-"],
             input=code_unparsed,
             capture_output=True,
             text=True,
@@ -178,12 +187,16 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
                 file.write(code_unparsed)
             file_path = input_str_or_bytes
         else:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tf:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".py",
+                delete=False,
+            ) as tf:
                 tf.write(code_unparsed)
                 file_path = tf.name
-        subprocess.run(
+        subprocess.run(  # noqa: S603
             [
-                "mypy",
+                shutil.which("mypy") or "mypy",
                 "--explicit-package-bases",
                 "--ignore-missing-imports",
                 "--strict",
@@ -191,11 +204,16 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
             ],
             check=False,
         )
-        subprocess.run(["vulture", file_path], check=False)
+        subprocess.run(  # noqa: S603
+            [shutil.which("vulture") or "vulture", file_path],
+            check=False,
+        )
         if not isinstance(input_str_or_bytes, str):
-            os.remove(file_path)
+            Path(file_path).unlink()
         if len(args) == 1:
-            return None if isinstance(input_str_or_bytes, str) else code_unparsed.encode()
+            return (
+                None if isinstance(input_str_or_bytes, str) else code_unparsed.encode()
+            )
     return None
 
 
