@@ -13,7 +13,6 @@ import git
 from fqdn import FQDN
 
 names_allowed = {
-    r"\.env\.age",
     r"\.git(/.*)?",
     r"\.github/workflows/workflow\.yml",
     r"\.gitignore",
@@ -25,7 +24,7 @@ names_allowed = {
     r"flake\.nix",
     r"formatter\.nix",
     r"prm(/.*)?",
-    r"secrets\.nix",
+    r"secrets(/.*)?",
 }
 file_dependencies = {
     r"hosts/[^/]+/configuration\.nix": {
@@ -67,7 +66,6 @@ file_dependencies = {
         r"packages/[^/]+/main\.cabal",
     },
     r"packages/[^/]+/main\.py": {
-        r"packages/[^/]+/\.env\.age",
         r"packages/[^/]+/default\.nix",
         r"packages/[^/]+/static(/.*)?",
         r"packages/[^/]+/templates(/.*)?",
