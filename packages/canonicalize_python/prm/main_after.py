@@ -1,9 +1,15 @@
-"""Docstring."""  # noqa: INP001
+"""Docstring."""
+
 from __future__ import annotations
+
 import functools
 import os
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 variable_top = 10
 # standalone comment
 variable = 0
@@ -11,50 +17,75 @@ while variable < variable_top:
     # comment in while header
     variable += 1
     # comment in while footer
+
+
 class ClassFirst:
     """Docstring in public class."""
+
     class_attribute: list[str]
+
     def __init__(self: ClassFirst) -> None:
         self.instance_attribute_another = 1
+
     def method_in_class_first(self: ClassFirst) -> None:
         """Docstring in public method."""
         self.instance_attribute = 1
+
     def __getitem__(self: ClassFirst, index: int) -> int:
         self.instance_attribute_other = 1
         return index
+
     # this is a comment inside a class in the footer
+
+
 class ClassThird:
     """Docstring in public class."""
+
     class_attribute_2 = 2
     class_attribute: list[str]
+
+
 class _ClassFourth:
     def method_in_class_fourth(self: _ClassFourth) -> None:
         self.instance_attribute = 1
+
+
 @functools.lru_cache(maxsize=128)
 def retrieve_arg(arg: str) -> str:
     """Docstring in public function."""
     return arg
+
+
 class _ClassSecond:  # inline function comment
     class_attribute_second: int | None = 2  # inline attribute comment
     class_attribute_third: str = "value"
     class_attribute_first: list[str]
+
     def __init__(self: _ClassSecond) -> None:
         # comment inside method
         self.instance_attribute = 1
         retrieve_arg("string")
+
     @functools.lru_cache(maxsize=128)  # noqa: B019
     def get_property(self: _ClassSecond) -> int:
         return self.instance_attribute
+
     def method_in_class_second(self: _ClassSecond) -> None:
         self.instance_attribute = 2
+
+
 class _MyDecorator:
     def add_info(self: Callable[[Path], Path]) -> Callable[[Path], Path]:  # type: ignore[misc]
         self.info = "This is some info"
         return self
+
+
 @_MyDecorator.add_info
 def function_first(path: Path) -> Path:
     """Docstring in public function."""
     return path
+
+
 def main(arg: int) -> None:  # inline function comment
     """Docstring in public function."""
     os.getenv("HOME")
@@ -89,6 +120,8 @@ def main(arg: int) -> None:  # inline function comment
     path = Path("non-existent/")
     function_first(path)
     # comment inside a function in the footer
+
+
 variable_bottom = 2
 # this is a comment before the if __name__ block
 if __name__ == "__main__":

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -144,6 +145,24 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         modified_tree = cst.visit(cst_transformer)
         code_unparsed: str = modified_tree.code
         code_unparsed = ssort.ssort(code_unparsed)
+        process = subprocess.run(
+            ["ruff", "check", "--select", "ALL", "--fix", "--unsafe-fixes", "-"],
+            input=code_unparsed,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if process.stdout:
+            code_unparsed = process.stdout
+        process = subprocess.run(
+            ["ruff", "format", "-"],
+            input=code_unparsed,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if process.stdout:
+            code_unparsed = process.stdout
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open("w") as file:
                 file.write(code_unparsed)
