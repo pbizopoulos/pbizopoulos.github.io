@@ -146,7 +146,7 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         code_unparsed: str = modified_tree.code
         code_unparsed = ssort.ssort(code_unparsed)
         process = subprocess.run(
-            ["ruff", "check", "--select", "ALL", "--fix", "--unsafe-fixes", "-"],
+            ["ruff", "check", "--select", "ALL", "--fix", "--unsafe-fixes", "-"],  # noqa: S607
             input=code_unparsed,
             capture_output=True,
             text=True,
@@ -155,7 +155,7 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         if process.stdout:
             code_unparsed = process.stdout
         process = subprocess.run(
-            ["ruff", "format", "-"],
+            ["ruff", "format", "-"],  # noqa: S607
             input=code_unparsed,
             capture_output=True,
             text=True,
