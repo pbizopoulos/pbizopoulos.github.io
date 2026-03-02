@@ -28,12 +28,14 @@ names_allowed = {
 }
 file_dependencies = {
     r"hosts/[^/]+/configuration\.nix": {
-        r"hosts/[^/]+/\.terraform\.lock\.hcl",
         r"hosts/[^/]+/\.terraform(/.*)?",
+        r"hosts/[^/]+/\.terraform\.lock\.hcl",
         r"hosts/[^/]+/deploy-requirements\.sh",
         r"hosts/[^/]+/deploy\.sh",
         r"hosts/[^/]+/hardware-configuration\.nix",
         r"hosts/[^/]+/main\.tf",
+        r"hosts/[^/]+/prm(/.*)?",
+        r"hosts/[^/]+/tmp(/.*)?",
     },
     r"packages/[^/]+/default\.nix": {
         r"packages/[^/]+/prm(/.*)?",
