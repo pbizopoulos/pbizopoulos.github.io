@@ -10,8 +10,10 @@ let
     programs = {
       actionlint.enable = true;
       beautysh.enable = true;
-      biome.enable = true;
-      biome.formatUnsafe = true;
+      biome = {
+        enable = true;
+        formatUnsafe = true;
+      };
       clang-format.enable = true;
       deadnix.enable = true;
       hlint.enable = true;
@@ -42,12 +44,17 @@ let
           command = pkgs.mypy;
           includes = [ "*.py" ];
           options = [
+            "--cache-dir=/tmp/.mypy_cache"
             "--explicit-package-bases"
             "--ignore-missing-imports"
             "--strict"
           ];
         };
-        ruff-check.options = [ "--unsafe-fixes" ];
+        ruff-check.options = [
+          "--cache-dir=/tmp/.ruff_cache"
+          "--unsafe-fixes"
+        ];
+        ruff-format.options = [ "--cache-dir=/tmp/.ruff_cache" ];
         shfmt.options = [ "--posix" ];
       };
       global.excludes = [
