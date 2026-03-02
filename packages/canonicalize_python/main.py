@@ -143,7 +143,13 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
                 content = file.read()
         else:
             content = input_str_or_bytes.decode()
-        content = "\n".join([line for line in content.splitlines() if line.strip()])
+        content = "\n".join(
+            [
+                line
+                for line in content.splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            ],
+        )
         cst = libcst.parse_module(content)
         cst_transformer = _CSTTransformer()
         modified_tree = cst.visit(cst_transformer)
