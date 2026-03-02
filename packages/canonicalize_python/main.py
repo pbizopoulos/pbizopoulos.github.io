@@ -45,20 +45,6 @@ def _get_sort_key(node: libcst.FunctionDef) -> str:
 
 
 class _CSTTransformer(libcst.CSTTransformer):  # type: ignore[misc]
-    def leave_TrailingWhitespace(
-        self,
-        original_node: libcst.TrailingWhitespace,  # noqa: ARG002
-        updated_node: libcst.TrailingWhitespace,
-    ) -> libcst.TrailingWhitespace:
-        return updated_node.with_changes(comment=None)
-
-    def leave_EmptyLine(
-        self,
-        original_node: libcst.EmptyLine,  # noqa: ARG002
-        updated_node: libcst.EmptyLine,
-    ) -> libcst.EmptyLine:
-        return updated_node.with_changes(comment=None)
-
     def leave_FunctionDef(  # noqa: N802
         self,
         original_node: libcst.FunctionDef,  # noqa: ARG002
