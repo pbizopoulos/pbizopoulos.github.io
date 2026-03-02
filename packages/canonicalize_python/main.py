@@ -144,10 +144,14 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
                 content = file.read()
         else:
             content = input_str_or_bytes.decode()
+        lines = content.splitlines()
+        shebang = ""
+        if lines and lines[0].startswith("#!"):
+            shebang = lines[0] + "\n"
         content = "\n".join(
             [
                 line
-                for line in content.splitlines()
+                for line in lines
                 if line.strip() and not line.strip().startswith("#")
             ],
         )
@@ -182,6 +186,7 @@ def canonicalize_python(*args: str | bytes) -> str | bytes | None:
         )
         if process.stdout:
             code_unparsed = process.stdout
+        code_unparsed = shebang + code_unparsed
         if isinstance(input_str_or_bytes, str):
             with Path(input_str_or_bytes).open("w") as file:
                 file.write(code_unparsed)
@@ -225,11 +230,22 @@ class _TestCase(unittest.TestCase):
         with (parent_path / "prm/main_after.py").open() as file:
             code_output_after = file.read()
         if code_output_before.decode() != code_output_after:  # type: ignore[union-attr]
+            import difflib
+
+            diff = difflib.unified_diff(
+                code_output_after.splitlines(),
+                code_output_before.decode().splitlines(),  # type: ignore[union-attr]
+                fromfile="expected",
+                tofile="actual",
+            )
+            print("\n" + "\n".join(diff))  # noqa: T201
             raise AssertionError
 
-    def test_canonicalize_python_empty_input(self) -> None:
-        code_output_after = canonicalize_python(b"")
-        if code_output_after != b"":
+    def test_canonicalize_python_shebang(self) -> None:
+        parent_path = Path(__file__).resolve().parent
+        code_input = b"#!/usr/bin/env python3\nimport os\n"
+        code_output = canonicalize_python(code_input)
+        if code_output != b"#!/usr/bin/env python3\nimport os\n":
             raise AssertionError
 
 
