@@ -183,7 +183,7 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        inputs.self.packages.${pkgs.stdenv.system}.fswm
+        inputs.pbizopoulos-nixpkgs.packages.${pkgs.stdenv.system}.fswm
         pkgs.distrobox
         pkgs.google-chrome
         (pkgs.st.overrideAttrs {

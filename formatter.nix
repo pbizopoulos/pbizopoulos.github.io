@@ -14,20 +14,12 @@ let
         enable = true;
         formatUnsafe = true;
       };
-      clang-format.enable = true;
       deadnix.enable = true;
-      hlint.enable = true;
       nixfmt = {
         enable = true;
         strict = true;
       };
-      ormolu.enable = true;
       prettier.enable = true;
-      ruff-check = {
-        enable = true;
-        extendSelect = [ "ALL" ];
-      };
-      ruff-format.enable = true;
       shellcheck.enable = true;
       shfmt = {
         enable = true;
@@ -40,21 +32,6 @@ let
     settings = {
       formatter = {
         biome.options = [ "--max-diagnostics=none" ];
-        mypy = {
-          command = pkgs.mypy;
-          includes = [ "*.py" ];
-          options = [
-            "--cache-dir=/tmp/.mypy_cache"
-            "--explicit-package-bases"
-            "--ignore-missing-imports"
-            "--strict"
-          ];
-        };
-        ruff-check.options = [
-          "--cache-dir=/tmp/.ruff_cache"
-          "--unsafe-fixes"
-        ];
-        ruff-format.options = [ "--cache-dir=/tmp/.ruff_cache" ];
         shfmt.options = [ "--posix" ];
       };
       global.excludes = [
