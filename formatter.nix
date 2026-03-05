@@ -34,16 +34,16 @@ let
     projectRootFile = "flake.nix";
     settings = {
       formatter = {
-        alphabetize-nix = {
-          command = inputs.canonicalization.packages.${pkgs.stdenv.system}.alphabetize-nix;
-          includes = [ "*.nix" ];
-          priority = 0;
-        };
         biome.options = [ "--max-diagnostics=none" ];
         check_repository_directory_structure = {
           command =
             inputs.canonicalization.packages.${pkgs.stdenv.system}.check_repository_directory_structure;
           includes = [ "flake.nix" ];
+          priority = 0;
+        };
+        nix-alphabetize = {
+          command = inputs.canonicalization.packages.${pkgs.stdenv.system}.nix-alphabetize;
+          includes = [ "*.nix" ];
           priority = 0;
         };
         remove_empty_lines = {

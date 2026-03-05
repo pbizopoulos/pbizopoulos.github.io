@@ -128,6 +128,11 @@
     slock.enable = true;
   };
   services = {
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
     ollama = {
       enable = true;
       loadModels = [
@@ -157,6 +162,13 @@
         "device.routes.default-sink-volume" = 0.422;
         "device.routes.default-source-volume" = 0.314;
       };
+    };
+    printing = {
+      drivers = with pkgs; [
+        cups-browsed
+        cups-filters
+      ];
+      enable = true;
     };
     xserver = {
       displayManager.startx = {
