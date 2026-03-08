@@ -4,16 +4,17 @@ let
 in
 pkgs.testers.runNixOSTest rec {
   name = builtins.baseNameOf ./.;
-  nodes.machine = { pkgs, ... }:
+  nodes.machine =
+    { pkgs, ... }:
     {
       environment.systemPackages = with pkgs; [
         fswmPkg
         procps
         xdotool
         xdpyinfo
+        xterm
         xvfb
         xwininfo
-        xterm
       ];
     };
   testScript = ''
@@ -42,18 +43,13 @@ pkgs.testers.runNixOSTest rec {
       order = stacking_order(ids)
       if wid not in order:
         raise Exception(f"window missing from stacking list: {wid} in {order}")
-
     machine.succeed("Xvfb :1 -screen 0 1024x768x24 >/tmp/Xvfb.log 2>&1 &")
     wait("DISPLAY=:1 xdpyinfo >/dev/null")
-
     machine.succeed("DISPLAY=:1 fswm xterm -T spawn >/tmp/fswm.log 2>&1 &")
-
     machine.succeed("DISPLAY=:1 xterm -T one >/tmp/xterm-one.log 2>&1 &")
     machine.succeed("DISPLAY=:1 xterm -T two >/tmp/xterm-two.log 2>&1 &")
-
     wait("DISPLAY=:1 xdotool search --name '^one$' >/dev/null")
     wait("DISPLAY=:1 xdotool search --name '^two$' >/dev/null")
-
     wait("test \"$(DISPLAY=:1 xdotool search --name '^(one|two)$' | wc -l)\" -eq 2")
     w1 = machine.succeed("DISPLAY=:1 xdotool search --name '^one$' | head -n1").strip()
     w2 = machine.succeed("DISPLAY=:1 xdotool search --name '^two$' | head -n1").strip()
@@ -69,7 +65,6 @@ pkgs.testers.runNixOSTest rec {
     screen_h = int(screen_h_str)
     min_w = max(1, screen_w - 32)
     min_h = max(1, screen_h - 32)
-
     machine.succeed(f"DISPLAY=:1 xdotool windowmap {w1}")
     machine.succeed(f"DISPLAY=:1 xdotool windowmap {w2}")
     wait(f"DISPLAY=:1 xwininfo -id {w1} | grep -q 'Map State: IsViewable'")
@@ -98,14 +93,12 @@ pkgs.testers.runNixOSTest rec {
     wait(
       f"test \"$(DISPLAY=:1 xwininfo -id {w2} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
     )
-
     f0 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
     if f0 not in (w1, w2):
       raise Exception(f"initial focus not on expected window: {f0}")
     assert_root_child(w1)
     assert_root_child(w2)
     assert_in_stacking(f0, [w1, w2])
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" != \"{f0}\"")
     f1 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
@@ -113,17 +106,14 @@ pkgs.testers.runNixOSTest rec {
       raise Exception(f"focus not on expected window after first Alt+Tab: {f1}")
     assert_in_stacking(f1, [w1, w2])
     order_before = stacking_order([w1, w2])
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{f0}\"")
     order_after = stacking_order([w1, w2])
     if order_before == order_after:
       raise Exception(f"stacking order did not change after focus switch: {order_after}")
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{f1}\"")
     assert_in_stacking(f1, [w1, w2])
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Ctrl+Alt+t")
     wait("DISPLAY=:1 xdotool search --name '^spawn$' >/dev/null")
     w3 = machine.succeed("DISPLAY=:1 xdotool search --name '^spawn$' | head -n1").strip()
@@ -175,7 +165,6 @@ pkgs.testers.runNixOSTest rec {
     wait(
       f"test \"$(DISPLAY=:1 xwininfo -id {w3} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
     )
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
@@ -193,7 +182,6 @@ pkgs.testers.runNixOSTest rec {
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{f_a}\"")
     assert_in_stacking(f_c, [w1, w2, w3])
-
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -206,14 +194,12 @@ pkgs.testers.runNixOSTest rec {
     wait(f"DISPLAY=:1 xwininfo -id {w3} >/dev/null")
     if f_before_close == w2:
       wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
-
     machine.succeed(f"DISPLAY=:1 xdotool windowclose {w1}")
     wait("test \"$(DISPLAY=:1 xdotool search --name '^one$' 2>/dev/null | wc -l)\" -eq 0")
     wait(f"sh -c '! xwininfo -id {w1} >/dev/null 2>&1'")
     wait(f"DISPLAY=:1 xwininfo -id {w3} >/dev/null")
     wait(f"DISPLAY=:1 xwininfo -id {w4} >/dev/null")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w3}\"")
-
     wait("pgrep -x fswm >/dev/null")
     machine.succeed("DISPLAY=:1 xdotool key --window root Ctrl+Alt+Delete")
     wait("! pgrep -x fswm >/dev/null")
