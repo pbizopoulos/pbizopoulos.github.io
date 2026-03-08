@@ -1,9 +1,3 @@
-use std::env;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-
 use calloop::generic::Generic;
 use calloop::{EventLoop, Interest, Mode, PostAction};
 use smithay::backend::input::{KeyState, Keycode};
@@ -11,32 +5,38 @@ use smithay::delegate_compositor;
 use smithay::delegate_seat;
 use smithay::delegate_shm;
 use smithay::delegate_xdg_shell;
-use smithay::input::{Seat, SeatHandler, SeatState};
 use smithay::input::keyboard::{FilterResult, KeysymHandle, ModifiersState, XkbConfig, keysyms};
-use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
-use smithay::reexports::wayland_server::protocol::wl_keyboard::KeymapFormat;
-use smithay::reexports::wayland_server::backend::GlobalId;
-use smithay::reexports::wayland_server::{
-    Client, DataInit, Dispatch, Display, DisplayHandle, GlobalDispatch, New, Resource,
-};
+use smithay::input::{Seat, SeatHandler, SeatState};
 use smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::{
     zwp_virtual_keyboard_manager_v1::{self, ZwpVirtualKeyboardManagerV1},
     zwp_virtual_keyboard_v1::{self, ZwpVirtualKeyboardV1},
 };
+use smithay::reexports::wayland_server::backend::GlobalId;
+use smithay::reexports::wayland_server::protocol::wl_keyboard::KeymapFormat;
+use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
+use smithay::reexports::wayland_server::{
+    Client, DataInit, Dispatch, Display, DisplayHandle, GlobalDispatch, New, Resource,
+};
+use smithay::utils::{SERIAL_COUNTER, Serial};
 use smithay::wayland::buffer::BufferHandler;
-use smithay::wayland::compositor::{with_states, CompositorClientState, CompositorHandler, CompositorState};
+use smithay::wayland::compositor::{
+    CompositorClientState, CompositorHandler, CompositorState, with_states,
+};
+use smithay::wayland::shell::xdg::{
+    PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
+    XdgToplevelSurfaceData,
+};
 use smithay::wayland::shm::{ShmHandler, ShmState};
 use smithay::wayland::socket::ListeningSocketSource;
-use smithay::wayland::shell::xdg::{
-    PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState, XdgToplevelSurfaceData,
-};
-use smithay::utils::{Serial, SERIAL_COUNTER};
-
+use std::env;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 struct Window {
     surface: ToplevelSurface,
     wl_surface: WlSurface,
 }
-
 struct State {
     display_handle: DisplayHandle,
     compositor_state: CompositorState,
@@ -52,27 +52,21 @@ struct State {
     focus_log: Option<PathBuf>,
     exit_requested: bool,
 }
-
 #[derive(Debug)]
 struct ClientState {
     compositor: CompositorClientState,
 }
-
 impl smithay::reexports::wayland_server::backend::ClientData for ClientState {}
-
 struct FswmVirtualKeyboardManagerState {
     global: GlobalId,
 }
-
 struct FswmVirtualKeyboardManagerGlobalData {
     filter: Box<dyn for<'c> Fn(&'c Client) -> bool + Send + Sync>,
 }
-
 struct FswmVirtualKeyboardUserData {
     seat: Seat<State>,
     keymap_set: Mutex<bool>,
 }
-
 impl FswmVirtualKeyboardManagerState {
     fn new<F>(display: &DisplayHandle, filter: F) -> Self
     where
@@ -85,19 +79,23 @@ impl FswmVirtualKeyboardManagerState {
         Self { global }
     }
 }
-
 impl State {
-    fn handle_keybinding(&mut self, mods: &ModifiersState, sym: KeysymHandle<'_>, pressed: bool) -> bool {
+    fn handle_keybinding(
+        &mut self,
+        mods: &ModifiersState,
+        sym: KeysymHandle<'_>,
+        pressed: bool,
+    ) -> bool {
         if !pressed {
             return false;
         }
-
-        let keysym = sym.raw_latin_sym_or_raw_current_sym().unwrap_or(sym.modified_sym());
+        let keysym = sym
+            .raw_latin_sym_or_raw_current_sym()
+            .unwrap_or(sym.modified_sym());
         let tab = keysyms::KEY_Tab.into();
         let t = keysyms::KEY_t.into();
         let t_upper = keysyms::KEY_T.into();
         let delete = keysyms::KEY_Delete.into();
-
         if mods.alt && keysym == tab {
             if mods.shift {
                 self.cycle_focus_reverse();
@@ -106,23 +104,23 @@ impl State {
             }
             return true;
         }
-
         if mods.ctrl && mods.alt && (keysym == t || keysym == t_upper) {
             self.spawn_terminal();
             return true;
         }
-
         if mods.ctrl && mods.alt && keysym == delete {
             self.exit_requested = true;
             return true;
         }
-
         false
     }
-
     fn log_focus(&self, window: Option<&Window>) {
-        let Some(path) = self.focus_log.as_ref() else { return; };
-        let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) else { return; };
+        let Some(path) = self.focus_log.as_ref() else {
+            return;
+        };
+        let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) else {
+            return;
+        };
         let (app_id, title) = match window {
             Some(win) => with_states(&win.wl_surface, |states| {
                 if let Some(data) = states.data_map.get::<XdgToplevelSurfaceData>() {
@@ -139,7 +137,6 @@ impl State {
         };
         let _ = writeln!(file, "focus app_id={} title={}", app_id, title);
     }
-
     fn focus_window(&mut self, index: Option<usize>) {
         self.current = index;
         let focused_surface = self
@@ -152,7 +149,6 @@ impl State {
         let window = self.current.and_then(|idx| self.windows.get(idx));
         self.log_focus(window);
     }
-
     fn prev_index(&self, idx: usize) -> Option<usize> {
         if self.windows.is_empty() {
             return None;
@@ -163,14 +159,12 @@ impl State {
             Some(idx - 1)
         }
     }
-
     fn next_index(&self, idx: usize) -> Option<usize> {
         if self.windows.is_empty() {
             return None;
         }
         Some((idx + 1) % self.windows.len())
     }
-
     fn update_focus(&mut self, focus: Option<usize>) {
         if let Some(focus_idx) = focus {
             if self.previous == Some(focus_idx) {
@@ -196,7 +190,6 @@ impl State {
         }
         self.focus_window(self.current);
     }
-
     fn cycle_focus(&mut self) {
         if self.windows.is_empty() {
             self.update_focus(None);
@@ -208,7 +201,6 @@ impl State {
         };
         self.update_focus(next);
     }
-
     fn cycle_focus_reverse(&mut self) {
         if self.windows.is_empty() {
             self.update_focus(None);
@@ -220,7 +212,6 @@ impl State {
         };
         self.update_focus(next);
     }
-
     fn spawn_terminal(&self) {
         if self.spawn_argv.is_empty() {
             return;
@@ -230,49 +221,46 @@ impl State {
         let _ = std::process::Command::new(cmd).args(args).spawn();
     }
 }
-
 impl CompositorHandler for State {
     fn compositor_state(&mut self) -> &mut CompositorState {
         &mut self.compositor_state
     }
-
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
         &client
             .get_data::<ClientState>()
             .expect("client data")
             .compositor
     }
-
     fn commit(&mut self, _surface: &WlSurface) {}
 }
-
 delegate_compositor!(State);
-
 impl ShmHandler for State {
     fn shm_state(&self) -> &ShmState {
         &self.shm_state
     }
 }
-
 delegate_shm!(State);
-
 impl BufferHandler for State {
-    fn buffer_destroyed(&mut self, _buffer: &smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer) {}
+    fn buffer_destroyed(
+        &mut self,
+        _buffer: &smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer,
+    ) {
+    }
 }
-
 impl XdgShellHandler for State {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
         &mut self.xdg_shell_state
     }
-
     fn new_toplevel(&mut self, toplevel: ToplevelSurface) {
         let wl_surface = toplevel.wl_surface().clone();
         toplevel.send_configure();
         let index = self.windows.len();
-        self.windows.push(Window { surface: toplevel, wl_surface });
+        self.windows.push(Window {
+            surface: toplevel,
+            wl_surface,
+        });
         self.update_focus(Some(index));
     }
-
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         let Some(pos) = self.windows.iter().position(|w| w.surface == surface) else {
             return;
@@ -299,19 +287,21 @@ impl XdgShellHandler for State {
             self.update_focus(self.previous);
         }
     }
-
     fn new_popup(&mut self, surface: PopupSurface, _positioner: PositionerState) {
         let _ = surface.send_configure();
     }
-
-    fn reposition_request(&mut self, surface: PopupSurface, positioner: PositionerState, token: u32) {
+    fn reposition_request(
+        &mut self,
+        surface: PopupSurface,
+        positioner: PositionerState,
+        token: u32,
+    ) {
         surface.with_pending_state(|state| {
             state.positioner = positioner;
             state.geometry = positioner.get_geometry();
         });
         let _ = surface.send_repositioned(token);
     }
-
     fn grab(
         &mut self,
         _surface: PopupSurface,
@@ -320,23 +310,17 @@ impl XdgShellHandler for State {
     ) {
     }
 }
-
 delegate_xdg_shell!(State);
-
 impl SeatHandler for State {
     type KeyboardFocus = WlSurface;
     type PointerFocus = WlSurface;
     type TouchFocus = WlSurface;
-
     fn seat_state(&mut self) -> &mut SeatState<Self> {
         &mut self.seat_state
     }
-
     fn focus_changed(&mut self, _seat: &Seat<Self>, _focused: Option<&Self::KeyboardFocus>) {}
 }
-
 delegate_seat!(State);
-
 impl GlobalDispatch<ZwpVirtualKeyboardManagerV1, FswmVirtualKeyboardManagerGlobalData, State>
     for State
 {
@@ -350,12 +334,10 @@ impl GlobalDispatch<ZwpVirtualKeyboardManagerV1, FswmVirtualKeyboardManagerGloba
     ) {
         data_init.init(resource, ());
     }
-
     fn can_view(client: Client, global_data: &FswmVirtualKeyboardManagerGlobalData) -> bool {
         (global_data.filter)(&client)
     }
 }
-
 impl Dispatch<ZwpVirtualKeyboardManagerV1, (), State> for State {
     fn request(
         _state: &mut State,
@@ -381,7 +363,6 @@ impl Dispatch<ZwpVirtualKeyboardManagerV1, (), State> for State {
         }
     }
 }
-
 impl Dispatch<ZwpVirtualKeyboardV1, FswmVirtualKeyboardUserData, State> for State {
     fn request(
         state: &mut State,
@@ -393,14 +374,22 @@ impl Dispatch<ZwpVirtualKeyboardV1, FswmVirtualKeyboardUserData, State> for Stat
         _data_init: &mut DataInit<'_, State>,
     ) {
         match request {
-            zwp_virtual_keyboard_v1::Request::Keymap { format, fd: _, size: _ } => {
+            zwp_virtual_keyboard_v1::Request::Keymap {
+                format,
+                fd: _,
+                size: _,
+            } => {
                 if format == KeymapFormat::XkbV1 as u32 {
                     if let Ok(mut keymap_set) = data.keymap_set.lock() {
                         *keymap_set = true;
                     }
                 }
             }
-            zwp_virtual_keyboard_v1::Request::Key { time, key, state: key_state } => {
+            zwp_virtual_keyboard_v1::Request::Key {
+                time,
+                key,
+                state: key_state,
+            } => {
                 if data.keymap_set.lock().map(|v| !*v).unwrap_or(true) {
                     virtual_keyboard.post_error(
                         zwp_virtual_keyboard_v1::Error::NoKeymap,
@@ -408,7 +397,6 @@ impl Dispatch<ZwpVirtualKeyboardV1, FswmVirtualKeyboardUserData, State> for Stat
                     );
                     return;
                 }
-
                 let key_state = if key_state == 1 {
                     KeyState::Pressed
                 } else {
@@ -416,7 +404,6 @@ impl Dispatch<ZwpVirtualKeyboardV1, FswmVirtualKeyboardUserData, State> for Stat
                 };
                 let pressed = key_state == KeyState::Pressed;
                 let keycode: Keycode = Keycode::from(key + 8);
-
                 if let Some(keyboard) = data.seat.get_keyboard() {
                     let serial = SERIAL_COUNTER.next_serial();
                     let _ = keyboard.input(
@@ -441,8 +428,6 @@ impl Dispatch<ZwpVirtualKeyboardV1, FswmVirtualKeyboardUserData, State> for Stat
         }
     }
 }
-
-
 fn main() {
     let mut args = env::args().collect::<Vec<_>>();
     if args.len() < 2 {
@@ -450,25 +435,20 @@ fn main() {
         std::process::exit(1);
     }
     let spawn_argv = args.split_off(1);
-
     tracing_subscriber::fmt().with_target(false).init();
-
     let mut event_loop: EventLoop<State> = EventLoop::try_new().expect("event loop");
     let display = Display::new().expect("display");
     let display_handle = display.handle();
-
     let compositor_state = CompositorState::new::<State>(&display_handle);
     let xdg_shell_state = XdgShellState::new::<State>(&display_handle);
     let shm_state = ShmState::new::<State>(&display_handle, vec![]);
     let virtual_keyboard_state =
         FswmVirtualKeyboardManagerState::new(&display_handle, |_client| true);
-
     let mut seat_state = SeatState::<State>::new();
     let mut seat = seat_state.new_wl_seat(&display_handle, "seat0");
-    seat.add_keyboard(XkbConfig::default(), 200, 25).expect("keyboard");
-
+    seat.add_keyboard(XkbConfig::default(), 200, 25)
+        .expect("keyboard");
     let focus_log = env::var("FSWM_WAYLAND_FOCUS_LOG").ok().map(PathBuf::from);
-
     let state = State {
         display_handle,
         compositor_state,
@@ -484,11 +464,9 @@ fn main() {
         focus_log,
         exit_requested: false,
     };
-
     let socket_name = env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
     let socket = ListeningSocketSource::with_name(&socket_name).expect("socket");
     env::set_var("WAYLAND_DISPLAY", &socket_name);
-
     let display_source = Generic::new(display, Interest::READ, Mode::Level);
     event_loop
         .handle()
@@ -499,7 +477,6 @@ fn main() {
             Ok(PostAction::Continue)
         })
         .expect("insert display source");
-
     event_loop
         .handle()
         .insert_source(socket, move |client, _, state| {
@@ -512,10 +489,8 @@ fn main() {
                 .expect("insert client");
         })
         .expect("insert socket source");
-
     let mut state = state;
     state.spawn_terminal();
-
     loop {
         event_loop.dispatch(None, &mut state).expect("dispatch");
         if state.exit_requested {

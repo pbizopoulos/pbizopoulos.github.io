@@ -4,15 +4,17 @@ let
 in
 pkgs.testers.runNixOSTest rec {
   name = builtins.baseNameOf ./.;
-  nodes.machine = { pkgs, ... }: {
-    environment.systemPackages = with pkgs; [
-      fswmPkg
-      foot
-      procps
-      wlrctl
-      wtype
-    ];
-  };
+  nodes.machine =
+    { pkgs, ... }:
+    {
+      environment.systemPackages = with pkgs; [
+        foot
+        fswmPkg
+        procps
+        wlrctl
+        wtype
+      ];
+    };
   testScript = ''
     timeout = 30
     def wait(cmd):
