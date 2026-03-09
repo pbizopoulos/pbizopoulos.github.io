@@ -1,20 +1,17 @@
 { inputs, pkgs, ... }:
-let
-  fswmPkg = inputs.self.packages.${pkgs.stdenv.system}.fswm;
-in
 pkgs.testers.runNixOSTest rec {
   name = builtins.baseNameOf ./.;
   nodes.machine =
     { pkgs, ... }:
     {
-      environment.systemPackages = with pkgs; [
-        fswmPkg
-        procps
-        xdotool
-        xdpyinfo
-        xterm
-        xvfb
-        xwininfo
+      environment.systemPackages = [
+        inputs.self.packages.${pkgs.stdenv.system}.fswm
+        pkgs.procps
+        pkgs.xdotool
+        pkgs.xdpyinfo
+        pkgs.xterm
+        pkgs.xvfb
+        pkgs.xwininfo
       ];
     };
   testScript = ''
