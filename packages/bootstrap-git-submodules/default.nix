@@ -1,8 +1,8 @@
-{
-  pkgs ? import <nixpkgs> { },
+{ pkgs ? import <nixpkgs> { }
+,
 }:
 pkgs.writeShellApplication {
-  name = builtins.baseNameOf ./.;
+  name = baseNameOf ./.;
   runtimeInputs = [ pkgs.gh ];
   text = builtins.readFile ./main.sh;
 }

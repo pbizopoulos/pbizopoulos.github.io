@@ -1,7 +1,7 @@
-{
-  pkgs ? import <nixpkgs> { },
+{ pkgs ? import <nixpkgs> { }
+,
 }:
-pkgs.rustPlatform.buildRustPackage rec {
+pkgs.rustPlatform.buildRustPackage {
   buildInputs = [
     pkgs.git
     pkgs.imagemagick

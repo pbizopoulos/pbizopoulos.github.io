@@ -1,5 +1,5 @@
-{
-  pkgs ? import <nixpkgs> { },
+{ pkgs ? import <nixpkgs> { }
+,
 }:
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
@@ -111,7 +111,7 @@ pkgs.stdenv.mkDerivation rec {
     pkgs.libxcb
     pkgs.xcbutilkeysyms
   ];
-  pname = builtins.baseNameOf ./.;
+  pname = baseNameOf ./.;
   src = ./.;
   version = "0.0.0";
 }

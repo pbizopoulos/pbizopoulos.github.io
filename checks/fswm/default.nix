@@ -1,6 +1,6 @@
 { inputs, pkgs, ... }:
-pkgs.testers.runNixOSTest rec {
-  name = builtins.baseNameOf ./.;
+pkgs.testers.runNixOSTest {
+  name = baseNameOf ./.;
   nodes.machine =
     { pkgs, ... }:
     {
