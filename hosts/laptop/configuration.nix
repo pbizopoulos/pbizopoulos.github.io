@@ -176,7 +176,6 @@
       isNormalUser = true;
       packages = [
         inputs.self.packages.${pkgs.stdenv.system}.fswm
-        inputs.self.packages.${pkgs.stdenv.system}.fswm-wayland
         pkgs.google-chrome
         (pkgs.st.overrideAttrs {
           patches = [

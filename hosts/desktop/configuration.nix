@@ -199,7 +199,6 @@
       isNormalUser = true;
       packages = [
         inputs.self.packages.${pkgs.stdenv.system}.fswm
-        inputs.self.packages.${pkgs.stdenv.system}.fswm-wayland
         pkgs.distrobox
         pkgs.google-chrome
         (pkgs.st.overrideAttrs {
