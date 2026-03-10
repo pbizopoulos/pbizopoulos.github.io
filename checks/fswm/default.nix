@@ -163,7 +163,7 @@ pkgs.testers.runNixOSTest {
       f"test \"$(DISPLAY=:1 xwininfo -id {w3} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
     )
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
-    wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
+    wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w2}\"")
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w3}\"")
     assert_in_stacking(w3, [w1, w2, w3])
@@ -180,9 +180,9 @@ pkgs.testers.runNixOSTest {
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{f_a}\"")
     assert_in_stacking(f_c, [w1, w2, w3])
     machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
-    wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
-    machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
     wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w2}\"")
+    machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
+    wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
     f_before_close = w2
     machine.succeed(f"DISPLAY=:1 xdotool windowclose {w2}")
     wait("test \"$(DISPLAY=:1 xdotool search --name '^two$' 2>/dev/null | wc -l)\" -eq 0")

@@ -40,45 +40,28 @@ static Client *remove_client(Client *client) {
 }
 void update_client(Client *client_focus, xcb_connection_t *connection) {
   unsigned int key_press_value_list[] = {XCB_STACK_MODE_ABOVE};
-  Client *client_head = clients.head;
   if (client_focus) {
-    if (client_focus == client_previous_focus) {
-      client_current = client_previous_focus;
-      client_previous_focus = client_current->previous;
-    } else {
-      client_previous_focus = client_current;
-      client_current = client_focus;
-    }
+    client_previous_focus = client_current;
+    client_current = client_focus;
   } else {
-    if (client_previous_focus) {
-      client_current = client_previous_focus;
-    } else {
+    client_current = client_previous_focus;
+    if (!client_current) {
       client_current = clients.head;
     }
     if (client_current) {
       client_previous_focus = client_current->previous;
-    } else {
-      client_previous_focus = NULL;
     }
   }
   if (!client_current) {
     return;
   }
-  if (!clients.head) {
-    return;
-  }
-  while (client_head) {
-    if (client_head == client_current) {
-      xcb_configure_window(connection, client_head->window,
-                           XCB_CONFIG_WINDOW_STACK_MODE, key_press_value_list);
-    }
-    client_head = client_head->next;
-  }
+  xcb_configure_window(connection, client_current->window,
+                       XCB_CONFIG_WINDOW_STACK_MODE, key_press_value_list);
   xcb_set_input_focus(connection, XCB_INPUT_FOCUS_POINTER_ROOT,
                       client_current->window, XCB_CURRENT_TIME);
 }
 int main(int argc, char *argv[]) {
-  Client *client = calloc(1, sizeof(Client));
+  Client *client = NULL;
   unsigned int map_request_configure_value_list[4];
   unsigned int root_value_list[] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                                     XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -133,28 +116,16 @@ int main(int argc, char *argv[]) {
           (xcb_key_press_event_t *)generic_event;
       if (key_press_event->detail == *tab_keycode &&
           key_press_event->state == (XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT)) {
-        Client *client_focus = NULL;
-        if (client_current) {
-          client_focus = client_current->previous;
-        } else {
-          client_focus = NULL;
-        }
-        if (!(client_focus)) {
-          client_focus = clients.tail;
-        }
-        client_previous_focus = client_current;
-        update_client(client_focus, connection);
-      } else if (key_press_event->detail == *tab_keycode) {
-        Client *client_focus = NULL;
-        if (client_current) {
-          client_focus = client_current->next;
-        } else {
-          client_focus = NULL;
-        }
-        if (!(client_focus)) {
+        Client *client_focus = client_current ? client_current->next : NULL;
+        if (!client_focus) {
           client_focus = clients.head;
         }
-        client_previous_focus = client_current;
+        update_client(client_focus, connection);
+      } else if (key_press_event->detail == *tab_keycode) {
+        Client *client_focus = client_current ? client_current->previous : NULL;
+        if (!client_focus) {
+          client_focus = clients.tail;
+        }
         update_client(client_focus, connection);
       } else if (key_press_event->detail == *delete_keycode) {
         free(generic_event);
@@ -205,12 +176,7 @@ int main(int argc, char *argv[]) {
     } else if (generic_event->response_type == XCB_UNMAP_NOTIFY) {
       const xcb_unmap_notify_event_t *unmap_notify_event =
           (xcb_unmap_notify_event_t *)generic_event;
-      Client *client_unmap_notify = NULL;
-      if (clients.head) {
-        client_unmap_notify = clients.head;
-      } else {
-        client_unmap_notify = NULL;
-      }
+      Client *client_unmap_notify = clients.head;
       while (client_unmap_notify) {
         if (client_unmap_notify->window == unmap_notify_event->window) {
           break;
@@ -218,29 +184,25 @@ int main(int argc, char *argv[]) {
         client_unmap_notify = client_unmap_notify->next;
       }
       if (!client_unmap_notify) {
+        free(generic_event);
         continue;
       }
       remove_client(client_unmap_notify);
-      if (client_unmap_notify == client_previous_focus) {
-        if (client_current) {
-          client_previous_focus = client_current->previous;
-        } else {
-          client_previous_focus = NULL;
-        }
+      if (client_unmap_notify == client_current) {
+        client_current = NULL;
       }
-      update_client(client_previous_focus, connection);
+      if (client_unmap_notify == client_previous_focus) {
+        client_previous_focus = NULL;
+      }
+      update_client(NULL, connection);
       free(client_unmap_notify);
       client_unmap_notify = NULL;
     }
     free(generic_event);
   }
-  while (client) {
+  while (clients.head) {
+    client = remove_client(clients.head);
     free(client);
-    if (clients.head) {
-      client = remove_client(clients.head);
-    } else {
-      client = NULL;
-    }
   }
   free(delete_keycode);
   free(t_keycode);
