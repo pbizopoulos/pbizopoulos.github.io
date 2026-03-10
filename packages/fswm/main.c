@@ -84,6 +84,9 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "usage: printf 'exec fswm <terminal_emulator_command>\\n' "
                     ">> ~/.xinitrc\n");
     goto error_exit;
+  } else if (!delete_keycode || !t_keycode || !tab_keycode) {
+    fprintf(stderr, "fswm: cannot get keycodes\n");
+    goto error_exit;
   } else if (xcb_connection_has_error(connection) > 0) {
     fprintf(stderr, "fswm: cannot connect to the X server\n");
     goto error_exit;
@@ -96,8 +99,6 @@ int main(int argc, char *argv[]) {
   map_request_configure_value_list[1] = 0;
   map_request_configure_value_list[2] = screen->width_in_pixels;
   map_request_configure_value_list[3] = screen->height_in_pixels;
-  xcb_change_window_attributes(connection, screen->root, XCB_CW_EVENT_MASK,
-                               root_value_list);
   xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_1, *tab_keycode,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
   xcb_grab_key(connection, 1, screen->root, XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT,
@@ -110,8 +111,10 @@ int main(int argc, char *argv[]) {
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
   while (1) {
     xcb_flush(connection);
-    generic_event = xcb_wait_for_event(connection);
-    if (generic_event->response_type == XCB_KEY_PRESS) {
+    if (!(generic_event = xcb_wait_for_event(connection))) {
+      break;
+    }
+    if ((generic_event->response_type & ~0x80) == XCB_KEY_PRESS) {
       const xcb_key_press_event_t *key_press_event =
           (xcb_key_press_event_t *)generic_event;
       if (key_press_event->detail == *tab_keycode &&
@@ -133,9 +136,10 @@ int main(int argc, char *argv[]) {
       } else if (key_press_event->detail == *t_keycode) {
         if (!(fork())) {
           execvp(argv[1], &argv[1]);
+          _exit(1);
         }
       }
-    } else if (generic_event->response_type == XCB_MAP_REQUEST) {
+    } else if ((generic_event->response_type & ~0x80) == XCB_MAP_REQUEST) {
       const xcb_map_request_event_t *map_request_event =
           (xcb_map_request_event_t *)generic_event;
       Client *client_map_request = NULL;
@@ -152,6 +156,10 @@ int main(int argc, char *argv[]) {
       }
       if (!(client_map_request)) {
         Client *client_new = calloc(1, sizeof(Client));
+        if (!client_new) {
+          fprintf(stderr, "fswm: out of memory\n");
+          break;
+        }
         client_new->window = map_request_event->window;
         if (clients.head) {
           Client *clients_tail = clients.tail;
@@ -173,7 +181,8 @@ int main(int argc, char *argv[]) {
                                XCB_CONFIG_WINDOW_WIDTH |
                                XCB_CONFIG_WINDOW_HEIGHT,
                            map_request_configure_value_list);
-    } else if (generic_event->response_type == XCB_UNMAP_NOTIFY) {
+    } else if ((generic_event->response_type & ~0x80) == XCB_UNMAP_NOTIFY ||
+               (generic_event->response_type & ~0x80) == XCB_DESTROY_NOTIFY) {
       const xcb_unmap_notify_event_t *unmap_notify_event =
           (xcb_unmap_notify_event_t *)generic_event;
       Client *client_unmap_notify = clients.head;

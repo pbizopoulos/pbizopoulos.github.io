@@ -95,10 +95,8 @@ pkgs.stdenv.mkDerivation rec {
     -Wvarargs \
     -Wvector-operation-performance \
     -Wvla \
-    -Wwrite-strings
-    # -fanalyzer \
-    # -Waggregate-return \
-    # -Wtraditional-conversion
+    -Wwrite-strings \
+    -fanalyzer
   '';
   installPhase = ''
     mkdir -p $out/bin
