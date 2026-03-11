@@ -3,7 +3,7 @@
 }:
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
-    cc -o fswm main.c -O3 -std=c89 -lxcb -lxcb-keysyms \
+    cc -o ${pname} main.c -O3 -std=c89 -lxcb -lxcb-keysyms \
     -Waggressive-loop-optimizations \
     -Wall \
     -Walloc-zero \
@@ -100,8 +100,8 @@ pkgs.stdenv.mkDerivation rec {
   '';
   installPhase = ''
     mkdir -p $out/bin
-    cp -f fswm $out/bin/
-    chmod 755 $out/bin/fswm
+    cp -f ${pname} $out/bin/
+    chmod 755 $out/bin/${pname}
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [
