@@ -99,9 +99,7 @@ pkgs.stdenv.mkDerivation rec {
     -fanalyzer
   '';
   installPhase = ''
-    mkdir -p $out/bin
-    cp -f ${pname} $out/bin/
-    chmod 755 $out/bin/${pname}
+    install -Dm755 ${pname} $out/bin/${pname}
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [

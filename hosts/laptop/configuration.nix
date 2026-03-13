@@ -1,4 +1,8 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 {
   boot = {
     initrd.systemd.enable = true;
@@ -83,7 +87,9 @@
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.18.16" ];
+    permittedInsecurePackages = [
+      "broadcom-sta-6.30.223.271-59-6.18.16"
+    ];
   };
   preservation = {
     enable = true;
@@ -163,7 +169,9 @@
     };
   };
   system.stateVersion = "25.11";
-  systemd.suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
+  systemd.suppressedSystemUnits = [
+    "systemd-machine-id-commit.service"
+  ];
   time.timeZone = "Europe/Athens";
   users = {
     mutableUsers = false;
@@ -185,7 +193,9 @@
             })
           ];
         })
-        (pkgs.vim.customize { vimrcConfig.customRC = "filetype plugin indent on"; })
+        (pkgs.vim.customize {
+          vimrcConfig.customRC = "filetype plugin indent on";
+        })
       ];
     };
   };

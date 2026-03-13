@@ -1,8 +1,15 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 pkgs.testers.runNixOSTest {
   name = baseNameOf ./.;
   nodes.machine =
-    { pkgs, ... }:
+    {
+      pkgs,
+      ...
+    }:
     {
       environment.systemPackages = [
         inputs.self.packages.${pkgs.stdenv.system}.fswm

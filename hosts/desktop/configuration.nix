@@ -1,7 +1,13 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 {
   boot = {
-    binfmt.emulatedSystems = [ "aarch64-linux" ];
+    binfmt.emulatedSystems = [
+      "aarch64-linux"
+    ];
     initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
   };
@@ -83,7 +89,9 @@
       "flakes"
       "nix-command"
     ];
-    trusted-users = [ "pbizopoulos" ];
+    trusted-users = [
+      "pbizopoulos"
+    ];
   };
   nixpkgs.config.allowUnfree = true;
   preservation = {
@@ -177,7 +185,9 @@
         generateScript = true;
       };
       enable = true;
-      videoDrivers = [ "nvidia" ];
+      videoDrivers = [
+        "nvidia"
+      ];
       xkb = {
         layout = "us,gr";
         options = "grp:win_space_toggle";
@@ -185,7 +195,9 @@
     };
   };
   system.stateVersion = "25.11";
-  systemd.suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
+  systemd.suppressedSystemUnits = [
+    "systemd-machine-id-commit.service"
+  ];
   time.timeZone = "Europe/Athens";
   users = {
     mutableUsers = false;
@@ -209,7 +221,9 @@
             })
           ];
         })
-        (pkgs.vim.customize { vimrcConfig.customRC = "filetype plugin indent on"; })
+        (pkgs.vim.customize {
+          vimrcConfig.customRC = "filetype plugin indent on";
+        })
       ];
     };
   };

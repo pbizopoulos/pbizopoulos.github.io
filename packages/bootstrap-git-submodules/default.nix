@@ -3,6 +3,8 @@
 }:
 pkgs.writeShellApplication {
   name = baseNameOf ./.;
-  runtimeInputs = [ pkgs.gh ];
+  runtimeInputs = [
+    pkgs.gh
+  ];
   text = builtins.readFile ./main.sh;
 }

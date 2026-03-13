@@ -1,4 +1,8 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 {
   boot = {
     loader.generic-extlinux-compatible.enable = true;
@@ -12,12 +16,16 @@
     enableAllHardware = pkgs.lib.mkForce false;
     enableRedistributableFirmware = true;
   };
-  imports = [ inputs.nixos-hardware.nixosModules.raspberry-pi-4 ];
+  imports = [
+    inputs.nixos-hardware.nixosModules.raspberry-pi-4
+  ];
   networking = {
     hostName = baseNameOf ./.;
     wireless = {
       enable = true;
-      interfaces = [ "wlan0" ];
+      interfaces = [
+        "wlan0"
+      ];
       networks."REPLACE_WITH_SSID".psk = "REPLACE_WITH_PASSWORD";
     };
   };
@@ -39,7 +47,9 @@
   users = {
     mutableUsers = false;
     users.guest = {
-      extraGroups = [ "wheel" ];
+      extraGroups = [
+        "wheel"
+      ];
       isNormalUser = true;
       password = "guest";
     };

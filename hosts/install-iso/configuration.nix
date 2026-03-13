@@ -1,4 +1,8 @@
-{ modulesPath, pkgs, ... }:
+{
+  modulesPath,
+  pkgs,
+  ...
+}:
 let
   installNixos = pkgs.writeShellApplication {
     name = "install-nixos";
@@ -34,7 +38,9 @@ let
   };
 in
 {
-  environment.systemPackages = [ installNixos ];
+  environment.systemPackages = [
+    installNixos
+  ];
   imports = [
     ../laptop/hardware-configuration.nix
     (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
@@ -45,7 +51,9 @@ in
   ];
   nixpkgs.config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-59-6.18.16" ];
+    permittedInsecurePackages = [
+      "broadcom-sta-6.30.223.271-59-6.18.16"
+    ];
   };
   users.motd = "Run 'install-nixos <hostname> <username> <disk>'";
   virtualisation.vmVariant.virtualisation.graphics = false;

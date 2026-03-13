@@ -1,23 +1,17 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.rustPlatform.buildRustPackage {
+pkgs.rustPlatform.buildRustPackage rec {
   buildInputs = [
     pkgs.git
     pkgs.imagemagick
   ];
   cargoHash = "sha256-Rn7HzfOe4DH/dLlSDHQeHIcHOiqPzjLTRKnEObV6RZk=";
-  nativeBuildInputs = [ pkgs.makeWrapper ];
-  pname = "git_inverse";
-  postInstall = ''
-    wrapProgram $out/bin/git_inverse \
-      --prefix PATH : ${
-        pkgs.lib.makeBinPath [
-          pkgs.git
-          pkgs.imagemagick
-        ]
-      }
-  '';
+  meta.mainProgram = pname;
+  nativeBuildInputs = [
+    pkgs.makeWrapper
+  ];
+  pname = baseNameOf ./.;
   src = ./.;
-  version = "0.1.0";
+  version = "0.0.0";
 }
