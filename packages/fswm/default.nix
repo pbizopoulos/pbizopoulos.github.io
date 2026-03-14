@@ -96,7 +96,8 @@ pkgs.stdenv.mkDerivation rec {
     -Wvector-operation-performance \
     -Wvla \
     -Wwrite-strings \
-    -fanalyzer
+    -fanalyzer \
+    -fsanitize=address,undefined
   '';
   installPhase = ''
     install -Dm755 ${pname} $out/bin/${pname}
