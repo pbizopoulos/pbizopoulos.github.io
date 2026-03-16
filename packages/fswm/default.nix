@@ -96,8 +96,14 @@ pkgs.stdenv.mkDerivation rec {
     -Wvector-operation-performance \
     -Wvla \
     -Wwrite-strings \
+    -Wformat=2 \
     -fanalyzer \
-    -fsanitize=address,undefined
+    -fsanitize=address,undefined \
+    -fstack-protector-strong \
+    -fstack-clash-protection \
+    -D_FORTIFY_SOURCE=3 \
+    -Wl,-z,relro,-z,now \
+    -Wl,-z,noexecstack
   '';
   installPhase = ''
     install -Dm755 ${pname} $out/bin/${pname}
