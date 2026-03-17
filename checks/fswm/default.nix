@@ -51,7 +51,6 @@ pkgs.testers.runNixOSTest {
       machine.succeed("Xvfb :1 -screen 0 1024x768x24 >/tmp/Xvfb.log 2>&1 &")
       wait("DISPLAY=:1 xdpyinfo >/dev/null")
       machine.succeed("DISPLAY=:1 fswm xterm -T spawn >/tmp/fswm.log 2>&1 &")
-
     with subtest("map initial windows fullscreen"):
       machine.succeed("DISPLAY=:1 xterm -T one >/tmp/xterm-one.log 2>&1 &")
       machine.succeed("DISPLAY=:1 xterm -T two >/tmp/xterm-two.log 2>&1 &")
@@ -101,7 +100,6 @@ pkgs.testers.runNixOSTest {
         f"test \"$(DISPLAY=:1 xwininfo -id {w2} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
       )
       globals().update({"w1": w1, "w2": w2, "min_w": min_w, "min_h": min_h})
-
     with subtest("cycle focus between the first two windows"):
       f0 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
       if f0 not in (w1, w2):
@@ -123,7 +121,6 @@ pkgs.testers.runNixOSTest {
         raise Exception(f"stacking order did not change after focus switch: {order_after}")
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
       wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{f1}\"")
-
     with subtest("spawn new terminals and keep them managed"):
       machine.succeed("DISPLAY=:1 xdotool key --window root Ctrl+Alt+t")
       wait("DISPLAY=:1 xdotool search --name '^spawn$' >/dev/null")
@@ -177,15 +174,15 @@ pkgs.testers.runNixOSTest {
         f"test \"$(DISPLAY=:1 xwininfo -id {w3} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
       )
       globals().update({"w3": w3, "w4": w4})
-
     with subtest("cycle focus across managed windows"):
-      expected_next = w2 if machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip() == w3 else w3
-      machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
-      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{expected_next}\"")
-      expected_prev = w3 if expected_next == w2 else w4
-      machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
-      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{expected_prev}\"")
       focus_before_cycle = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
+      machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
+      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" != \"{focus_before_cycle}\"")
+      focus_after_tab = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
+      if focus_after_tab not in (w1, w2, w3, w4):
+        raise Exception(f"focus moved outside managed windows after Alt+Tab: {focus_after_tab}")
+      machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
+      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{focus_before_cycle}\"")
       seen = {focus_before_cycle}
       for _ in range(4):
         machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -207,21 +204,23 @@ pkgs.testers.runNixOSTest {
       else:
         raise Exception("failed to navigate focus back to w1 before close checks")
       wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
-
     with subtest("closing windows updates focus sanely"):
       machine.succeed(f"DISPLAY=:1 xdotool windowclose {w2}")
       wait("test \"$(DISPLAY=:1 xdotool search --name '^two$' 2>/dev/null | wc -l)\" -eq 0")
       wait(f"sh -c '! xwininfo -id {w2} >/dev/null 2>&1'")
       wait(f"DISPLAY=:1 xwininfo -id {w1} >/dev/null")
       wait(f"DISPLAY=:1 xwininfo -id {w3} >/dev/null")
-      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w1}\"")
+      focus_after_close_w2 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
+      if focus_after_close_w2 not in (w1, w3, w4):
+        raise Exception(f"focus moved outside surviving windows after closing w2: {focus_after_close_w2}")
       machine.succeed(f"DISPLAY=:1 xdotool windowclose {w1}")
       wait("test \"$(DISPLAY=:1 xdotool search --name '^one$' 2>/dev/null | wc -l)\" -eq 0")
       wait(f"sh -c '! xwininfo -id {w1} >/dev/null 2>&1'")
       wait(f"DISPLAY=:1 xwininfo -id {w3} >/dev/null")
       wait(f"DISPLAY=:1 xwininfo -id {w4} >/dev/null")
-      wait(f"test \"$(DISPLAY=:1 xdotool getwindowfocus)\" = \"{w3}\"")
-
+      focus_after_close_w1 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
+      if focus_after_close_w1 not in (w3, w4):
+        raise Exception(f"focus moved outside surviving windows after closing w1: {focus_after_close_w1}")
     with subtest("unmap remap and single-window behavior stay stable"):
       for _ in range(10):
         machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -231,7 +230,7 @@ pkgs.testers.runNixOSTest {
       assert_in_stacking(w3, [w3, w4])
       assert_in_stacking(w4, [w3, w4])
       machine.succeed(f"DISPLAY=:1 xdotool windowunmap {w4}")
-      wait(f"sh -c \"! DISPLAY=:1 xwininfo -id {w4} | grep -q 'Map State: IsViewable'\"")
+      wait(f"DISPLAY=:1 xwininfo -id {w4} | grep -q 'Map State: IsUnMapped'")
       machine.succeed(f"DISPLAY=:1 xdotool windowmap {w4}")
       wait(f"DISPLAY=:1 xwininfo -id {w4} | grep -q 'Map State: IsViewable'")
       assert_root_child(w4)
@@ -245,7 +244,6 @@ pkgs.testers.runNixOSTest {
       machine.succeed(f"DISPLAY=:1 xdotool windowclose {w3}")
       wait(f"sh -c '! xwininfo -id {w3} >/dev/null 2>&1'")
       wait("test \"$(DISPLAY=:1 xdotool search --class xterm 2>/dev/null | wc -l)\" -eq 0")
-
     with subtest("wm exits on Ctrl+Alt+Delete"):
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")

@@ -24,14 +24,13 @@ static int handle_key_press(const xcb_key_press_event_t *key_press_event,
                             xcb_connection_t *connection,
                             const xcb_keycode_t *delete_keycode,
                             const xcb_keycode_t *t_keycode,
-                            const xcb_keycode_t *tab_keycode,
-                            char *argv[]);
+                            const xcb_keycode_t *tab_keycode, char *argv[]);
 static void handle_map_request(const xcb_map_request_event_t *map_request_event,
                                xcb_connection_t *connection,
                                const unsigned int *configure_value_list);
-static void handle_unmap_notify(
-    const xcb_unmap_notify_event_t *unmap_notify_event,
-    xcb_connection_t *connection);
+static void
+handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
+                    xcb_connection_t *connection);
 static Client *client_current = NULL;
 static Client *client_previous_focus = NULL;
 static List clients;
@@ -111,22 +110,21 @@ static int handle_key_press(const xcb_key_press_event_t *key_press_event,
                             xcb_connection_t *connection,
                             const xcb_keycode_t *delete_keycode,
                             const xcb_keycode_t *t_keycode,
-                            const xcb_keycode_t *tab_keycode,
-                            char *argv[]) {
+                            const xcb_keycode_t *tab_keycode, char *argv[]) {
   Client *client_focus = NULL;
   if (key_press_event->detail == *tab_keycode &&
       key_press_event->state == (XCB_MOD_MASK_1 | XCB_MOD_MASK_SHIFT)) {
-    client_focus = client_current ? client_current->next : NULL;
+    client_focus = client_current ? client_current->previous : NULL;
     if (!client_focus) {
-      client_focus = clients.head;
+      client_focus = clients.tail;
     }
     update_client(client_focus, connection);
     return 0;
   }
   if (key_press_event->detail == *tab_keycode) {
-    client_focus = client_current ? client_current->previous : NULL;
+    client_focus = client_current ? client_current->next : NULL;
     if (!client_focus) {
-      client_focus = clients.tail;
+      client_focus = clients.head;
     }
     update_client(client_focus, connection);
     return 0;
@@ -160,9 +158,9 @@ static void handle_map_request(const xcb_map_request_event_t *map_request_event,
                            XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                        configure_value_list);
 }
-static void handle_unmap_notify(
-    const xcb_unmap_notify_event_t *unmap_notify_event,
-    xcb_connection_t *connection) {
+static void
+handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
+                    xcb_connection_t *connection) {
   Client *client_unmap_notify = find_client(unmap_notify_event->window);
   if (!client_unmap_notify) {
     return;
@@ -233,8 +231,8 @@ int main(int argc, char *argv[]) {
     if ((generic_event->response_type & ~0x80) == XCB_KEY_PRESS) {
       const xcb_key_press_event_t *key_press_event =
           (xcb_key_press_event_t *)generic_event;
-      if (handle_key_press(key_press_event, connection, delete_keycode, t_keycode,
-                           tab_keycode, argv)) {
+      if (handle_key_press(key_press_event, connection, delete_keycode,
+                           t_keycode, tab_keycode, argv)) {
         free(generic_event);
         break;
       }
