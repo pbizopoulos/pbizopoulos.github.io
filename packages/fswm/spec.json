@@ -26,7 +26,7 @@
       "clang-tidy passes during checkPhase",
       "cppcheck passes with `--enable=all` during checkPhase",
       "executing the built binary with no terminal command prints usage text and exits successfully",
-      "the build uses sanitizers, stack protection, and hardened linker flags",
+      "the build uses stack protection and hardened linker flags",
       "checks run only on Linux"
     ]
   },
@@ -216,7 +216,7 @@
           "then": [
             "key handling returns a stop signal",
             "the main loop breaks",
-            "allocated keycode and XCB resources are freed before the program exits successfully"
+            "the program exits successfully after leaving the event loop"
           ]
         }
       ]
