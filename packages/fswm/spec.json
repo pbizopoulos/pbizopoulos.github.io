@@ -1,0 +1,225 @@
+{
+  "description": "Current-state specification for the fswm package. Read this file as a description of the behavior, constraints, and verification surface of the code that exists today, not as a roadmap or aspirational design document.",
+  "interpretation": {
+    "mode": "descriptive",
+    "sourceOfTruth": "This file summarizes the present implementation in main.c and the package definition in default.nix. If code and this file diverge, update the code and checks together or rewrite this file to match the current implementation.",
+    "notes": [
+      "This package is a small X11 window manager written in C against XCB and xcb-keysyms.",
+      "The scenarios below describe implemented runtime behavior and current package-level verification.",
+      "Behavior is intentionally minimal; absence of a scenario should not be interpreted as an unimplemented product requirement."
+    ]
+  },
+  "qualityGates": {
+    "minimumTestCoverage": {
+      "unit": 0,
+      "overall": 0
+    },
+    "mutationTesting": {
+      "targetMutationScore": 0,
+      "warningBelow": 0,
+      "minimumBreakThreshold": 0
+    },
+    "requiredChecks": [
+      "the package builds successfully with `nix-build default.nix --no-out-link`",
+      "compilation as C89 succeeds with warnings treated as errors",
+      "linking against XCB and xcb-keysyms succeeds",
+      "clang-tidy passes during checkPhase",
+      "cppcheck passes with `--enable=all` during checkPhase",
+      "executing the built binary with no terminal command prints usage text and exits successfully",
+      "the build uses sanitizers, stack protection, and hardened linker flags",
+      "checks run only on Linux"
+    ]
+  },
+  "allowedCommands": ["nix-build default.nix --no-out-link"],
+  "features": [
+    {
+      "feature": "Startup",
+      "scenarios": [
+        {
+          "scenario": "Running without a terminal command prints usage and exits cleanly",
+          "given": [
+            "the fswm binary is executed without an additional command-line argument"
+          ],
+          "when": ["startup argument validation runs"],
+          "then": [
+            "the program prints `usage: printf 'exec fswm <terminal_emulator_command>\\n' >> ~/.xinitrc` to stderr",
+            "the program exits with status 0",
+            "the event loop is not entered"
+          ]
+        }
+      ]
+    },
+    {
+      "feature": "Window manager initialization",
+      "scenarios": [
+        {
+          "scenario": "Startup fails when keycodes cannot be resolved",
+          "given": [
+            "the program cannot resolve one or more of Delete, T, or Tab keycodes"
+          ],
+          "when": ["initialization runs after argument validation"],
+          "then": [
+            "the program prints `fswm: cannot get keycodes` to stderr",
+            "the program exits with failure"
+          ]
+        },
+        {
+          "scenario": "Startup fails when the X server connection cannot be established",
+          "given": ["xcb_connection_has_error(connection) > 0"],
+          "when": ["initialization validates the X connection"],
+          "then": [
+            "the program prints `fswm: cannot connect to the X server` to stderr",
+            "the program exits with failure"
+          ]
+        },
+        {
+          "scenario": "Startup fails when another window manager owns the root redirect",
+          "given": [
+            "changing the root window event mask returns an X request error"
+          ],
+          "when": [
+            "the program tries to become the window manager for the root window"
+          ],
+          "then": [
+            "the program prints `fswm: another window manager is already running` to stderr",
+            "the program exits with failure"
+          ]
+        },
+        {
+          "scenario": "Successful initialization grabs the supported keybindings",
+          "given": [
+            "startup argument validation passes",
+            "the X connection is healthy",
+            "no competing window manager is running"
+          ],
+          "when": ["initialization completes"],
+          "then": [
+            "the root window subscribes to substructure redirect, substructure notify, and property change events",
+            "Alt+Tab is grabbed",
+            "Alt+Shift+Tab is grabbed",
+            "Ctrl+Alt+T is grabbed",
+            "Ctrl+Alt+Delete is grabbed"
+          ]
+        }
+      ]
+    },
+    {
+      "feature": "Window tracking and layout",
+      "scenarios": [
+        {
+          "scenario": "A newly mapped window is tracked and fullscreened to the screen",
+          "given": [
+            "the event loop receives a MapRequest for a window that is not already tracked"
+          ],
+          "when": ["the map request is handled"],
+          "then": [
+            "a client node is appended to the internal doubly linked list",
+            "the window is mapped",
+            "the window becomes the current focus",
+            "the window is configured to x=0, y=0, width=screen width, height=screen height"
+          ]
+        },
+        {
+          "scenario": "An already tracked window can be remapped without duplicating the client entry",
+          "given": [
+            "the event loop receives a MapRequest for a window that is already tracked"
+          ],
+          "when": ["the map request is handled"],
+          "then": [
+            "no second client node is created for that window",
+            "the existing client is mapped, focused, and resized to fill the screen"
+          ]
+        },
+        {
+          "scenario": "Out-of-memory during client creation is reported and the request is ignored",
+          "given": [
+            "the event loop receives a MapRequest for an untracked window",
+            "allocating a new client node fails"
+          ],
+          "when": ["the map request is handled"],
+          "then": [
+            "the program prints `fswm: out of memory` to stderr",
+            "the window is not appended to the client list"
+          ]
+        },
+        {
+          "scenario": "Unmapped or destroyed tracked windows are removed from the client list",
+          "given": [
+            "the event loop receives UnmapNotify or DestroyNotify for a tracked window"
+          ],
+          "when": ["the event is handled"],
+          "then": [
+            "the matching client is removed from the internal doubly linked list",
+            "current and previous focus pointers are cleared if they referred to that client",
+            "focus falls back to the previous focus or the head of the list when available"
+          ]
+        },
+        {
+          "scenario": "Unmap-style events for unknown windows are ignored",
+          "given": [
+            "the event loop receives UnmapNotify or DestroyNotify for a window that is not tracked"
+          ],
+          "when": ["the event is handled"],
+          "then": ["the client list is unchanged", "no focus update occurs"]
+        }
+      ]
+    },
+    {
+      "feature": "Keyboard-driven interaction",
+      "scenarios": [
+        {
+          "scenario": "Alt+Tab cycles focus forward through tracked clients",
+          "given": [
+            "at least one client is tracked",
+            "the event loop receives a Tab key press event that reaches the handler"
+          ],
+          "when": ["the key press is handled"],
+          "then": [
+            "focus moves to the next tracked client after the current one",
+            "focus wraps to the head of the list when the current client is the tail",
+            "the focused window is raised above others",
+            "input focus is set to the focused window"
+          ]
+        },
+        {
+          "scenario": "Alt+Shift+Tab cycles focus backward through tracked clients",
+          "given": ["at least one client is tracked"],
+          "when": ["a KeyPress matching Tab with Alt+Shift is handled"],
+          "then": [
+            "focus moves to the previous tracked client before the current one",
+            "focus wraps to the tail of the list when needed",
+            "the focused window is raised above others",
+            "input focus is set to the focused window"
+          ]
+        },
+        {
+          "scenario": "Ctrl+Alt+T launches the configured terminal command",
+          "given": [
+            "the program was started with a terminal emulator command in argv[1]",
+            "the event loop receives a T key press event that reaches the handler"
+          ],
+          "when": ["the key press is handled"],
+          "then": [
+            "the process forks",
+            "the child calls execvp(argv[1], &argv[1])",
+            "a failed exec in the child exits with status 1",
+            "the parent keeps running the window manager"
+          ]
+        },
+        {
+          "scenario": "Ctrl+Alt+Delete exits the event loop",
+          "given": [
+            "the window manager event loop is running",
+            "the event loop receives a Delete key press event that reaches the handler"
+          ],
+          "when": ["the key press is handled"],
+          "then": [
+            "key handling returns a stop signal",
+            "the main loop breaks",
+            "allocated keycode and XCB resources are freed before the program exits successfully"
+          ]
+        }
+      ]
+    }
+  ]
+}

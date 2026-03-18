@@ -26,6 +26,20 @@ pkgs.testers.runNixOSTest {
     timeout = 20
     def wait(cmd):
       machine.wait_until_succeeds(cmd, timeout=timeout)
+    def fswm_rss_kib():
+      return int(
+        machine.succeed(
+          "awk '/VmRSS:/ {print $2}' /proc/$(pgrep -x fswm)/status"
+        ).strip()
+      )
+    def churn_window(wid, cycles):
+      machine.succeed(
+        f"for i in $(seq 1 {cycles}); do "
+        f"DISPLAY=:1 xdotool windowunmap {wid}; "
+        f"DISPLAY=:1 xdotool windowmap {wid}; "
+        "done"
+      )
+      wait(f"DISPLAY=:1 xwininfo -id {wid} | grep -q 'Map State: IsViewable'")
     def assert_root_child(wid):
       wid_hex = hex(int(wid))
       wait(
@@ -174,6 +188,16 @@ pkgs.testers.runNixOSTest {
         f"test \"$(DISPLAY=:1 xwininfo -id {w3} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
       )
       globals().update({"w3": w3, "w4": w4})
+    with subtest("window churn keeps wm rss stable"):
+      churn_window(w4, 512)
+      rss_after_first_batch = fswm_rss_kib()
+      churn_window(w4, 512)
+      rss_after_second_batch = fswm_rss_kib()
+      if rss_after_second_batch > rss_after_first_batch + 16:
+        raise Exception(
+          "fswm rss kept growing across equal map/unmap churn batches: "
+          f"{rss_after_first_batch} KiB -> {rss_after_second_batch} KiB"
+        )
     with subtest("cycle focus across managed windows"):
       focus_before_cycle = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")

@@ -20,6 +20,7 @@ typedef struct Client {
 static void update_client(Client *client, xcb_connection_t *connection);
 static Client *find_client(xcb_window_t window);
 static Client *append_client(xcb_window_t window);
+static void free_clients(void);
 static int handle_key_press(const xcb_key_press_event_t *key_press_event,
                             xcb_connection_t *connection,
                             const xcb_keycode_t *delete_keycode,
@@ -83,6 +84,13 @@ static Client *append_client(xcb_window_t window) {
   }
   clients.tail = client_new;
   return client_new;
+}
+static void free_clients(void) {
+  Client *client = NULL;
+  while (clients.head) {
+    client = remove_client(clients.head);
+    free(client);
+  }
 }
 void update_client(Client *client_focus, xcb_connection_t *connection) {
   unsigned int key_press_value_list[] = {XCB_STACK_MODE_ABOVE};
@@ -173,6 +181,7 @@ handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
     client_previous_focus = NULL;
   }
   update_client(NULL, connection);
+  free(client_unmap_notify);
 }
 int main(int argc, char *argv[]) {
   unsigned int map_request_configure_value_list[4];
@@ -249,6 +258,7 @@ int main(int argc, char *argv[]) {
     }
     free(generic_event);
   }
+  free_clients();
   free(delete_keycode);
   free(t_keycode);
   free(tab_keycode);
@@ -256,6 +266,7 @@ int main(int argc, char *argv[]) {
   xcb_disconnect(connection);
   return 0;
 error_exit:
+  free_clients();
   free(delete_keycode);
   free(generic_event);
   free(t_keycode);
