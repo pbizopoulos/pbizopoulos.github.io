@@ -177,7 +177,6 @@
     mutableUsers = false;
     users.pbizopoulos = {
       extraGroups = [
-        "docker"
         "wheel"
       ];
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
@@ -199,27 +198,21 @@
       ];
     };
   };
-  virtualisation = {
-    docker = {
-      daemon.settings.data-root = "/nix/docker";
-      enable = true;
+  virtualisation.vmVariantWithDisko = {
+    disko.devices.disk.main.content.partitions = {
+      home.size = pkgs.lib.mkForce "500M";
+      swap.size = pkgs.lib.mkForce "1M";
     };
-    vmVariantWithDisko = {
-      disko.devices.disk.main.content.partitions = {
-        home.size = pkgs.lib.mkForce "500M";
-        swap.size = pkgs.lib.mkForce "1M";
+    users.users.pbizopoulos = {
+      hashedPasswordFile = pkgs.lib.mkForce null;
+      password = "password";
+    };
+    virtualisation = {
+      fileSystems = {
+        "/home".neededForBoot = true;
+        "/persistent".neededForBoot = true;
       };
-      users.users.pbizopoulos = {
-        hashedPasswordFile = pkgs.lib.mkForce null;
-        password = "password";
-      };
-      virtualisation = {
-        fileSystems = {
-          "/home".neededForBoot = true;
-          "/persistent".neededForBoot = true;
-        };
-        graphics = false;
-      };
+      graphics = false;
     };
   };
 }
