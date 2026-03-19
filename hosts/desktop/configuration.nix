@@ -203,7 +203,6 @@
     mutableUsers = false;
     users.pbizopoulos = {
       extraGroups = [
-        "docker"
         "podman"
         "wheel"
       ];
@@ -228,7 +227,6 @@
     };
   };
   virtualisation = {
-    docker.enable = true;
     podman.enable = true;
     vmVariantWithDisko = {
       disko.devices.disk.main.content.partitions = {
