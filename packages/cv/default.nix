@@ -1,12 +1,10 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.writeShellApplication {
-  name = baseNameOf ./.;
-  runtimeInputs = [
-    pkgs.nodePackages.http-server
-  ];
-  text = ''
-    set +u && [ -z "$DEBUG" ] && http-server ${./.}
-  '';
-}
+pkgs.writeShellScriptBin (baseNameOf ./.) ''
+  if [ "$DEBUG" = "1" ]; then
+    echo "debug mode: skipping http-server"
+    exit 0
+  fi
+  exec ${pkgs.http-server}/bin/http-server ${./.} "$@"
+''
