@@ -52,7 +52,7 @@ in
   nixpkgs.config = {
     allowUnfree = true;
     permittedInsecurePackages = [
-      "broadcom-sta-6.30.223.271-59-6.18.20"
+      "broadcom-sta-6.30.223.271-59-6.18.21"
     ];
   };
   users.motd = "Run 'install-nixos <hostname> <username> <disk>'";
