@@ -93,7 +93,6 @@
       "pbizopoulos"
     ];
   };
-  nixpkgs.config.allowUnfree = true;
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
@@ -140,15 +139,6 @@
       enable = true;
       nssmdns4 = true;
       openFirewall = true;
-    };
-    ollama = {
-      enable = true;
-      loadModels = [
-        "functiongemma:270m"
-        "gemma3:12b"
-      ];
-      package = pkgs.ollama-cuda;
-      syncModels = true;
     };
     openssh = {
       enable = true;
@@ -235,7 +225,6 @@
         home.size = pkgs.lib.mkForce "500M";
         swap.size = pkgs.lib.mkForce "1M";
       };
-      ollama.enable = false;
       users.users.pbizopoulos = {
         hashedPasswordFile = pkgs.lib.mkForce null;
         password = "password";

@@ -13,7 +13,12 @@
     inputs:
     inputs.canonicalization.blueprint {
       inherit inputs;
-      nixpkgs.config.allowUnfree = true;
+      nixpkgs.config = {
+        allowUnfree = true;
+        permittedInsecurePackages = [
+          "broadcom-sta-6.30.223.271-59-6.18.22"
+        ];
+      };
     }
     // {
       inherit (inputs.canonicalization) formatter;

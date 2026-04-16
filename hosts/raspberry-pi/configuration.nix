@@ -33,7 +33,7 @@
     "flakes"
     "nix-command"
   ];
-  nixpkgs.system = "aarch64-linux";
+  nixpkgs.hostPlatform = "aarch64-linux";
   programs = {
     bash.promptInit = "";
     git = {
