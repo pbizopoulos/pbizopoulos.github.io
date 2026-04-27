@@ -162,9 +162,9 @@
       };
     };
     printing = {
-      drivers = with pkgs; [
-        cups-browsed
-        cups-filters
+      drivers = [
+        pkgs.cups-filters
+        pkgs.hplip
       ];
       enable = true;
     };
@@ -194,6 +194,7 @@
     users.pbizopoulos = {
       extraGroups = [
         "docker"
+        "lp"
         "podman"
         "wheel"
       ];
