@@ -27,8 +27,9 @@ pkgs.testers.runNixOSTest {
           pkgs.xwininfo
         ];
         variables = {
-          ASAN_OPTIONS = "abort_on_error=1:detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1";
-          UBSAN_OPTIONS = "halt_on_error=1:print_stacktrace=1";
+          ASAN_OPTIONS = "abort_on_error=1:detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:check_printf=1:allocator_may_return_null=0";
+          UBSAN_OPTIONS = "halt_on_error=1:print_stacktrace=1:report_error_type=1";
+          LSAN_OPTIONS = "exitcode=23:report_objects=1";
         };
       };
     };
@@ -122,6 +123,7 @@ pkgs.testers.runNixOSTest {
       wait(
         f"test \"$(DISPLAY=:1 xwininfo -id {w2} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
       )
+      assert_no_sanitizer_errors()
       globals().update({"w1": w1, "w2": w2, "min_w": min_w, "min_h": min_h})
     with subtest("cycle focus between the first two windows"):
       f0 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
@@ -200,6 +202,7 @@ pkgs.testers.runNixOSTest {
     with subtest("window churn remains stable under sanitizers"):
       churn_window(w4, 512)
       churn_window(w4, 512)
+      assert_no_sanitizer_errors()
     with subtest("cycle focus across managed windows"):
       focus_before_cycle = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -247,6 +250,7 @@ pkgs.testers.runNixOSTest {
       focus_after_close_w1 = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
       if focus_after_close_w1 not in (w3, w4):
         raise Exception(f"focus moved outside surviving windows after closing w1: {focus_after_close_w1}")
+      assert_no_sanitizer_errors()
     with subtest("unmap remap and single-window behavior stay stable"):
       for _ in range(10):
         machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -270,6 +274,7 @@ pkgs.testers.runNixOSTest {
       machine.succeed(f"DISPLAY=:1 xdotool windowclose {w3}")
       wait(f"sh -c '! xwininfo -id {w3} >/dev/null 2>&1'")
       wait("test \"$(DISPLAY=:1 xdotool search --class xterm 2>/dev/null | wc -l)\" -eq 0")
+      assert_no_sanitizer_errors()
     with subtest("wm exits on Ctrl+Alt+Delete"):
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Shift+Tab")
