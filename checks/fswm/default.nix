@@ -28,19 +28,39 @@ pkgs.testers.runNixOSTest {
         ];
         variables = {
           ASAN_OPTIONS = "abort_on_error=1:detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:check_printf=1:allocator_may_return_null=0";
-          UBSAN_OPTIONS = "halt_on_error=1:print_stacktrace=1:report_error_type=1";
           LSAN_OPTIONS = "exitcode=23:report_objects=1";
+          UBSAN_OPTIONS = "halt_on_error=1:print_stacktrace=1:report_error_type=1";
         };
       };
     };
   testScript = ''
     import time
     timeout = 20
+    rss_pin_kib = 8548
+    hwm_pin_kib = 10000
     def wait(cmd):
       machine.wait_until_succeeds(cmd, timeout=timeout)
     def assert_no_sanitizer_errors():
       machine.succeed(
         "sh -c '! grep -Eq \"AddressSanitizer|UndefinedBehaviorSanitizer|runtime error:|LeakSanitizer\" /tmp/fswm.log'"
+      )
+    def fswm_rss_kib():
+      return int(
+        machine.succeed(
+          "awk '/VmRSS:/ {print $2}' /proc/$(pgrep -x fswm)/status"
+        ).strip()
+      )
+    def fswm_status_kib(field):
+      return int(
+        machine.succeed(
+          f"awk '/^{field}:/ {{print $2}}' /proc/$(pgrep -x fswm)/status"
+        ).strip()
+      )
+    def fswm_status_int(field):
+      return int(
+        machine.succeed(
+          f"awk '/^{field}:/ {{print $2}}' /proc/$(pgrep -x fswm)/status"
+        ).strip()
       )
     def churn_window(wid, cycles):
       machine.succeed(
@@ -202,6 +222,29 @@ pkgs.testers.runNixOSTest {
     with subtest("window churn remains stable under sanitizers"):
       churn_window(w4, 512)
       churn_window(w4, 512)
+      rss_after_churn = fswm_rss_kib()
+      hwm_after_churn = fswm_status_kib("VmHWM")
+      swap_after_churn = fswm_status_kib("VmSwap")
+      threads_after_churn = fswm_status_int("Threads")
+      if rss_after_churn > rss_pin_kib:
+        raise Exception(
+          "fswm rss crossed pinned ceiling under sanitizer churn: "
+          f"{rss_after_churn} KiB > {rss_pin_kib} KiB"
+        )
+      if hwm_after_churn > hwm_pin_kib:
+        raise Exception(
+          "fswm vmhwm crossed pinned ceiling under sanitizer churn: "
+          f"{hwm_after_churn} KiB > {hwm_pin_kib} KiB"
+        )
+      if hwm_after_churn < rss_after_churn:
+        raise Exception(
+          "fswm vmhwm dropped below vmrss, which is inconsistent: "
+          f"VmHWM={hwm_after_churn} KiB VmRSS={rss_after_churn} KiB"
+        )
+      if swap_after_churn != 0:
+        raise Exception(f"fswm started swapping unexpectedly: VmSwap={swap_after_churn} KiB")
+      if threads_after_churn != 1:
+        raise Exception(f"fswm thread count changed unexpectedly: Threads={threads_after_churn}")
       assert_no_sanitizer_errors()
     with subtest("cycle focus across managed windows"):
       focus_before_cycle = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
