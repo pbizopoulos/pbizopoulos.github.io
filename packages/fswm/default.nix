@@ -3,7 +3,8 @@
 }:
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
-    cc -o ${pname} main.c -O3 -std=c89 -lxcb -lxcb-keysyms \
+    cc -o ${pname} main.c -std=c89 -lxcb -lxcb-keysyms \
+    -O3 \
     -Waggressive-loop-optimizations \
     -Wall \
     -Walloc-zero \

@@ -10,27 +10,36 @@ pkgs.testers.runNixOSTest {
       pkgs,
       ...
     }:
+    let
+      fswmForCheck = inputs.self.packages.${pkgs.stdenv.system}.fswm.overrideAttrs (_: {
+        NIX_CFLAGS_COMPILE = "-O1 -g3 -fno-omit-frame-pointer -fno-sanitize-recover=all -fsanitize=address,undefined,leak,pointer-compare,pointer-subtract,bounds-strict,object-size";
+      });
+    in
     {
-      environment.systemPackages = [
-        inputs.self.packages.${pkgs.stdenv.system}.fswm
-        pkgs.procps
-        pkgs.xdotool
-        pkgs.xdpyinfo
-        pkgs.xterm
-        pkgs.xvfb
-        pkgs.xwininfo
-      ];
+      environment = {
+        systemPackages = [
+          fswmForCheck
+          pkgs.procps
+          pkgs.xdotool
+          pkgs.xdpyinfo
+          pkgs.xterm
+          pkgs.xvfb
+          pkgs.xwininfo
+        ];
+        variables = {
+          ASAN_OPTIONS = "abort_on_error=1:detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1";
+          UBSAN_OPTIONS = "halt_on_error=1:print_stacktrace=1";
+        };
+      };
     };
   testScript = ''
     import time
     timeout = 20
     def wait(cmd):
       machine.wait_until_succeeds(cmd, timeout=timeout)
-    def fswm_rss_kib():
-      return int(
-        machine.succeed(
-          "awk '/VmRSS:/ {print $2}' /proc/$(pgrep -x fswm)/status"
-        ).strip()
+    def assert_no_sanitizer_errors():
+      machine.succeed(
+        "sh -c '! grep -Eq \"AddressSanitizer|UndefinedBehaviorSanitizer|runtime error:|LeakSanitizer\" /tmp/fswm.log'"
       )
     def churn_window(wid, cycles):
       machine.succeed(
@@ -188,16 +197,9 @@ pkgs.testers.runNixOSTest {
         f"test \"$(DISPLAY=:1 xwininfo -id {w3} | awk '/Absolute upper-left Y:/ {{print $4}}')\" -eq 0"
       )
       globals().update({"w3": w3, "w4": w4})
-    with subtest("window churn keeps wm rss stable"):
+    with subtest("window churn remains stable under sanitizers"):
       churn_window(w4, 512)
-      rss_after_first_batch = fswm_rss_kib()
       churn_window(w4, 512)
-      rss_after_second_batch = fswm_rss_kib()
-      if rss_after_second_batch > rss_after_first_batch + 16:
-        raise Exception(
-          "fswm rss kept growing across equal map/unmap churn batches: "
-          f"{rss_after_first_batch} KiB -> {rss_after_second_batch} KiB"
-        )
     with subtest("cycle focus across managed windows"):
       focus_before_cycle = machine.succeed("DISPLAY=:1 xdotool getwindowfocus").strip()
       machine.succeed("DISPLAY=:1 xdotool key --window root Alt+Tab")
@@ -274,5 +276,6 @@ pkgs.testers.runNixOSTest {
       wait("pgrep -x fswm >/dev/null")
       machine.succeed("DISPLAY=:1 xdotool key --window root Ctrl+Alt+Delete")
       wait("! pgrep -x fswm >/dev/null")
+      assert_no_sanitizer_errors()
   '';
 }
