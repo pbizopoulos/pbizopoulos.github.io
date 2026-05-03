@@ -38,6 +38,7 @@ let
   };
 in
 {
+  boot.zfs.forceImportRoot = false;
   environment.systemPackages = [
     installNixos
   ];
