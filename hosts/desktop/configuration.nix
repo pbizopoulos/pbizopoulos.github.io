@@ -65,10 +65,18 @@
       ];
     };
   };
-  environment.sessionVariables = {
-    EDITOR = "vim";
-    GDK_SCALE = "2";
-    XINITRC = "/etc/X11/xinit/xinitrc";
+  environment = {
+    sessionVariables = {
+      EDITOR = "vim";
+      GDK_SCALE = "2";
+      XINITRC = "/etc/X11/xinit/xinitrc";
+    };
+    systemPackages = with pkgs; [
+      cups
+      cups-filters
+      ghostscript
+      poppler
+    ];
   };
   fileSystems = {
     "/home".neededForBoot = true;
@@ -162,8 +170,10 @@
       };
     };
     printing = {
+      browsing = true;
       drivers = [
         pkgs.cups-filters
+        pkgs.ghostscript
         pkgs.hplip
       ];
       enable = true;
