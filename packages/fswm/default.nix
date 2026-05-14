@@ -107,7 +107,7 @@ pkgs.stdenv.mkDerivation rec {
   '';
   checkPhase = ''
     clang-tidy main.c -- -std=c89 -I${pkgs.stdenv.cc.libc.dev}/include -I${pkgs.lib.getDev pkgs.stdenv.cc.cc}/include
-    cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem .
+    cppcheck --enable=all --error-exitcode=1 --force --std=c89 --suppress=missingIncludeSystem .
     ./${pname}
   '';
   doCheck = pkgs.stdenv.isLinux;
