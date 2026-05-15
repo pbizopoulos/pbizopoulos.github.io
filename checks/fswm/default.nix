@@ -36,7 +36,7 @@ pkgs.testers.runNixOSTest {
   testScript = ''
     import time
     timeout = 20
-    rss_pin_kib = 8568
+    rss_pin_kib = 8748
     hwm_pin_kib = 10000
     def wait(cmd):
       machine.wait_until_succeeds(cmd, timeout=timeout)

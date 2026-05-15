@@ -2,8 +2,13 @@
   pkgs ? import <nixpkgs> { },
 }:
 pkgs.stdenv.mkDerivation rec {
+  buildInputs = [
+    pkgs.libX11
+    pkgs.libxcb
+    pkgs.xcbutilkeysyms
+  ];
   buildPhase = ''
-    cc -o ${pname} main.c -std=c89 -lxcb -lxcb-keysyms \
+    cc -o ${pname} main.c -std=c89 $(pkg-config --cflags --libs x11 xcb xcb-keysyms) \
     -O3 \
     -Waggressive-loop-optimizations \
     -Wall \
@@ -106,7 +111,7 @@ pkgs.stdenv.mkDerivation rec {
     -Wl,-z,noexecstack
   '';
   checkPhase = ''
-    clang-tidy main.c -- -std=c89 -I${pkgs.stdenv.cc.libc.dev}/include -I${pkgs.lib.getDev pkgs.stdenv.cc.cc}/include
+    clang-tidy main.c -- -std=c89 $(pkg-config --cflags x11 xcb xcb-keysyms)
     cppcheck --enable=all --error-exitcode=1 --force --std=c89 --suppress=missingIncludeSystem .
     ./${pname}
   '';
@@ -116,9 +121,7 @@ pkgs.stdenv.mkDerivation rec {
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [
-    pkgs.libX11
-    pkgs.libxcb
-    pkgs.xcbutilkeysyms
+    pkgs.pkg-config
   ];
   nativeCheckInputs = [
     pkgs.clang-tools
@@ -126,5 +129,6 @@ pkgs.stdenv.mkDerivation rec {
   ];
   pname = baseNameOf ./.;
   src = ./.;
+  strictDeps = true;
   version = "0.0.0";
 }
