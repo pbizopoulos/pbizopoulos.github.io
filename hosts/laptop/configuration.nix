@@ -6,6 +6,9 @@
 {
   boot = {
     initrd.systemd.enable = true;
+    kernelParams = [
+      "snd_intel_dspcfg.dsp_driver=1"
+    ];
     loader.systemd-boot.enable = true;
   };
   disko.devices = {
