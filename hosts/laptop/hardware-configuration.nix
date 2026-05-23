@@ -19,7 +19,12 @@
     ];
     kernelModules = [
       "kvm-intel"
+      "snd_hda_intel"
       "wl"
+    ];
+    kernelParams = [
+      "acpi_rev_override=1"
+      "snd_hda_intel.dmic_detect=0"
     ];
   };
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
