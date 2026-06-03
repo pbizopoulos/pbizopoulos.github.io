@@ -213,9 +213,6 @@
         inputs.self.packages.${pkgs.stdenv.system}.fswm
         pkgs.distrobox
         pkgs.google-chrome
-        (pkgs.llama-cpp.override {
-          cudaSupport = true;
-        })
         (pkgs.st.overrideAttrs {
           patches = [
             (pkgs.fetchpatch {
