@@ -18,7 +18,7 @@ typedef struct Client {
   xcb_window_t window;
 } Client;
 static void update_client(Client *client, xcb_connection_t *connection);
-static Client *find_client(xcb_window_t window);
+static Client *find_client(xcb_window_t window) __attribute__((pure));
 static Client *append_client(xcb_window_t window);
 static void free_clients(void);
 static int handle_key_press(const xcb_key_press_event_t *key_press_event,

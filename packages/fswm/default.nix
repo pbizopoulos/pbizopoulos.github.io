@@ -14,9 +14,12 @@ pkgs.stdenv.mkDerivation rec {
     -Wall \
     -Walloc-zero \
     -Walloca \
+    -Warith-conversion \
+    -Warray-bounds=2 \
     -Wattribute-alias \
     -Wattributes \
     -Wbad-function-cast \
+    -Wbidi-chars=any \
     -Wbuiltin-declaration-mismatch \
     -Wbuiltin-macro-redefined \
     -Wc90-c99-compat \
@@ -42,7 +45,10 @@ pkgs.stdenv.mkDerivation rec {
     -Werror \
     -Wextra \
     -Wfloat-equal \
+    -Wformat=2 \
+    -Wformat-overflow=2 \
     -Wformat-signedness \
+    -Wformat-truncation=2 \
     -Wfree-nonheap-object \
     -Whsa \
     -Wif-not-aligned \
@@ -84,6 +90,13 @@ pkgs.stdenv.mkDerivation rec {
     -Wstrict-aliasing \
     -Wstrict-overflow \
     -Wstrict-prototypes \
+    -Wstringop-overflow=4 \
+    -Wsuggest-attribute=const \
+    -Wsuggest-attribute=format \
+    -Wsuggest-attribute=malloc \
+    -Wsuggest-attribute=noreturn \
+    -Wsuggest-attribute=pure \
+    -Wsuggest-attribute=returns_nonnull \
     -Wsuggest-final-methods \
     -Wsuggest-final-types \
     -Wswitch-bool \
@@ -102,8 +115,8 @@ pkgs.stdenv.mkDerivation rec {
     -Wvector-operation-performance \
     -Wvla \
     -Wwrite-strings \
-    -Wformat=2 \
     -fanalyzer \
+    -fstrict-flex-arrays=3 \
     -fstack-protector-strong \
     -fstack-clash-protection \
     -D_FORTIFY_SOURCE=3 \
