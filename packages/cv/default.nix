@@ -1,9 +1,13 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-let
-  pname = baseNameOf ./.;
-in
-pkgs.writeShellScriptBin pname ''
-  exec ${pkgs.http-server}/bin/http-server ${./.} "$@"
-''
+pkgs.writeShellApplication rec {
+  meta.description = "";
+  name = baseNameOf ./.;
+  runtimeInputs = [
+    pkgs.http-server
+  ];
+  text = ''
+    exec ${pkgs.http-server}/bin/http-server ${./.} "$@"
+  '';
+}
