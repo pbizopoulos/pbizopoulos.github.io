@@ -1,15 +1,12 @@
 {
+  inputs,
   pkgs ? import <nixpkgs> { },
 }:
 pkgs.stdenv.mkDerivation rec {
-  buildInputs = [
-    pkgs.libX11
-    pkgs.libxcb
-    pkgs.xcbutilkeysyms
-  ];
   buildPhase = ''
-    cc -o ${pname} main.c -std=c89 $(pkg-config --cflags --libs x11 xcb xcb-keysyms) \
+    cc -o ${pname} main.c -std=c89 \
     -O3 \
+    -Waggregate-return \
     -Waggressive-loop-optimizations \
     -Wall \
     -Walloc-zero \
@@ -104,6 +101,7 @@ pkgs.stdenv.mkDerivation rec {
     -Wswitch-enum \
     -Wswitch-unreachable \
     -Wsync-nand \
+    -Wtraditional-conversion \
     -Wtrampolines \
     -Wundef \
     -Wunreachable-code \
@@ -124,23 +122,34 @@ pkgs.stdenv.mkDerivation rec {
     -Wl,-z,noexecstack
   '';
   checkPhase = ''
-    clang-tidy main.c -- -std=c89 $(pkg-config --cflags x11 xcb xcb-keysyms)
-    cppcheck --enable=all --error-exitcode=1 --force --std=c89 --suppress=missingIncludeSystem --suppress=checkersReport --suppress=normalCheckLevelMaxBranches --suppress=unmatchedSuppression --suppress=variableScope .
-    ./${pname}
+    clang-tidy main.c -- -std=c89 -I${pkgs.stdenv.cc.libc.dev}/include -I${pkgs.lib.getDev pkgs.stdenv.cc.cc}/include
+    cppcheck --enable=all --error-exitcode=1 --inconclusive --force --std=c89 --suppress=missingIncludeSystem --suppress=checkersReport --suppress=normalCheckLevelMaxBranches --suppress=variableScope .
   '';
   doCheck = pkgs.stdenv.isLinux;
   installPhase = ''
     install -Dm755 ${pname} $out/bin/${pname}
   '';
-  meta.mainProgram = pname;
-  nativeBuildInputs = [
-    pkgs.pkg-config
-  ];
+  meta = {
+    description = "A C template package.";
+    mainProgram = pname;
+  };
   nativeCheckInputs = [
     pkgs.clang-tools
     pkgs.cppcheck
   ];
   pname = baseNameOf ./.;
+  runtimeInputs = [
+    inputs.self.packages.${pkgs.stdenv.system}.fswm
+    pkgs.coreutils
+    pkgs.gnugrep
+    pkgs.procps
+    pkgs.xdotool
+    pkgs.xdpyinfo
+    pkgs.xkbcomp
+    pkgs.xterm
+    pkgs.xvfb
+    pkgs.xwininfo
+  ];
   src = ./.;
   strictDeps = true;
   version = "0.0.0";

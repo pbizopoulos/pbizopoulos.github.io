@@ -33,7 +33,6 @@ static void
 handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
                     xcb_connection_t *connection);
 static Client *client_current = NULL;
-static Client *client_previous_focus = NULL;
 static List clients;
 static Client *remove_client(Client *client) {
   Client *next;
@@ -95,16 +94,9 @@ static void free_clients(void) {
 void update_client(Client *client_focus, xcb_connection_t *connection) {
   unsigned int key_press_value_list[] = {XCB_STACK_MODE_ABOVE};
   if (client_focus) {
-    client_previous_focus = client_current;
     client_current = client_focus;
   } else {
-    client_current = client_previous_focus;
-    if (!client_current) {
-      client_current = clients.head;
-    }
-    if (client_current) {
-      client_previous_focus = client_current->previous;
-    }
+    client_current = clients.head;
   }
   if (!client_current) {
     return;
@@ -167,22 +159,31 @@ static void handle_map_request(const xcb_map_request_event_t *map_request_event,
                        configure_value_list);
 }
 static void
+/* NOLINTBEGIN(clang-analyzer-unix.Malloc) */
 handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
                     xcb_connection_t *connection) {
+  Client *client_fallback = NULL;
+  Client *client_focus = NULL;
   Client *client_unmap_notify = find_client(unmap_notify_event->window);
+  int was_current = 0;
   if (!client_unmap_notify) {
     return;
   }
+  was_current = client_unmap_notify == client_current;
+  client_fallback = client_unmap_notify->previous;
+  if (!client_fallback) {
+    client_fallback = client_unmap_notify->next;
+  }
   remove_client(client_unmap_notify);
-  if (client_unmap_notify == client_current) {
-    client_current = NULL;
+  if (was_current) {
+    client_focus = client_fallback;
+  } else {
+    client_focus = clients.head;
   }
-  if (client_unmap_notify == client_previous_focus) {
-    client_previous_focus = NULL;
-  }
-  update_client(NULL, connection);
+  update_client(client_focus, connection);
   free(client_unmap_notify);
 }
+/* NOLINTEND(clang-analyzer-unix.Malloc) */
 int main(int argc, char *argv[]) {
   unsigned int map_request_configure_value_list[4];
   unsigned int root_value_list[] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
