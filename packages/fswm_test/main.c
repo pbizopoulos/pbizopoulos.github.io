@@ -32,6 +32,12 @@
 #ifndef XWININFO_BIN
 #define XWININFO_BIN "xwininfo"
 #endif
+#ifndef RUNTIME_PATH_1
+#define RUNTIME_PATH_1 ""
+#endif
+#ifndef RUNTIME_PATH_2
+#define RUNTIME_PATH_2 ""
+#endif
 #define DISPLAY_VALUE ":1"
 #define TEST_TIMEOUT_SECONDS 20
 #define SCREEN_WIDTH 1024
@@ -42,6 +48,7 @@ typedef struct {
   char temp_dir[256];
   char xvfb_log[320];
   char fswm_log[320];
+  char fswm_conflict_log[320];
   char xterm_one_log[320];
   char xterm_two_log[320];
   pid_t xvfb_pid;
@@ -102,6 +109,7 @@ static int find_new_window(const char *existing[], size_t existing_count,
                            char *buffer, size_t buffer_size);
 static void send_root_key(const char *key_spec);
 static void close_window(const char *window_id);
+static void kill_window(const char *window_id);
 static void map_window(const char *window_id);
 static void unmap_window(const char *window_id);
 static int process_alive(pid_t pid);
@@ -109,6 +117,11 @@ static void ensure_directory(void);
 static void trim_trailing_newlines(char *buffer);
 static void wait_for_window_count_by_name(const char *name_pattern,
                                           int expected_count);
+static void assert_file_contains(const char *path, const char *needle);
+static void assert_focus_unchanged(const char *key_spec,
+                                   const char *expected_window_id);
+static void assert_fswm_survives_key(const char *key_spec);
+static void assert_second_wm_rejected(void);
 static void run_test(void);
 static void cleanup(void) {
   if (context.fswm_pid > 0 && process_alive(context.fswm_pid)) {
@@ -267,12 +280,15 @@ static void ensure_directory(void) {
            context.temp_dir);
   snprintf(context.fswm_log, sizeof(context.fswm_log), "%s/fswm.log",
            context.temp_dir);
+  snprintf(context.fswm_conflict_log, sizeof(context.fswm_conflict_log),
+           "%s/fswm-conflict.log", context.temp_dir);
   snprintf(context.xterm_one_log, sizeof(context.xterm_one_log),
            "%s/xterm-one.log", context.temp_dir);
   snprintf(context.xterm_two_log, sizeof(context.xterm_two_log),
            "%s/xterm-two.log", context.temp_dir);
 }
 static void start_environment(void) {
+  char runtime_path[1024];
   char xvfb_bin[] = XVFB_BIN;
   char display_value[] = DISPLAY_VALUE;
   char xvfb_screen[] = "-screen";
@@ -298,6 +314,14 @@ static void start_environment(void) {
   ensure_directory();
   if (setenv("DISPLAY", DISPLAY_VALUE, 1) != 0) {
     fail("setenv DISPLAY failed");
+  }
+  runtime_path[0] = '\0';
+  if (snprintf(runtime_path, sizeof(runtime_path), "%s%s", RUNTIME_PATH_1,
+               RUNTIME_PATH_2) >= (int)sizeof(runtime_path)) {
+    fail("runtime PATH too long");
+  }
+  if (runtime_path[0] != '\0' && setenv("PATH", runtime_path, 1) != 0) {
+    fail("setenv PATH failed");
   }
   if (setenv("ASAN_OPTIONS",
              "abort_on_error=1:detect_leaks=1:strict_string_checks=1:"
@@ -581,6 +605,12 @@ static void close_window(const char *window_id) {
     fail("failed to close window %s", window_id);
   }
 }
+static void kill_window(const char *window_id) {
+  if (run_shell("DISPLAY=%s %s windowkill %s >/dev/null 2>&1", DISPLAY_VALUE,
+                XDOTOOL_BIN, window_id) != 0) {
+    fail("failed to kill window %s", window_id);
+  }
+}
 static void map_window(const char *window_id) {
   if (run_shell("DISPLAY=%s %s windowmap %s >/dev/null 2>&1", DISPLAY_VALUE,
                 XDOTOOL_BIN, window_id) != 0) {
@@ -621,6 +651,67 @@ static void wait_for_window_count_by_name(const char *name_pattern,
   }
   fail("unexpected window count for %s: %d != %d", name_pattern, count,
        expected_count);
+}
+static void assert_file_contains(const char *path, const char *needle) {
+  char line[1024];
+  FILE *file;
+  file = fopen(path, "r");
+  if (!file) {
+    fail("failed to open %s", path);
+  }
+  while (fgets(line, (int)sizeof(line), file)) {
+    if (strstr(line, needle)) {
+      fclose(file);
+      return;
+    }
+  }
+  fclose(file);
+  fail("did not find \"%s\" in %s", needle, path);
+}
+static void assert_focus_unchanged(const char *key_spec,
+                                   const char *expected_window_id) {
+  send_root_key(key_spec);
+  usleep(300000U);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN, expected_window_id);
+}
+static void assert_fswm_survives_key(const char *key_spec) {
+  send_root_key(key_spec);
+  usleep(300000U);
+  if (!process_alive(context.fswm_pid)) {
+    fail("fswm exited unexpectedly after key %s", key_spec);
+  }
+}
+static void assert_second_wm_rejected(void) {
+  char fswm_bin[] = FSWM_BIN;
+  char xterm_bin[] = XTERM_BIN;
+  char xterm_title_flag[] = "-T";
+  char spawn_title[] = "spawn";
+  char *fswm_argv[5];
+  pid_t conflict_pid;
+  int i;
+  fswm_argv[0] = fswm_bin;
+  fswm_argv[1] = xterm_bin;
+  fswm_argv[2] = xterm_title_flag;
+  fswm_argv[3] = spawn_title;
+  fswm_argv[4] = NULL;
+  conflict_pid = spawn_logged_process(context.fswm_conflict_log, fswm_argv);
+  for (i = 0; i < TEST_TIMEOUT_SECONDS * 10; i++) {
+    if (!process_alive(conflict_pid)) {
+      break;
+    }
+    usleep(100000U);
+  }
+  if (process_alive(conflict_pid)) {
+    fail("second fswm instance did not exit");
+  }
+  if (!process_alive(context.fswm_pid)) {
+    fail("primary fswm exited during conflict test");
+  }
+  assert_file_contains(context.fswm_conflict_log,
+                       "another window manager is already running");
 }
 static void run_test(void) {
   char w1[32];
@@ -667,6 +758,8 @@ static void run_test(void) {
   xterm_two_argv[3] = NULL;
   info("start xvfb and fswm");
   start_environment();
+  info("reject second window manager on same display");
+  assert_second_wm_rejected();
   info("map initial windows fullscreen");
   spawn_logged_process(context.xterm_one_log, xterm_one_argv);
   spawn_logged_process(context.xterm_two_log, xterm_two_argv);
@@ -761,7 +854,17 @@ static void run_test(void) {
       TEST_TIMEOUT_SECONDS,
       "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
       DISPLAY_VALUE, XDOTOOL_BIN, focused_after);
+  info("ignore near-miss shortcuts");
+  assert_focus_unchanged("Tab", focused_after);
+  assert_fswm_survives_key("Delete");
   info("spawn new terminals and keep them managed");
+  count_before = get_windows_by_class("xterm", xterm_before, (size_t)16);
+  send_root_key("ctrl+t");
+  usleep(300000U);
+  count_after = get_windows_by_class("xterm", xterm_after, (size_t)16);
+  if (count_after != count_before) {
+    fail("non-matching spawn shortcut created a window");
+  }
   send_root_key("ctrl+alt+t");
   wait_until_succeeds(
       TEST_TIMEOUT_SECONDS,
@@ -991,13 +1094,22 @@ static void run_test(void) {
       "%s -c 'DISPLAY=%s %s -id %s | grep -q \"Map State: IsViewable\"'",
       SHELL_BIN, DISPLAY_VALUE, XWININFO_BIN, w4);
   assert_root_child(w4);
-  close_window(w4);
+  info("destroyed windows update focus sanely");
+  kill_window(w4);
   wait_until_succeeds(TEST_TIMEOUT_SECONDS,
                       "%s -c '! DISPLAY=%s %s -id %s >/dev/null 2>&1'",
                       SHELL_BIN, DISPLAY_VALUE, XWININFO_BIN, w4);
   wait_until_succeeds(TEST_TIMEOUT_SECONDS,
                       "%s -c 'DISPLAY=%s %s -id %s >/dev/null 2>&1'", SHELL_BIN,
                       DISPLAY_VALUE, XWININFO_BIN, w3);
+  if (!process_alive(context.fswm_pid)) {
+    fail("fswm exited after destroyed window");
+  }
+  get_focused_window(focused_after, sizeof(focused_after));
+  if (strcmp(focused_after, w3) != 0) {
+    fail("focus did not move to surviving window after destroy: %s",
+         focused_after);
+  }
   send_root_key("Alt+Tab");
   wait_until_succeeds(
       TEST_TIMEOUT_SECONDS,
@@ -1020,6 +1132,7 @@ static void run_test(void) {
   if (!process_alive(context.fswm_pid)) {
     fail("fswm exited too early");
   }
+  assert_fswm_survives_key("Alt+Delete");
   send_root_key("ctrl+alt+Delete");
   for (i = 0; i < TEST_TIMEOUT_SECONDS * 10; i++) {
     if (!process_alive(context.fswm_pid)) {

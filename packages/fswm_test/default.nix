@@ -5,6 +5,24 @@
 pkgs.stdenv.mkDerivation rec {
   buildPhase = ''
     cc -o ${pname} main.c -std=c89 \
+    -DRUNTIME_PATH_1='"${
+      pkgs.lib.makeBinPath [
+        inputs.self.packages.${pkgs.stdenv.system}.fswm
+        pkgs.coreutils
+        pkgs.gnugrep
+        pkgs.procps
+      ]
+    }"' \
+    -DRUNTIME_PATH_2='":${
+      pkgs.lib.makeBinPath [
+        pkgs.xdotool
+        pkgs.xdpyinfo
+        pkgs.xkbcomp
+        pkgs.xterm
+        pkgs.xvfb
+        pkgs.xwininfo
+      ]
+    }"' \
     -O3 \
     -Waggregate-return \
     -Waggressive-loop-optimizations \
