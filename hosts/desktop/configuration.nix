@@ -101,6 +101,13 @@
       "pbizopoulos"
     ];
   };
+  nixpkgs.overlays = [
+    (_: prev: {
+      vmTools = prev.vmTools.override {
+        kernelImage = "bzImage";
+      };
+    })
+  ];
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
@@ -237,6 +244,7 @@
         home.size = pkgs.lib.mkForce "500M";
         swap.size = pkgs.lib.mkForce "1M";
       };
+      hardware.nvidia-container-toolkit.enable = pkgs.lib.mkForce false;
       users.users.pbizopoulos = {
         hashedPasswordFile = pkgs.lib.mkForce null;
         password = "password";

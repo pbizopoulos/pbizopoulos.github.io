@@ -85,6 +85,13 @@
     "flakes"
     "nix-command"
   ];
+  nixpkgs.overlays = [
+    (_: prev: {
+      vmTools = prev.vmTools.override {
+        kernelImage = "bzImage";
+      };
+    })
+  ];
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
