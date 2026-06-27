@@ -75,6 +75,7 @@
   imports = [
     ./hardware-configuration.nix
     inputs.disko.nixosModules.disko
+    inputs.nixos-hardware.nixosModules."dell-xps-13-9343"
     inputs.preservation.nixosModules.default
   ];
   networking = {
