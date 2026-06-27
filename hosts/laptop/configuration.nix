@@ -6,6 +6,9 @@
 {
   boot = {
     initrd.systemd.enable = true;
+    kernelParams = [
+      "i915.enable_psr=0"
+    ];
     loader.systemd-boot.enable = true;
   };
   disko.devices = {
@@ -75,7 +78,6 @@
   imports = [
     ./hardware-configuration.nix
     inputs.disko.nixosModules.disko
-    inputs.nixos-hardware.nixosModules."dell-xps-13-9343"
     inputs.preservation.nixosModules.default
   ];
   networking = {
