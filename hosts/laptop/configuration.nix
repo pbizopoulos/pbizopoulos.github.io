@@ -6,9 +6,6 @@
 {
   boot = {
     initrd.systemd.enable = true;
-    kernelParams = [
-      "i915.enable_psr=0"
-    ];
     loader.systemd-boot.enable = true;
   };
   disko.devices = {
