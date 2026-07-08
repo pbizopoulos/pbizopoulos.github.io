@@ -298,8 +298,11 @@ static void start_environment(void) {
   char xterm_bin[] = XTERM_BIN;
   char xterm_title_flag[] = "-T";
   char spawn_title[] = "spawn";
+  char ready_title[] = "wm-ready";
   char *xvfb_argv[6];
   char *fswm_argv[5];
+  char *ready_argv[4];
+  char ready_window[32];
   xvfb_argv[0] = xvfb_bin;
   xvfb_argv[1] = display_value;
   xvfb_argv[2] = xvfb_screen;
@@ -311,6 +314,10 @@ static void start_environment(void) {
   fswm_argv[2] = xterm_title_flag;
   fswm_argv[3] = spawn_title;
   fswm_argv[4] = NULL;
+  ready_argv[0] = xterm_bin;
+  ready_argv[1] = xterm_title_flag;
+  ready_argv[2] = ready_title;
+  ready_argv[3] = NULL;
   ensure_directory();
   if (setenv("DISPLAY", DISPLAY_VALUE, 1) != 0) {
     fail("setenv DISPLAY failed");
@@ -346,6 +353,14 @@ static void start_environment(void) {
   wait_until_succeeds(TEST_TIMEOUT_SECONDS,
                       "%s -c 'kill -0 %ld >/dev/null 2>&1'", SHELL_BIN,
                       (long)context.fswm_pid);
+  spawn_logged_process(context.xterm_one_log, ready_argv);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c 'DISPLAY=%s %s search --name \"^wm-ready$\" >/dev/null'",
+      SHELL_BIN, DISPLAY_VALUE, XDOTOOL_BIN);
+  get_first_window_by_name("wm-ready", ready_window, sizeof(ready_window));
+  close_window(ready_window);
+  wait_for_window_count_by_name("^wm-ready$", 0);
 }
 static void assert_no_sanitizer_errors(void) {
   FILE *log_file;
@@ -718,6 +733,9 @@ static void run_test(void) {
   char w2[32];
   char w3[32];
   char w4[32];
+  char w5[32];
+  char w6[32];
+  char w7[32];
   char focused[32];
   char focused_after[32];
   char name[128];
@@ -746,8 +764,14 @@ static void run_test(void) {
   char xterm_title_flag[] = "-T";
   char xterm_title_one[] = "one";
   char xterm_title_two[] = "two";
+  char xterm_title_anchor[] = "anchor";
+  char xterm_title_middle[] = "middle";
+  char xterm_title_detached[] = "detached";
   char *xterm_one_argv[4];
   char *xterm_two_argv[4];
+  char *xterm_anchor_argv[4];
+  char *xterm_middle_argv[4];
+  char *xterm_detached_argv[4];
   xterm_one_argv[0] = xterm_bin;
   xterm_one_argv[1] = xterm_title_flag;
   xterm_one_argv[2] = xterm_title_one;
@@ -756,6 +780,18 @@ static void run_test(void) {
   xterm_two_argv[1] = xterm_title_flag;
   xterm_two_argv[2] = xterm_title_two;
   xterm_two_argv[3] = NULL;
+  xterm_anchor_argv[0] = xterm_bin;
+  xterm_anchor_argv[1] = xterm_title_flag;
+  xterm_anchor_argv[2] = xterm_title_anchor;
+  xterm_anchor_argv[3] = NULL;
+  xterm_middle_argv[0] = xterm_bin;
+  xterm_middle_argv[1] = xterm_title_flag;
+  xterm_middle_argv[2] = xterm_title_middle;
+  xterm_middle_argv[3] = NULL;
+  xterm_detached_argv[0] = xterm_bin;
+  xterm_detached_argv[1] = xterm_title_flag;
+  xterm_detached_argv[2] = xterm_title_detached;
+  xterm_detached_argv[3] = NULL;
   info("start xvfb and fswm");
   start_environment();
   info("reject second window manager on same display");
@@ -1125,6 +1161,64 @@ static void run_test(void) {
                       "%s -c '[ \"$(DISPLAY=%s %s search --class xterm "
                       "2>/dev/null | wc -l)\" -eq 0 ]'",
                       SHELL_BIN, DISPLAY_VALUE, XDOTOOL_BIN);
+  assert_no_sanitizer_errors();
+  info("closing non-focused windows preserves focus and Alt-Tab anchor");
+  spawn_logged_process(context.xterm_one_log, xterm_anchor_argv);
+  spawn_logged_process(context.fswm_conflict_log, xterm_middle_argv);
+  spawn_logged_process(context.xterm_two_log, xterm_detached_argv);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c 'DISPLAY=%s %s search --name \"^anchor$\" >/dev/null'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c 'DISPLAY=%s %s search --name \"^middle$\" >/dev/null'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c 'DISPLAY=%s %s search --name \"^detached$\" >/dev/null'",
+      SHELL_BIN, DISPLAY_VALUE, XDOTOOL_BIN);
+  get_first_window_by_name("anchor", w5, sizeof(w5));
+  get_first_window_by_name("middle", w6, sizeof(w6));
+  get_first_window_by_name("detached", w7, sizeof(w7));
+  for (i = 0; i < TEST_TIMEOUT_SECONDS * 10; i++) {
+    if (read_command_output(focused_after, sizeof(focused_after),
+                            "DISPLAY=%s %s getwindowfocus 2>/dev/null",
+                            DISPLAY_VALUE, XDOTOOL_BIN) == 0 &&
+        (strcmp(focused_after, w5) == 0 || strcmp(focused_after, w6) == 0 ||
+         strcmp(focused_after, w7) == 0)) {
+      break;
+    }
+    usleep(100000U);
+  }
+  if (i == TEST_TIMEOUT_SECONDS * 10) {
+    fail("focus did not settle on anchor regression windows");
+  }
+  for (i = 0; i < 3; i++) {
+    get_focused_window(focused_after, sizeof(focused_after));
+    if (strcmp(focused_after, w7) == 0) {
+      break;
+    }
+    send_root_key("Alt+Tab");
+  }
+  if (i == 3) {
+    fail("failed to focus detached window before anchor close");
+  }
+  close_window(w5);
+  wait_for_window_count_by_name("^anchor$", 0);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN, w7);
+  send_root_key("Alt+Tab");
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN, w6);
+  close_window(w6);
+  wait_for_window_count_by_name("^middle$", 0);
+  close_window(w7);
+  wait_for_window_count_by_name("^detached$", 0);
   assert_no_sanitizer_errors();
   info("wm exits on Ctrl+Alt+Delete");
   send_root_key("Alt+Tab");

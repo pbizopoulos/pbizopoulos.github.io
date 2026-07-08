@@ -178,7 +178,7 @@ handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
   if (was_current) {
     client_focus = client_fallback;
   } else {
-    client_focus = clients.head;
+    client_focus = client_current;
   }
   update_client(client_focus, connection);
   free(client_unmap_notify);
