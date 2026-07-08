@@ -8,7 +8,6 @@
     binfmt.emulatedSystems = [
       "aarch64-linux"
     ];
-    initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
   };
   disko.devices = {
@@ -140,7 +139,6 @@
     avahi = {
       enable = true;
       nssmdns4 = true;
-      openFirewall = true;
     };
     openssh = {
       enable = true;
