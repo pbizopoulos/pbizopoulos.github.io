@@ -20,6 +20,7 @@ typedef struct Client {
 static void update_client(Client *client, xcb_connection_t *connection);
 static Client *find_client(xcb_window_t window) __attribute__((pure));
 static Client *append_client(xcb_window_t window);
+static int client_is_managed(const Client *client) __attribute__((pure));
 static void free_clients(void);
 static int handle_key_press(const xcb_key_press_event_t *key_press_event,
                             xcb_connection_t *connection,
@@ -33,6 +34,7 @@ static void
 handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
                     xcb_connection_t *connection);
 static Client *client_current = NULL;
+static Client *client_previous = NULL;
 static List clients;
 static Client *remove_client(Client *client) {
   Client *next;
@@ -84,6 +86,9 @@ static Client *append_client(xcb_window_t window) {
   clients.tail = client_new;
   return client_new;
 }
+static int client_is_managed(const Client *client) {
+  return client && client->parent == &clients;
+}
 static void free_clients(void) {
   Client *client = NULL;
   while (clients.head) {
@@ -92,11 +97,20 @@ static void free_clients(void) {
   }
 }
 void update_client(Client *client_focus, xcb_connection_t *connection) {
+  Client *client_next = NULL;
   unsigned int key_press_value_list[] = {XCB_STACK_MODE_ABOVE};
   if (client_focus) {
-    client_current = client_focus;
+    client_next = client_focus;
   } else {
-    client_current = clients.head;
+    client_next = clients.head;
+  }
+  if (client_next != client_current && client_is_managed(client_current)) {
+    client_previous = client_current;
+  }
+  client_current = client_next;
+  if (client_previous == client_current ||
+      !client_is_managed(client_previous)) {
+    client_previous = NULL;
   }
   if (!client_current) {
     return;
@@ -170,9 +184,17 @@ handle_unmap_notify(const xcb_unmap_notify_event_t *unmap_notify_event,
     return;
   }
   was_current = client_unmap_notify == client_current;
-  client_fallback = client_unmap_notify->previous;
-  if (!client_fallback) {
-    client_fallback = client_unmap_notify->next;
+  if (was_current && client_previous != client_unmap_notify &&
+      client_is_managed(client_previous)) {
+    client_fallback = client_previous;
+  } else {
+    client_fallback = client_unmap_notify->previous;
+    if (!client_fallback) {
+      client_fallback = client_unmap_notify->next;
+    }
+  }
+  if (!was_current && client_previous == client_unmap_notify) {
+    client_previous = NULL;
   }
   remove_client(client_unmap_notify);
   if (was_current) {

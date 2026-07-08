@@ -736,6 +736,7 @@ static void run_test(void) {
   char w5[32];
   char w6[32];
   char w7[32];
+  char w8[32];
   char focused[32];
   char focused_after[32];
   char name[128];
@@ -1206,6 +1207,19 @@ static void run_test(void) {
   }
   close_window(w5);
   wait_for_window_count_by_name("^anchor$", 0);
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN, w7);
+  send_root_key("ctrl+alt+t");
+  wait_for_window_count_by_name("^spawn$", 1);
+  get_first_window_by_name("spawn", w8, sizeof(w8));
+  wait_until_succeeds(
+      TEST_TIMEOUT_SECONDS,
+      "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
+      DISPLAY_VALUE, XDOTOOL_BIN, w8);
+  close_window(w8);
+  wait_for_window_count_by_name("^spawn$", 0);
   wait_until_succeeds(
       TEST_TIMEOUT_SECONDS,
       "%s -c '[ \"$(DISPLAY=%s %s getwindowfocus)\" = \"%s\" ]'", SHELL_BIN,
