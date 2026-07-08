@@ -65,18 +65,10 @@
       ];
     };
   };
-  environment = {
-    sessionVariables = {
-      EDITOR = "vim";
-      GDK_SCALE = "2";
-      XINITRC = "/etc/X11/xinit/xinitrc";
-    };
-    systemPackages = with pkgs; [
-      cups
-      cups-filters
-      ghostscript
-      poppler
-    ];
+  environment.sessionVariables = {
+    EDITOR = "vim";
+    GDK_SCALE = "2";
+    XINITRC = "/etc/X11/xinit/xinitrc";
   };
   fileSystems = {
     "/home".neededForBoot = true;
@@ -92,15 +84,10 @@
     inputs.preservation.nixosModules.default
   ];
   networking.hostName = baseNameOf ./.;
-  nix.settings = {
-    experimental-features = [
-      "flakes"
-      "nix-command"
-    ];
-    trusted-users = [
-      "pbizopoulos"
-    ];
-  };
+  nix.settings.experimental-features = [
+    "flakes"
+    "nix-command"
+  ];
   nixpkgs.overlays = [
     (_: prev: {
       vmTools = prev.vmTools.override {
