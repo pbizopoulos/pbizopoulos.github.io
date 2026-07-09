@@ -6,7 +6,6 @@
 }:
 {
   boot = {
-    extraModulePackages = [ ];
     initrd.availableKernelModules = [
       "ahci"
       "nvme"
