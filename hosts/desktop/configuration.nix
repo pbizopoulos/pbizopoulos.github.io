@@ -141,10 +141,6 @@
     slock.enable = true;
   };
   services = {
-    avahi = {
-      enable = true;
-      nssmdns4 = true;
-    };
     openssh = {
       enable = true;
       hostKeys = [
@@ -165,15 +161,6 @@
         "device.routes.default-sink-volume" = 0.422;
         "device.routes.default-source-volume" = 0.314;
       };
-    };
-    printing = {
-      browsing = true;
-      drivers = [
-        pkgs.cups-filters
-        pkgs.ghostscript
-        pkgs.hplip
-      ];
-      enable = true;
     };
     xserver = {
       displayManager.startx = {
@@ -200,7 +187,6 @@
     mutableUsers = false;
     users.pbizopoulos = {
       extraGroups = [
-        "lp"
         "podman"
         "wheel"
       ];
