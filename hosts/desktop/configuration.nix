@@ -193,7 +193,7 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        inputs.canonicalization.packages.${pkgs.stdenv.system}.git-home-submodules
+        inputs.canonicalization.packages.${pkgs.stdenv.system}.git-home-submodule
         inputs.self.packages.${pkgs.stdenv.system}.fswm
         pkgs.distrobox
         pkgs.google-chrome
