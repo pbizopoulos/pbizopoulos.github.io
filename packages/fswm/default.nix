@@ -130,7 +130,7 @@ pkgs.stdenv.mkDerivation rec {
   '';
   doCheck = pkgs.stdenv.isLinux;
   installPhase = ''
-    install -Dm755 ${pname} $out/bin/${pname}
+    install -Dm755 ${pname} "$out/bin/${pname}"
   '';
   meta.mainProgram = pname;
   nativeBuildInputs = [

@@ -4,7 +4,7 @@
   ...
 }:
 let
-  name = builtins.baseNameOf ./.;
+  name = baseNameOf ./.;
   packageDrv = inputs.self.packages.${pkgs.stdenv.system}.${name};
 in
 pkgs.testers.runNixOSTest {
