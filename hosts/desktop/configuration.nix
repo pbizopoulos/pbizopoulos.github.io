@@ -4,12 +4,7 @@
   ...
 }:
 {
-  boot = {
-    binfmt.emulatedSystems = [
-      "aarch64-linux"
-    ];
-    loader.systemd-boot.enable = true;
-  };
+  boot.loader.systemd-boot.enable = true;
   disko.devices = {
     disk.main = {
       content = {
