@@ -73,6 +73,7 @@
       }
       input type:touchpad {
         events enabled
+        scroll_method two_finger
         tap enabled
       }
       bindsym --no-repeat Alt+Tab focus next
@@ -84,6 +85,7 @@
     '';
     sessionVariables = {
       EDITOR = "vim";
+      GDK_DPI_SCALE = "2";
       GDK_SCALE = "4";
       XINITRC = "/etc/X11/xinit/xinitrc";
     };
