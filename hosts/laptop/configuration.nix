@@ -71,6 +71,10 @@
       input type:touch {
         events enabled
       }
+      input type:touchpad {
+        events enabled
+        tap enabled
+      }
       bindsym --no-repeat Alt+Tab focus next
       bindsym --no-repeat Alt+Shift+Tab focus prev
       bindsym Ctrl+Alt+t exec foot
@@ -139,6 +143,7 @@
   };
   programs = {
     bash.promptInit = "";
+    dwl.enable = true;
     foot = {
       enable = true;
       settings = {
