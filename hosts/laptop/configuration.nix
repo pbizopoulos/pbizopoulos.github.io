@@ -143,7 +143,12 @@
   };
   programs = {
     bash.promptInit = "";
-    dwl.enable = true;
+    dwl = {
+      enable = true;
+      package = pkgs.dwl.override {
+        configH = ../../prm/dwl-config.h;
+      };
+    };
     foot = {
       enable = true;
       settings = {
@@ -168,7 +173,7 @@
           regular7 = "eee8d5";
         };
         main = {
-          font = "Liberation Mono:pixelsize=40:style=Bold";
+          font = "Liberation Mono:pixelsize=60:style=Bold";
           "initial-color-theme" = "light";
         };
       };
@@ -223,7 +228,9 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        pkgs.google-chrome
+        (pkgs.google-chrome.override {
+          commandLineArgs = "--force-device-scale-factor=2";
+        })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })

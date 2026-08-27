@@ -33,3 +33,5 @@
 !/packages/fswm_test/
 !/packages/fswm_test/default.nix
 !/packages/fswm_test/main.c
+!/prm/
+!/prm/**
