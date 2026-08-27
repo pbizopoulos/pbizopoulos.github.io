@@ -83,11 +83,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1787754316,
-        "narHash": "sha256-pTViPeTEw+rCP2jJFeMm0kMSkolq6dfr6GEcya630vE=",
+        "lastModified": 1787842159,
+        "narHash": "sha256-d3lfyYbmgmc2DBmBwZOZNGaQXwigPrzyk967nRV3USA=",
         "owner": "pbizopoulos",
         "repo": "canonicalization",
-        "rev": "b15c54e8408b39a0dcbad8ff49d75e47fa37eafb",
+        "rev": "2eea4c8e7aef9055af9251241b28db97425f23ef",
         "type": "github"
       },
       "original": {
