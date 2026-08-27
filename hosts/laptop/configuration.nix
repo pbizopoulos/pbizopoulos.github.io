@@ -135,6 +135,7 @@
       enable = true;
     };
     slock.enable = true;
+    sway.enable = true;
   };
   services = {
     openssh = {
