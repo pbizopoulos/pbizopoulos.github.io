@@ -66,13 +66,13 @@
   };
   environment = {
     etc."sway/config.d/window-management.conf".text = ''
-      for_window [app_id=".*"] fullscreen enable
-      for_window [class=".*"] fullscreen enable
+      for_window [app_id=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
+      for_window [class=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
       input type:touch {
         events enabled
       }
-      bindsym --no-repeat Alt+Tab exec swaymsg 'fullscreen disable; focus next; fullscreen enable'
-      bindsym --no-repeat Alt+Shift+Tab exec swaymsg 'fullscreen disable; focus prev; fullscreen enable'
+      bindsym --no-repeat Alt+Tab focus next
+      bindsym --no-repeat Alt+Shift+Tab focus prev
       bindsym Ctrl+Alt+t exec foot
       default_border none
       default_floating_border none
