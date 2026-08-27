@@ -155,7 +155,7 @@
           regular6 = "2aa198";
           regular7 = "eee8d5";
         };
-        main.font = "Liberation Mono:size=70:style=Bold";
+        main.font = "Liberation Mono:size=40:style=Bold";
       };
     };
     git = {
