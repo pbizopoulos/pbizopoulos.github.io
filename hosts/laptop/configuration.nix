@@ -68,8 +68,11 @@
     etc."sway/config.d/window-management.conf".text = ''
       for_window [app_id=".*"] fullscreen enable
       for_window [class=".*"] fullscreen enable
-      bindsym --no-repeat Alt+Tab focus next
-      bindsym --no-repeat Alt+Shift+Tab focus prev
+      input type:touch {
+        events enabled
+      }
+      bindsym --no-repeat Alt+Tab exec swaymsg 'fullscreen disable; focus next; fullscreen enable'
+      bindsym --no-repeat Alt+Shift+Tab exec swaymsg 'fullscreen disable; focus prev; fullscreen enable'
       bindsym Ctrl+Alt+t exec foot
       default_border none
       default_floating_border none
