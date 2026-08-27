@@ -15,9 +15,9 @@ static const Rule rules[] = {
     {NULL, NULL, 0, 0, -1},
 };
 static const Layout layouts[] = {
+    {"[M]", monocle},
     {"[]=", tile},
     {"><>", NULL},
-    {"[M]", monocle},
 };
 static const MonitorRule monrules[] = {
     {NULL, 0.55f, 1, 1, &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL, -1, -1},
@@ -49,7 +49,10 @@ static const char *termcmd[] = {"foot", NULL};
 static const Key keys[] = {
     {WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT, XKB_KEY_t, spawn, {.v = termcmd}},
     {WLR_MODIFIER_ALT, XKB_KEY_Tab, focusstack, {.i = +1}},
-    {WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT, XKB_KEY_Tab, focusstack, {.i = -1}},
+    {WLR_MODIFIER_ALT | WLR_MODIFIER_SHIFT,
+     XKB_KEY_ISO_Left_Tab,
+     focusstack,
+     {.i = -1}},
 };
 static const Button buttons[] = {
     {0, 0, NULL, {0}},
