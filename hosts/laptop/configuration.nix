@@ -64,10 +64,18 @@
       ];
     };
   };
-  environment.sessionVariables = {
-    EDITOR = "vim";
-    GDK_SCALE = "4";
-    XINITRC = "/etc/X11/xinit/xinitrc";
+  environment = {
+    etc."sway/config.d/window-management.conf".text = ''
+      for_window [app_id=".*"] fullscreen enable
+      for_window [class=".*"] fullscreen enable
+      bindsym Mod1+Tab focus next
+      bindsym Mod1+Shift+Tab focus prev
+    '';
+    sessionVariables = {
+      EDITOR = "vim";
+      GDK_SCALE = "4";
+      XINITRC = "/etc/X11/xinit/xinitrc";
+    };
   };
   fileSystems = {
     "/home".neededForBoot = true;
@@ -124,6 +132,32 @@
   };
   programs = {
     bash.promptInit = "";
+    foot = {
+      enable = true;
+      settings = {
+        colors = {
+          background = "fdf6e3";
+          bright0 = "002b36";
+          bright1 = "cb4b16";
+          bright2 = "586e75";
+          bright3 = "657b83";
+          bright4 = "839496";
+          bright5 = "6c71c4";
+          bright6 = "93a1a1";
+          bright7 = "fdf6e3";
+          foreground = "657b83";
+          regular0 = "073642";
+          regular1 = "dc322f";
+          regular2 = "859900";
+          regular3 = "b58900";
+          regular4 = "268bd2";
+          regular5 = "d33682";
+          regular6 = "2aa198";
+          regular7 = "eee8d5";
+        };
+        main.font = "Liberation Mono:size=70:style=Bold";
+      };
+    };
     git = {
       config = {
         init.defaultBranch = "main";
@@ -159,18 +193,6 @@
         "device.routes.default-source-volume" = 1.0e-3;
       };
     };
-    xserver = {
-      displayManager.startx = {
-        enable = true;
-        extraCommands = "fswm st -f 'Liberation Mono:pixelsize=60:weight=bold'";
-        generateScript = true;
-      };
-      enable = true;
-      xkb = {
-        layout = "us,gr";
-        options = "grp:win_space_toggle";
-      };
-    };
   };
   system.stateVersion = "25.11";
   systemd.suppressedSystemUnits = [
@@ -186,16 +208,7 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        inputs.self.packages.${pkgs.stdenv.system}.fswm
         pkgs.google-chrome
-        (pkgs.st.overrideAttrs {
-          patches = [
-            (pkgs.fetchpatch {
-              sha256 = "Q+uWYYPF8nKgCS1P+v13GneXE07L0MaDQCGR8/F267A=";
-              url = "https://st.suckless.org/patches/solarized/st-solarized-light-0.8.5.diff";
-            })
-          ];
-        })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
