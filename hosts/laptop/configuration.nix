@@ -68,8 +68,12 @@
     etc."sway/config.d/window-management.conf".text = ''
       for_window [app_id=".*"] fullscreen enable
       for_window [class=".*"] fullscreen enable
-      bindsym Mod1+Tab focus next
-      bindsym Mod1+Shift+Tab focus prev
+      bindsym --no-repeat Alt+Tab focus next
+      bindsym --no-repeat Alt+Shift+Tab focus prev
+      bindsym Ctrl+Alt+t exec foot
+      default_border none
+      default_floating_border none
+      bar mode invisible
     '';
     sessionVariables = {
       EDITOR = "vim";
@@ -135,7 +139,7 @@
     foot = {
       enable = true;
       settings = {
-        colors = {
+        "colors-light" = {
           background = "fdf6e3";
           bright0 = "002b36";
           bright1 = "cb4b16";
@@ -155,7 +159,10 @@
           regular6 = "2aa198";
           regular7 = "eee8d5";
         };
-        main.font = "Liberation Mono:size=40:style=Bold";
+        main = {
+          font = "Liberation Mono:pixelsize=40:style=Bold";
+          "initial-color-theme" = "light";
+        };
       };
     };
     git = {
