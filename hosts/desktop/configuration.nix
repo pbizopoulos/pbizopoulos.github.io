@@ -179,10 +179,7 @@
       enable = true;
     };
   };
-  security = {
-    pam.services.waylock = { };
-    rtkit.enable = true;
-  };
+  security.pam.services.waylock = { };
   services = {
     openssh = {
       enable = true;
