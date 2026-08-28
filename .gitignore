@@ -8,8 +8,6 @@
 !/checks/
 !/checks/desktopVmWithDisko/
 !/checks/desktopVmWithDisko/default.nix
-!/checks/fswm_test/
-!/checks/fswm_test/default.nix
 !/checks/laptopVmWithDisko/
 !/checks/laptopVmWithDisko/default.nix
 !/flake.lock
@@ -27,11 +25,5 @@
 !/packages/cv/
 !/packages/cv/default.nix
 !/packages/cv/index.html
-!/packages/fswm/
-!/packages/fswm/default.nix
-!/packages/fswm/main.c
-!/packages/fswm_test/
-!/packages/fswm_test/default.nix
-!/packages/fswm_test/main.c
 !/prm/
 !/prm/**

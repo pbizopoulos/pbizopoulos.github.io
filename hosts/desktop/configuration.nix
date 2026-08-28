@@ -196,7 +196,6 @@
       ];
     };
     pipewire = {
-      alsa.enable = true;
       enable = true;
       pulse.enable = true;
       wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
