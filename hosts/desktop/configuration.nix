@@ -59,19 +59,7 @@
       ];
     };
   };
-  environment = {
-    etc = {
-      "xdg/gtk-3.0/settings.ini".text = ''
-        [Settings]
-        gtk-font-name=Liberation Sans 16
-      '';
-      "xdg/gtk-4.0/settings.ini".text = ''
-        [Settings]
-        gtk-font-name=Liberation Sans 16
-      '';
-    };
-    sessionVariables.EDITOR = "vim";
-  };
+  environment.sessionVariables.EDITOR = "vim";
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
@@ -240,7 +228,9 @@
       packages = [
         inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
         pkgs.distrobox
-        pkgs.google-chrome
+        (pkgs.google-chrome.override {
+          commandLineArgs = "--force-device-scale-factor=2";
+        })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
