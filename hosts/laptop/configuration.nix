@@ -64,36 +64,17 @@
       ];
     };
   };
-  environment = {
-    etc."sway/config.d/window-management.conf".text = ''
-      for_window [app_id=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
-      for_window [class=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
-      input type:touch {
-        events enabled
-      }
-      input type:touchpad {
-        events enabled
-        scroll_method two_finger
-        tap enabled
-      }
-      bindsym --no-repeat Alt+Tab focus next
-      bindsym --no-repeat Alt+Shift+Tab focus prev
-      bindsym Ctrl+Alt+t exec foot
-      default_border none
-      default_floating_border none
-      bar mode invisible
-    '';
-    sessionVariables = {
-      EDITOR = "vim";
-      GDK_DPI_SCALE = "2";
-      GDK_SCALE = "4";
-      XINITRC = "/etc/X11/xinit/xinitrc";
-    };
+  environment.sessionVariables = {
+    EDITOR = "vim";
+    NIXOS_OZONE_WL = "1";
   };
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
   };
+  fonts.packages = [
+    pkgs.liberation_ttf
+  ];
   hardware.enableRedistributableFirmware = true;
   imports = [
     ./hardware-configuration.nix
@@ -190,9 +171,8 @@
       };
       enable = true;
     };
-    slock.enable = true;
-    sway.enable = true;
   };
+  security.pam.services.waylock = { };
   services = {
     openssh = {
       enable = true;
@@ -209,7 +189,9 @@
       ];
     };
     pipewire = {
+      alsa.enable = true;
       enable = true;
+      pulse.enable = true;
       wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
         "device.routes.default-sink-volume" = 0.422;
         "device.routes.default-source-volume" = 1.0e-3;
@@ -236,6 +218,7 @@
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
+        pkgs.waylock
       ];
     };
   };
