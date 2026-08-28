@@ -59,7 +59,19 @@
       ];
     };
   };
-  environment.sessionVariables.EDITOR = "vim";
+  environment = {
+    etc = {
+      "xdg/gtk-3.0/settings.ini".text = ''
+        [Settings]
+        gtk-font-name=Liberation Sans 16
+      '';
+      "xdg/gtk-4.0/settings.ini".text = ''
+        [Settings]
+        gtk-font-name=Liberation Sans 16
+      '';
+    };
+    sessionVariables.EDITOR = "vim";
+  };
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
