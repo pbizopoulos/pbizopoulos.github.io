@@ -59,6 +59,26 @@
       ];
     };
   };
+  environment = {
+    etc."sway/config.d/window-management.conf".text = ''
+      for_window [app_id=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
+      for_window [class=".*"] floating enable, resize set width 100 ppt height 100 ppt, move position 0 0
+      input type:touch {
+        events enabled
+      }
+      input type:touchpad {
+        events enabled
+        scroll_method two_finger
+        tap enabled
+      }
+      bindsym --no-repeat Alt+Tab focus next
+      bindsym --no-repeat Alt+Shift+Tab focus prev
+      bindsym Ctrl+Alt+t exec foot
+      default_border none
+      default_floating_border none
+      bar mode invisible
+    '';
+  };
   environment.sessionVariables = {
     EDITOR = "vim";
     GDK_SCALE = "2";
@@ -131,6 +151,35 @@
   };
   programs = {
     bash.promptInit = "";
+    foot = {
+      enable = true;
+      settings = {
+        "colors-light" = {
+          background = "fdf6e3";
+          bright0 = "002b36";
+          bright1 = "cb4b16";
+          bright2 = "586e75";
+          bright3 = "657b83";
+          bright4 = "839496";
+          bright5 = "6c71c4";
+          bright6 = "93a1a1";
+          bright7 = "fdf6e3";
+          foreground = "657b83";
+          regular0 = "073642";
+          regular1 = "dc322f";
+          regular2 = "859900";
+          regular3 = "b58900";
+          regular4 = "268bd2";
+          regular5 = "d33682";
+          regular6 = "2aa198";
+          regular7 = "eee8d5";
+        };
+        main = {
+          font = "Liberation Mono:pixelsize=60:style=Bold";
+          "initial-color-theme" = "light";
+        };
+      };
+    };
     git = {
       config = {
         init.defaultBranch = "main";
@@ -142,6 +191,7 @@
       enable = true;
     };
     slock.enable = true;
+    sway.enable = true;
   };
   services = {
     openssh = {
