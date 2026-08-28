@@ -179,6 +179,10 @@
       enable = true;
     };
   };
+  security = {
+    pam.services.waylock = { };
+    rtkit.enable = true;
+  };
   services = {
     openssh = {
       enable = true;
@@ -195,7 +199,9 @@
       ];
     };
     pipewire = {
+      alsa.enable = true;
       enable = true;
+      pulse.enable = true;
       wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
         "device.routes.default-sink-volume" = 0.422;
         "device.routes.default-source-volume" = 0.314;
@@ -228,6 +234,7 @@
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
+        pkgs.waylock
       ];
     };
   };
