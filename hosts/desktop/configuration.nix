@@ -157,7 +157,7 @@
           regular7 = "eee8d5";
         };
         main = {
-          font = "Liberation Mono:pixelsize=60:style=Bold";
+          font = "Liberation Mono:pixelsize=40:style=Bold";
           "initial-color-theme" = "light";
         };
       };
