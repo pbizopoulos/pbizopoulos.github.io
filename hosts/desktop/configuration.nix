@@ -224,9 +224,7 @@
       packages = [
         inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
         pkgs.distrobox
-        (pkgs.google-chrome.override {
-          commandLineArgs = "--force-device-scale-factor=2";
-        })
+        pkgs.google-chrome
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
