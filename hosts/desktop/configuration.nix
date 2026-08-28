@@ -67,6 +67,9 @@
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
   };
+  fonts.packages = [
+    pkgs.liberation_ttf
+  ];
   hardware = {
     nvidia.open = true;
     nvidia-container-toolkit.enable = true;
