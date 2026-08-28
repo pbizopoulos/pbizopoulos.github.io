@@ -211,7 +211,9 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        pkgs.google-chrome
+        (pkgs.google-chrome.override {
+          commandLineArgs = "--force-device-scale-factor=2";
+        })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
