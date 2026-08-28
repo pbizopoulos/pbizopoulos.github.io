@@ -71,7 +71,10 @@
     "/persistent".neededForBoot = true;
   };
   fonts.packages = [ pkgs.liberation_ttf ];
-  hardware.enableRedistributableFirmware = true;
+  hardware = {
+    enableRedistributableFirmware = true;
+    graphics.enable = true;
+  };
   imports = [
     ./hardware-configuration.nix
     inputs.disko.nixosModules.disko
