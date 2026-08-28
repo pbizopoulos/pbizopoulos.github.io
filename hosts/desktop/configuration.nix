@@ -67,9 +67,7 @@
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
   };
-  fonts.packages = [
-    pkgs.liberation_ttf
-  ];
+  fonts.packages = [ pkgs.liberation_ttf ];
   hardware = {
     nvidia.open = true;
     nvidia-container-toolkit.enable = true;
@@ -93,9 +91,7 @@
       "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
     ];
-    trusted-users = [
-      "pbizopoulos"
-    ];
+    trusted-users = [ "pbizopoulos" ];
   };
   nixpkgs.overlays = [
     (_: prev: {
@@ -142,7 +138,7 @@
     foot = {
       enable = true;
       settings = {
-        "colors-light" = {
+        colors-light = {
           background = "fdf6e3";
           bright0 = "002b36";
           bright1 = "cb4b16";
@@ -164,7 +160,7 @@
         };
         main = {
           font = "Liberation Mono:pixelsize=40:style=Bold";
-          "initial-color-theme" = "light";
+          initial-color-theme = "light";
         };
       };
     };
@@ -203,14 +199,10 @@
         "device.routes.default-source-volume" = 0.314;
       };
     };
-    xserver.videoDrivers = [
-      "nvidia"
-    ];
+    xserver.videoDrivers = [ "nvidia" ];
   };
   system.stateVersion = "25.11";
-  systemd.suppressedSystemUnits = [
-    "systemd-machine-id-commit.service"
-  ];
+  systemd.suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
   time.timeZone = "Europe/Athens";
   users = {
     mutableUsers = false;
@@ -222,14 +214,14 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
-        pkgs.distrobox
         (pkgs.google-chrome.override {
           commandLineArgs = "--force-device-scale-factor=2";
         })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
+        inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
+        pkgs.distrobox
         pkgs.waylock
       ];
     };

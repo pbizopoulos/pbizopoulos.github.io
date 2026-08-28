@@ -5,9 +5,7 @@
 }:
 {
   boot = {
-    kernelParams = [
-      "i915.enable_psr=0"
-    ];
+    kernelParams = [ "i915.enable_psr=0" ];
     loader.systemd-boot.enable = true;
   };
   disko.devices = {
@@ -72,9 +70,7 @@
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
   };
-  fonts.packages = [
-    pkgs.liberation_ttf
-  ];
+  fonts.packages = [ pkgs.liberation_ttf ];
   hardware.enableRedistributableFirmware = true;
   imports = [
     ./hardware-configuration.nix
@@ -135,7 +131,7 @@
     foot = {
       enable = true;
       settings = {
-        "colors-light" = {
+        colors-light = {
           background = "fdf6e3";
           bright0 = "002b36";
           bright1 = "cb4b16";
@@ -157,7 +153,7 @@
         };
         main = {
           font = "Liberation Mono:pixelsize=60:style=Bold";
-          "initial-color-theme" = "light";
+          initial-color-theme = "light";
         };
       };
     };
@@ -198,16 +194,12 @@
     };
   };
   system.stateVersion = "25.11";
-  systemd.suppressedSystemUnits = [
-    "systemd-machine-id-commit.service"
-  ];
+  systemd.suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
   time.timeZone = "Europe/Athens";
   users = {
     mutableUsers = false;
     users.pbizopoulos = {
-      extraGroups = [
-        "wheel"
-      ];
+      extraGroups = [ "wheel" ];
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [

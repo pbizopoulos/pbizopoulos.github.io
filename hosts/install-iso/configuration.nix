@@ -38,12 +38,10 @@ let
   };
 in
 {
-  environment.systemPackages = [
-    installNixos
-  ];
+  environment.systemPackages = [ installNixos ];
   imports = [
-    ../laptop/hardware-configuration.nix
     (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
+    ../laptop/hardware-configuration.nix
   ];
   nix.settings.experimental-features = [
     "flakes"

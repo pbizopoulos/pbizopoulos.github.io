@@ -6,9 +6,7 @@
 }:
 {
   boot = {
-    extraModulePackages = [
-      config.boot.kernelPackages.broadcom_sta
-    ];
+    extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
     initrd.availableKernelModules = [
       "ahci"
       "ehci_pci"
@@ -23,8 +21,6 @@
     ];
   };
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-  imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-  ];
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 }
