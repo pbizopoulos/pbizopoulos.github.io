@@ -151,6 +151,12 @@
   };
   programs = {
     bash.promptInit = "";
+    dwl = {
+      enable = true;
+      package = pkgs.dwl.override {
+        configH = ../../prm/dwl-config.h;
+      };
+    };
     foot = {
       enable = true;
       settings = {
@@ -247,17 +253,8 @@
       isNormalUser = true;
       packages = [
         inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
-        inputs.self.packages.${pkgs.stdenv.system}.fswm
         pkgs.distrobox
         pkgs.google-chrome
-        (pkgs.st.overrideAttrs {
-          patches = [
-            (pkgs.fetchpatch {
-              sha256 = "Q+uWYYPF8nKgCS1P+v13GneXE07L0MaDQCGR8/F267A=";
-              url = "https://st.suckless.org/patches/solarized/st-solarized-light-0.8.5.diff";
-            })
-          ];
-        })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
