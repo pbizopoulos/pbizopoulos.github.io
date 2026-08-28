@@ -59,7 +59,10 @@
       ];
     };
   };
-  environment.sessionVariables.EDITOR = "vim";
+  environment.sessionVariables = {
+    EDITOR = "vim";
+    NIXOS_OZONE_WL = "1";
+  };
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
@@ -195,21 +198,9 @@
         "device.routes.default-source-volume" = 0.314;
       };
     };
-    xserver = {
-      displayManager.startx = {
-        enable = true;
-        extraCommands = "fswm st -f 'Liberation Mono:pixelsize=35:weight=bold'";
-        generateScript = true;
-      };
-      enable = true;
-      videoDrivers = [
-        "nvidia"
-      ];
-      xkb = {
-        layout = "us,gr";
-        options = "grp:win_space_toggle";
-      };
-    };
+    xserver.videoDrivers = [
+      "nvidia"
+    ];
   };
   system.stateVersion = "25.11";
   systemd.suppressedSystemUnits = [
