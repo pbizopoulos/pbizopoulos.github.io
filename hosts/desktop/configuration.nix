@@ -246,12 +246,4 @@
       };
     };
   };
-  xdg.portal = {
-    config.common.default = "*";
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-      xdg-desktop-portal-wlr
-    ];
-  };
 }
