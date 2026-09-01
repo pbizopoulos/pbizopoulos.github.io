@@ -1,8 +1,4 @@
-{
-  modulesPath,
-  pkgs,
-  ...
-}:
+{ modulesPath, pkgs, ... }:
 let
   installNixos = pkgs.writeShellApplication {
     name = "install-nixos";

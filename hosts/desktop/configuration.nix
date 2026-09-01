@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ inputs, pkgs, ... }:
 {
   boot.loader.systemd-boot.enable = true;
   disko.devices = {
@@ -220,9 +216,10 @@
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
         })
-        inputs.canonicalization.packages.${pkgs.stdenv.system}.git-canonicalization
+        inputs.canonicalization.packages.${pkgs.stdenv.system}.git_canonicalization
         pkgs.distrobox
         pkgs.waylock
+        pkgs.xdg-desktop-portal
       ];
     };
   };
