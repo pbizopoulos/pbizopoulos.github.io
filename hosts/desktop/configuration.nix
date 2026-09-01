@@ -219,7 +219,6 @@
         inputs.canonicalization.packages.${pkgs.stdenv.system}.git_canonicalization
         pkgs.distrobox
         pkgs.waylock
-        pkgs.xdg-desktop-portal
       ];
     };
   };
@@ -246,5 +245,13 @@
         graphics = false;
       };
     };
+  };
+  xdg.portal = {
+    config.common.default = "*";
+    enable = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-gtk
+      xdg-desktop-portal-wlr
+    ];
   };
 }
