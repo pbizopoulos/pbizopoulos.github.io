@@ -66,13 +66,10 @@
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
   };
-  fonts = {
-    fontconfig.defaultFonts.emoji = [ "Noto Color Emoji" ];
-    packages = [
-      pkgs.noto-fonts
-      pkgs.noto-fonts-color-emoji
-    ];
-  };
+  fonts.packages = [
+    pkgs.noto-fonts
+    pkgs.noto-fonts-color-emoji
+  ];
   hardware = {
     enableRedistributableFirmware = true;
     graphics.enable = true;
