@@ -133,10 +133,7 @@
     };
     foot = {
       enable = true;
-      settings.main = {
-        font = "Liberation Mono:pixelsize=40:style=Bold";
-        initial-color-theme = "light";
-      };
+      settings.main.font = "Liberation Mono:pixelsize=40:style=Bold";
       theme = "solarized-light";
     };
     git = {
