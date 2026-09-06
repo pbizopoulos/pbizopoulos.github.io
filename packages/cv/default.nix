@@ -1,11 +1,13 @@
-{
-  pkgs ? import <nixpkgs> { },
-}:
-pkgs.writeShellApplication rec {
-  meta.description = "";
-  name = baseNameOf ./.;
-  runtimeInputs = [ pkgs.http-server ];
+{ pkgs, ... }:
+let
+  pname = baseNameOf ./.;
+  runtimeDeps = [ ];
+in
+pkgs.writeShellApplication {
+  meta.description = "An HTML package.";
+  name = pname;
+  runtimeInputs = runtimeDeps ++ [ pkgs.http-server ];
   text = ''
-    exec ${pkgs.http-server}/bin/http-server ${./.} "$@"
+    exec http-server ${./.} "$@"
   '';
 }
