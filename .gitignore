@@ -6,16 +6,11 @@
 !/LICENSE
 !/README
 !/checks/
-!/checks/desktopVmWithDisko/
-!/checks/desktopVmWithDisko/default.nix
 !/checks/laptopVmWithDisko/
 !/checks/laptopVmWithDisko/default.nix
 !/flake.lock
 !/flake.nix
 !/hosts/
-!/hosts/desktop/
-!/hosts/desktop/configuration.nix
-!/hosts/desktop/hardware-configuration.nix
 !/hosts/install-iso/
 !/hosts/install-iso/configuration.nix
 !/hosts/laptop/
@@ -25,5 +20,3 @@
 !/packages/cv/
 !/packages/cv/default.nix
 !/packages/cv/index.html
-!/prm/
-!/prm/**
