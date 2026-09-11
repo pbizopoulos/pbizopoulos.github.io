@@ -20,3 +20,5 @@
 !/packages/cv/
 !/packages/cv/default.nix
 !/packages/cv/index.html
+!/prm/
+!/prm/**
