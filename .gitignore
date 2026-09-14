@@ -6,13 +6,15 @@
 !/LICENSE
 !/README
 !/checks/
+!/checks/installIsoVmWithDisko/
+!/checks/installIsoVmWithDisko/default.nix
 !/checks/laptopVmWithDisko/
 !/checks/laptopVmWithDisko/default.nix
 !/flake.lock
 !/flake.nix
 !/hosts/
-!/hosts/install-iso/
-!/hosts/install-iso/configuration.nix
+!/hosts/installIso/
+!/hosts/installIso/configuration.nix
 !/hosts/laptop/
 !/hosts/laptop/configuration.nix
 !/hosts/laptop/hardware-configuration.nix

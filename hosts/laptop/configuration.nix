@@ -83,10 +83,13 @@
     hostName = baseNameOf ./.;
     wireless.iwd.enable = true;
   };
-  nix.settings.experimental-features = [
-    "flakes"
-    "nix-command"
-  ];
+  nix.settings = {
+    experimental-features = [
+      "flakes"
+      "nix-command"
+    ];
+    trusted-users = [ "pbizopoulos" ];
+  };
   nixpkgs.overlays = [
     (_: prev: {
       vmTools = prev.vmTools.override {
