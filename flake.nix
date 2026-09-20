@@ -1,16 +1,16 @@
 {
   inputs = {
-    canonicalization.url = "github:pbizopoulos/canonicalization";
+    canonical.url = "github:pbizopoulos/canonical";
     disko = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:nix-community/disko";
     };
-    nixpkgs.follows = "canonicalization/nixpkgs";
+    nixpkgs.follows = "canonical/nixpkgs";
     preservation.url = "github:nix-community/preservation";
   };
   outputs =
     inputs:
-    inputs.canonicalization.blueprint {
+    inputs.canonical.blueprint {
       inherit inputs;
       nixpkgs.config = {
         allowUnfree = true;
@@ -18,6 +18,6 @@
       };
     }
     // {
-      inherit (inputs.canonicalization) formatter;
+      inherit (inputs.canonical) formatter;
     };
 }
