@@ -1,5 +1,4 @@
 (async () => {
-  // Procedural furniture: no model downloads or full-resolution photo textures.
   const referenceCatalog = {
     awning: [3.6, 1.8, 2.65],
     canopy_bed: [1.55, 2.05, 1.95],
@@ -14,25 +13,25 @@
     towel_stack: [0.48, 0.32, 0.24],
     woven_chair: [0.68, 0.75, 0.85],
   };
-
   function addReferenceAsset(name, group, { THREE, box, cylinder, material: m }) {
-    if (!referenceCatalog[name]) return;
-    const [w, d, h] = referenceCatalog[name];
-    const b = (width, height, depth, x, y, z, finish = m.wood) =>
-      box(group, width, height, depth, x, y, z, finish);
-    const rod = (a, b, radius = 0.018, finish = m.wood) => {
-      const start = new THREE.Vector3(...a),
-        end = new THREE.Vector3(...b);
-      const part = cylinder(group, radius, radius, start.distanceTo(end), 0, 0, 0, finish, 12);
-      part.position.copy(start).add(end).multiplyScalar(0.5);
-      part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
-      return part;
-    };
+    if (!referenceCatalog[name]) {
+      return;
+    }
+    const [w, d, h] = referenceCatalog[name],
+      b = (width, height, depth, x, y, z, finish = m.wood) =>
+        box(group, width, height, depth, x, y, z, finish),
+      rod = (a, b, radius = 0.018, finish = m.wood) => {
+        const start = new THREE.Vector3(...a),
+          end = new THREE.Vector3(...b),
+          part = cylinder(group, radius, radius, start.distanceTo(end), 0, 0, 0, finish, 12);
+        part.position.copy(start).add(end).multiplyScalar(0.5);
+        part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
+        return part;
+      };
     if (name === "awning") {
       b(w, 0.12, 0.13, 0, h - 0.06, -d / 2, m.white);
       const canopy = b(w, 0.025, d, 0, h - 0.22, 0, m.ochre);
       canopy.rotation.x = 0.2;
-      // Scallops are a single extruded silhouette, not dozens of overlapping meshes.
       const shape = new THREE.Shape();
       shape.moveTo(-w / 2, 0);
       shape.lineTo(w / 2, 0);
@@ -43,11 +42,7 @@
       }
       shape.closePath();
       const valance = new THREE.Mesh(
-        new THREE.ExtrudeGeometry(shape, {
-          depth: 0.018,
-          bevelEnabled: false,
-          curveSegments: 4,
-        }),
+        new THREE.ExtrudeGeometry(shape, { bevelEnabled: false, curveSegments: 4, depth: 0.018 }),
         m.ochre,
       );
       valance.position.set(0, h - 0.4, d / 2 - 0.02);
@@ -62,10 +57,12 @@
       b(w, 0.22, d, 0, 0.11, 0, m.plaster);
       b(w + 0.08, 0.055, d + 0.05, 0, 0.25, 0, m.slate);
       b(w - 0.24, 0.85, 0.07, 0, 0.68, -d / 2 + 0.04, m.stone);
-      for (const side of [-1, 1]) b(0.14, 0.88, d, side * (w / 2 - 0.07), 0.7, 0, m.plaster);
+      for (const side of [-1, 1]) {
+        b(0.14, 0.88, d, side * (w / 2 - 0.07), 0.7, 0, m.plaster);
+      }
       for (let row = 0; row < 6; row += 1) {
         b(w - 0.28, 0.008, 0.01, 0, 0.32 + row * 0.13, -d / 2 + 0.08, m.slate);
-        for (let col = 0; col < 3; col += 1)
+        for (let col = 0; col < 3; col += 1) {
           b(
             0.008,
             0.12,
@@ -75,6 +72,7 @@
             -d / 2 + 0.08,
             m.slate,
           );
+        }
       }
       b(w + 0.13, 0.07, d + 0.07, 0, 1.17, 0, m.woodDark);
       const hood = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.68, 1.46, 4, 1), m.plaster);
@@ -102,45 +100,62 @@
       rod([0.06, 0.67, 0.3], [0.06, 0.67, 0.58], 0.075, m.cream);
       rod([-w / 2, h - 0.03, -d / 2 + 0.04], [w / 2, h - 0.03, -d / 2 + 0.04], 0.028);
       rod([-w / 2, 0.7, d / 2 - 0.04], [w / 2, 0.7, d / 2 - 0.04], 0.026);
-      for (const side of [-1, 1])
+      for (const side of [-1, 1]) {
         rod(
           [side * (w / 2 - 0.035), 0, d / 2 - 0.04],
           [side * (w / 2 - 0.035), 0.72, d / 2 - 0.04],
           0.026,
         );
+      }
     } else if (name === "garment_rack") {
       for (const side of [-1, 1]) {
-        for (const front of [-1, 1])
+        for (const front of [-1, 1]) {
           rod([(side * w) / 2, 0, (front * d) / 2], [side * w * 0.4, h, 0], 0.025);
+        }
       }
       rod([-w / 2, h - 0.04, 0], [w / 2, h - 0.04, 0], 0.024);
-      for (let i = 0; i < 7; i += 1) b(0.025, 0.025, d - 0.06, -0.43 + i * 0.143, 0.22, 0);
+      for (let i = 0; i < 7; i += 1) {
+        b(0.025, 0.025, d - 0.06, -0.43 + i * 0.143, 0.22, 0);
+      }
       for (const x of [-0.25, 0.12]) {
         rod([x, h - 0.1, 0], [x - 0.17, h - 0.28, 0], 0.012);
         rod([x - 0.17, h - 0.28, 0], [x + 0.17, h - 0.28, 0], 0.012);
         rod([x + 0.17, h - 0.28, 0], [x, h - 0.1, 0], 0.012);
       }
     } else if (name === "slatted_table") {
-      for (const x of [-1, 1])
-        for (const z of [-1, 1])
+      for (const x of [-1, 1]) {
+        for (const z of [-1, 1]) {
           b(0.045, h - 0.04, 0.045, x * (w / 2 - 0.06), (h - 0.04) / 2, z * (d / 2 - 0.06));
-      for (let i = 0; i < 9; i += 1) b(w / 10, 0.045, d, ((i - 4) * w) / 9, h - 0.023, 0);
-      for (const side of [-1, 1]) b(w, 0.075, 0.035, 0, h - 0.08, side * (d / 2 - 0.03));
+        }
+      }
+      for (let i = 0; i < 9; i += 1) {
+        b(w / 10, 0.045, d, ((i - 4) * w) / 9, h - 0.023, 0);
+      }
+      for (const side of [-1, 1]) {
+        b(w, 0.075, 0.035, 0, h - 0.08, side * (d / 2 - 0.03));
+      }
     } else if (name === "folding_chair" || name === "woven_chair") {
       const woven = name === "woven_chair";
       for (const side of [-1, 1]) {
         rod([side * w * 0.42, 0, -d * 0.4], [side * w * 0.42, 0.5, d * 0.3], 0.023);
         rod([side * w * 0.42, 0, d * 0.4], [side * w * 0.42, h, -d * 0.38], 0.023);
-        if (woven) b(0.06, 0.035, d * 0.8, side * w * 0.46, 0.63, 0);
+        if (woven) {
+          b(0.06, 0.035, d * 0.8, side * w * 0.46, 0.63, 0);
+        }
       }
       for (let i = 0; i < 7; i += 1) {
         b(w * 0.82, 0.025, d / 10, 0, 0.45, ((i - 3) * d) / 10, woven ? m.linen : m.wood);
         b(w * 0.82, 0.035, 0.027, 0, 0.58 + i * 0.04, -d * 0.35, woven ? m.linen : m.wood);
-        if (woven) b(0.04, 0.29, 0.032, ((i - 3) * w) / 9, 0.7, -d * 0.35 + 0.014, m.cream);
+        if (woven) {
+          b(0.04, 0.29, 0.032, ((i - 3) * w) / 9, 0.7, -d * 0.35 + 0.014, m.cream);
+        }
       }
     } else if (name === "sofa_bed") {
-      for (const x of [-0.78, 0.78])
-        for (const z of [-0.28, 0.28]) rod([x, 0, z], [x, 0.23, z], 0.035);
+      for (const x of [-0.78, 0.78]) {
+        for (const z of [-0.28, 0.28]) {
+          rod([x, 0, z], [x, 0.23, z], 0.035);
+        }
+      }
       b(w, 0.16, d, 0, 0.3, 0, m.woodDark);
       for (let i = 0; i < 3; i += 1) {
         b(w / 3 - 0.012, 0.15, d - 0.1, ((i - 1) * w) / 3, 0.45, 0.04, m.linen);
@@ -168,11 +183,16 @@
       b(0.47, 0.46, 0.015, 0.9, 0.47, d / 2 + 0.055, m.screen);
       b(0.36, 0.025, 0.035, 0.9, 0.72, d / 2 + 0.075, m.metal);
     } else if (name === "timber_rail") {
-      for (let i = 0; i <= 12; i += 1)
+      for (let i = 0; i <= 12; i += 1) {
         b(0.035, h - 0.1, 0.035, -w / 2 + (i * w) / 12, h / 2, 0, m.woodDark);
-      for (const y of [0.06, h - 0.03]) b(w + 0.04, 0.06, d, 0, y, 0, m.woodDark);
+      }
+      for (const y of [0.06, h - 0.03]) {
+        b(w + 0.04, 0.06, d, 0, y, 0, m.woodDark);
+      }
     } else if (name === "towel_stack") {
-      for (const x of [-0.12, 0.12]) rod([x, 0.08, -0.15], [x, 0.08, 0.15], 0.08, m.cream);
+      for (const x of [-0.12, 0.12]) {
+        rod([x, 0.08, -0.15], [x, 0.08, 0.15], 0.08, m.cream);
+      }
       rod([0, 0.19, -0.14], [0, 0.19, 0.14], 0.07, m.linen);
     } else if (name === "gym_bench") {
       for (const z of [-0.5, 0.5]) {
@@ -183,18 +203,17 @@
       b(0.42, 0.1, 0.9, 0, 0.75, -0.18, m.screen).rotation.x = 0.7;
     }
   }
-
   function referenceApartment(buildExample) {
     const room = (name, floor, cols, rows, x, z, items, extra = {}) => ({
-      name,
-      floor,
       cols,
-      rows,
-      x,
-      z,
+      floor,
       items,
+      name,
+      rows,
       style: "mediterranean",
       walls: ["north", "east", "south", "west"],
+      x,
+      z,
       ...extra,
     });
     return buildExample(
@@ -376,26 +395,26 @@
       foldedRanges,
       unfoldEffect,
     } = await import("@codemirror/language"),
-    { defaultKeymap, history, historyKeymap, indentWithTab } = await import("@codemirror/commands");
-  const lightAssets = [
-    "ceiling_light",
-    "fluorescent_light",
-    "pendant_light",
-    "track_light",
-    "downlight",
-    "garden_lamp",
-    "lantern",
-    "lamp",
-    "table_lamp",
-    "wall_lamp",
-  ];
-  const overheadLights = lightAssets.slice(0, 5);
+    { defaultKeymap, history, historyKeymap, indentWithTab } = await import("@codemirror/commands"),
+    lightAssets = [
+      "ceiling_light",
+      "fluorescent_light",
+      "pendant_light",
+      "track_light",
+      "downlight",
+      "garden_lamp",
+      "lantern",
+      "lamp",
+      "table_lamp",
+      "wall_lamp",
+    ],
+    overheadLights = lightAssets.slice(0, 5);
   function sharedWall(room, other, dir) {
     if (room === other || room.floor !== other.floor) {
       return false;
     }
-    const horizontalOverlap = other.x < room.x + room.cols && other.x + other.cols > room.x;
-    const verticalOverlap = other.z < room.z + room.rows && other.z + other.rows > room.z;
+    const horizontalOverlap = other.x < room.x + room.cols && other.x + other.cols > room.x,
+      verticalOverlap = other.z < room.z + room.rows && other.z + other.rows > room.z;
     return dir === "north"
       ? other.z + other.rows === room.z && horizontalOverlap
       : dir === "south"
@@ -416,19 +435,20 @@
       const additions = [];
       if (room.kind !== "balcony") {
         const exterior = ["north", "east", "south", "west"].filter(
-          (dir) => !program.rooms.some((other) => sharedWall(room, other, dir)),
-        );
-        const walls = [...new Set([...room.walls, ...exterior])];
-        const wallCommand = `WALLS ${walls.join(" ") || "none"}`;
+            (dir) => !program.rooms.some((other) => sharedWall(room, other, dir)),
+          ),
+          walls = [...new Set([...room.walls, ...exterior])],
+          wallCommand = `WALLS ${walls.join(" ") || "none"}`;
         if (room.wallsLine) {
           lines[room.wallsLine - 1] = wallCommand;
         } else {
           additions.push(wallCommand);
         }
         const eligible = exterior.filter(
-          (dir) => (dir === "east" || dir === "west" ? room.rows : room.cols) * program.grid > 2.2,
-        );
-        const doors = [...room.doors];
+            (dir) =>
+              (dir === "east" || dir === "west" ? room.rows : room.cols) * program.grid > 2.2,
+          ),
+          doors = [...room.doors];
         if (
           eligible.length > 0 &&
           eligible.every((dir) => doors.includes(dir)) &&
@@ -442,8 +462,8 @@
             additions.push(doorCommand);
           }
         }
-        const windows = eligible.filter((dir) => !doors.includes(dir));
-        const command = `WINDOWS ${windows.join(" ") || "none"}`;
+        const windows = eligible.filter((dir) => !doors.includes(dir)),
+          command = `WINDOWS ${windows.join(" ") || "none"}`;
         if (room.windowsLine) {
           lines[room.windowsLine - 1] = command;
         } else {
@@ -454,16 +474,16 @@
         }
       }
       const existing =
-        program.layouts[room.name]
-          .flat()
-          .filter((token) => token && lightAssets.includes(token.name)).length +
-        room.mounts.filter((mount) => mount.name === "wall_lamp").length +
-        room.lights.length;
-      const desired = Math.max(
-        room.kind === "balcony" ? 1 : 2,
-        Math.min(6, Math.ceil((room.cols * room.rows * program.grid ** 2) / 24)),
-      );
-      const occupiedLights = [];
+          program.layouts[room.name]
+            .flat()
+            .filter((token) => token && lightAssets.includes(token.name)).length +
+          room.mounts.filter((mount) => mount.name === "wall_lamp").length +
+          room.lights.length,
+        desired = Math.max(
+          room.kind === "balcony" ? 1 : 2,
+          Math.min(6, Math.ceil((room.cols * room.rows * program.grid ** 2) / 24)),
+        ),
+        occupiedLights = [];
       for (let i = existing; i < desired; i += 1) {
         const fraction = (i + 1) / (desired + 1);
         let x = ((room.cols - 1) * fraction).toFixed(1),
@@ -483,8 +503,8 @@
                     ? "pendant_light"
                     : "downlight";
         if (room.kind === "balcony") {
-          const candidates = [];
-          const layout = program.layouts[room.name];
+          const candidates = [],
+            layout = program.layouts[room.name];
           for (let row = 0; row < room.rows; row += 1) {
             for (let col = 0; col < room.cols; col += 1) {
               const clear =
@@ -496,11 +516,11 @@
                       return true;
                     }
                     const angle = (token.yaw * Math.PI) / 180,
-                      [w, d] = token.dimensions;
-                    const halfX =
-                      (Math.abs(w * Math.cos(angle)) + Math.abs(d * Math.sin(angle)) + 0.35) / 2;
-                    const halfZ =
-                      (Math.abs(w * Math.sin(angle)) + Math.abs(d * Math.cos(angle)) + 0.35) / 2;
+                      [w, d] = token.dimensions,
+                      halfX =
+                        (Math.abs(w * Math.cos(angle)) + Math.abs(d * Math.sin(angle)) + 0.35) / 2,
+                      halfZ =
+                        (Math.abs(w * Math.sin(angle)) + Math.abs(d * Math.cos(angle)) + 0.35) / 2;
                     return (
                       Math.abs((col - c) * program.grid) > halfX ||
                       Math.abs((row - r) * program.grid) > halfZ
@@ -526,17 +546,17 @@
       lines[room.line - 1] += additions.length > 0 ? `\n${additions.join("\n")}` : "";
     }
     const site = /lunar/iu.test(name)
-      ? "sand"
-      : /cloud city/iu.test(name)
-        ? "none"
-        : /rooftop|drowned/iu.test(name)
-          ? "paving"
-          : "grass";
-    const facade = /lunar|museum/iu.test(name)
-      ? "concrete"
-      : /loft|library/iu.test(name)
-        ? "brick"
-        : "plaster";
+        ? "sand"
+        : /cloud city/iu.test(name)
+          ? "none"
+          : /rooftop|drowned/iu.test(name)
+            ? "paving"
+            : "grass",
+      facade = /lunar|museum/iu.test(name)
+        ? "concrete"
+        : /loft|library/iu.test(name)
+          ? "brick"
+          : "plaster";
     return `WALL_THICKNESS 0.24 0.12\nSITE ${site} 5\nFACADE ${facade}\nROOF flat\n${lines.join("\n")}`;
   }
   function facadeMaterial(kind) {
@@ -588,9 +608,9 @@
     const index = { east: 0, north: 5, south: 4, west: 1 }[dir];
     mesh.material = Array.from({ length: 6 }).fill(mesh.material);
     mesh.material[index] = finish;
-    const { position, uv } = mesh.geometry.attributes;
-    const face = mesh.geometry.groups[index];
-    const indices = mesh.geometry.index;
+    const { position, uv } = mesh.geometry.attributes,
+      face = mesh.geometry.groups[index],
+      indices = mesh.geometry.index;
     for (let i = face.start; i < face.start + face.count; i += 1) {
       const vertex = indices.getX(i);
       uv.setXY(
@@ -603,10 +623,10 @@
     }
   }
   function addExterior(program, root, ceilings, addBox) {
-    const finish = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
-    const trim = finish("#aaa497"),
-      roof = finish(program.roof === "pitched" ? "#655149" : "#69716e");
-    const width = program.cols * program.grid,
+    const finish = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 }),
+      trim = finish("#aaa497"),
+      roof = finish(program.roof === "pitched" ? "#655149" : "#69716e"),
+      width = program.cols * program.grid,
       depth = program.rows * program.grid;
     if (program.site !== "none") {
       const group = new THREE.Group();
@@ -632,8 +652,8 @@
         continue;
       }
       const w = room.cols * program.grid,
-        d = room.rows * program.grid;
-      const base = new THREE.Group();
+        d = room.rows * program.grid,
+        base = new THREE.Group();
       base.userData.floor = room.floor;
       root.add(base);
       if (room.floor === 0 && program.site !== "none") {
@@ -725,33 +745,33 @@
     return mesh;
   }
   const decorCatalog = {
-    mirror: [0.6, 0.06, 0.9],
-    painting: [0.85, 0.055, 0.65],
-    poster: [0.6, 0.025, 0.85],
-    vase: [0.22, 0.22, 0.34],
-    wall_clock: [0.32, 0.06, 0.32],
-    wall_shelf: [0.8, 0.22, 0.32],
-  };
-  const wallDecor = ["poster", "painting", "mirror", "wall_clock", "wall_shelf"];
+      mirror: [0.6, 0.06, 0.9],
+      painting: [0.85, 0.055, 0.65],
+      poster: [0.6, 0.025, 0.85],
+      vase: [0.22, 0.22, 0.34],
+      wall_clock: [0.32, 0.06, 0.32],
+      wall_shelf: [0.8, 0.22, 0.32],
+    },
+    wallDecor = ["poster", "painting", "mirror", "wall_clock", "wall_shelf"];
   function addDecoration(group, name, addBox) {
     if (!decorCatalog[name]) {
       return;
     }
     group.userData.detailed = false;
-    const [w, d, h] = decorCatalog[name];
-    const material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.78 });
-    const frame = material("#6a4a35"),
+    const [w, d, h] = decorCatalog[name],
+      material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.78 }),
+      frame = material("#6a4a35"),
       paper = material("#f3e4c7"),
       ink = material("#285d64"),
-      accent = material("#c36d42");
-    const mesh = (geometry, finish, x = 0, y = 0, z = 0) => {
-      const part = new THREE.Mesh(geometry, finish);
-      part.position.set(x, y, z);
-      part.castShadow = true;
-      part.receiveShadow = true;
-      group.add(part);
-      return part;
-    };
+      accent = material("#c36d42"),
+      mesh = (geometry, finish, x = 0, y = 0, z = 0) => {
+        const part = new THREE.Mesh(geometry, finish);
+        part.position.set(x, y, z);
+        part.castShadow = true;
+        part.receiveShadow = true;
+        group.add(part);
+        return part;
+      };
     if (name === "vase") {
       const profile = [
         [0.055, 0],
@@ -777,17 +797,17 @@
       const rim = mesh(new THREE.CylinderGeometry(w / 2, w / 2, d, 32), frame, 0, h / 2);
       rim.rotation.x = Math.PI / 2;
       for (let i = 0; i < 12; i += 1) {
-        const angle = (i * Math.PI) / 6;
-        const tick = addBox(
-          group,
-          0.009,
-          0.02,
-          0.005,
-          Math.sin(angle) * w * 0.36,
-          h / 2 + Math.cos(angle) * w * 0.36,
-          d / 2 + 0.006,
-          ink,
-        );
+        const angle = (i * Math.PI) / 6,
+          tick = addBox(
+            group,
+            0.009,
+            0.02,
+            0.005,
+            Math.sin(angle) * w * 0.36,
+            h / 2 + Math.cos(angle) * w * 0.36,
+            d / 2 + 0.006,
+            ink,
+          );
         tick.rotation.z = -angle;
       }
       addBox(group, 0.009, h * 0.28, 0.007, 0, h * 0.62, d / 2 + 0.01, ink);
@@ -839,59 +859,59 @@
     }
   }
   const decorationExample =
-    "# Posters, artwork, a clock, a shelf, and a ceramic vase\nGRID 1\nROOM gallery 8x8 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS north east west\nMOUNT south 1 poster\nMOUNT south 6 mirror\nMOUNT east 0 painting\nMOUNT east 7 wall_shelf\nMOUNT north 0 wall_clock\nLIGHT track_light AT 2,2 POWER 24\nLIGHT pendant_light AT 5,5 POWER 18\nLAYOUT gallery\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | vase | . | . | . | . | .\n. | . | . | . | . | . | . | .\nEND";
-  const daylightStrength = { value: 0 },
+      "# Posters, artwork, a clock, a shelf, and a ceramic vase\nGRID 1\nROOM gallery 8x8 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS north east west\nMOUNT south 1 poster\nMOUNT south 6 mirror\nMOUNT east 0 painting\nMOUNT east 7 wall_shelf\nMOUNT north 0 wall_clock\nLIGHT track_light AT 2,2 POWER 24\nLIGHT pendant_light AT 5,5 POWER 18\nLAYOUT gallery\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | vase | . | . | . | . | .\n. | . | . | . | . | . | . | .\nEND",
+    daylightStrength = { value: 0 },
     daylightPass = { value: 1 },
     daylightSourceMaterials = new Set(),
     daylightCeilings = new Set();
   function addDaylightFill(program, root) {
     const sources = new Map(
-      program.rooms.map((room) => [
-        room,
-        room.daylightOpenings
-          .filter((opening) => !opening.shared)
-          .reduce((area, opening) => area + opening.area, 0),
-      ]),
-    );
-    const roomMaterials = new Map();
+        program.rooms.map((room) => [
+          room,
+          room.daylightOpenings
+            .filter((opening) => !opening.shared)
+            .reduce((area, opening) => area + opening.area, 0),
+        ]),
+      ),
+      roomMaterials = new Map();
     for (const room of program.rooms) {
-      const area = room.cols * room.rows * program.grid ** 2;
-      const openings = room.daylightOpenings.map((opening) => {
-        let weight = opening.area;
-        if (opening.shared) {
-          weight = 0;
-          for (const other of program.rooms) {
-            if (!sharedWall(room, other, opening.dir)) {
-              continue;
-            }
-            const opposite = { east: "west", north: "south", south: "north", west: "east" };
-            const linked = other.daylightOpenings.some(
-              (candidate) =>
-                candidate.dir === opposite[opening.dir] &&
-                Math.hypot(candidate.x - opening.x, candidate.z - opening.z) <
-                  (candidate.span + opening.span) / 2,
-            );
-            if (linked) {
-              weight +=
-                opening.area *
-                0.2 *
-                Math.min(
-                  1,
-                  sources.get(other) / Math.sqrt(other.cols * other.rows * program.grid ** 2),
+      const area = room.cols * room.rows * program.grid ** 2,
+        openings = room.daylightOpenings.map((opening) => {
+          let weight = opening.area;
+          if (opening.shared) {
+            weight = 0;
+            for (const other of program.rooms) {
+              if (!sharedWall(room, other, opening.dir)) {
+                continue;
+              }
+              const opposite = { east: "west", north: "south", south: "north", west: "east" },
+                linked = other.daylightOpenings.some(
+                  (candidate) =>
+                    candidate.dir === opposite[opening.dir] &&
+                    Math.hypot(candidate.x - opening.x, candidate.z - opening.z) <
+                      (candidate.span + opening.span) / 2,
                 );
+              if (linked) {
+                weight +=
+                  opening.area *
+                  0.2 *
+                  Math.min(
+                    1,
+                    sources.get(other) / Math.sqrt(other.cols * other.rows * program.grid ** 2),
+                  );
+              }
             }
           }
-        }
-        return new THREE.Vector4(opening.x, opening.z, weight / Math.sqrt(area), 0);
-      });
+          return new THREE.Vector4(opening.x, opening.z, weight / Math.sqrt(area), 0);
+        });
       while (openings.length < 4) {
         openings.push(new THREE.Vector4());
       }
       roomMaterials.set(room.name, { materials: new Map(), openings });
     }
     function visit(node, roomName) {
-      const name = node.userData.token?.room || roomName;
-      const entry = roomMaterials.get(name);
+      const name = node.userData.token?.room || roomName,
+        entry = roomMaterials.get(name);
       if (node.isMesh && entry) {
         const finish = (source) => {
           if (!source.isMeshStandardMaterial || source.userData.windowPane) {
@@ -947,35 +967,35 @@
     visit(root);
   }
   function createFixtureRenderer(renderer, scene, camera, sunlight) {
-    const passTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
-    const sumTarget = new THREE.WebGLRenderTarget(1, 1, {
-      depthBuffer: false,
-      type: THREE.HalfFloatType,
-    });
-    const quadScene = new THREE.Scene(),
-      quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const vertexShader =
-      "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
-    const sumMaterial = new THREE.ShaderMaterial({
-      blending: THREE.AdditiveBlending,
-      depthTest: false,
-      depthWrite: false,
-      fragmentShader:
-        "uniform sampler2D source; varying vec2 vUv; void main() { gl_FragColor = texture2D(source, vUv); }",
-      toneMapped: false,
-      transparent: true,
-      uniforms: { source: { value: passTarget.texture } },
-      vertexShader,
-    });
-    const outputMaterial = new THREE.ShaderMaterial({
-      depthTest: false,
-      depthWrite: false,
-      fragmentShader:
-        "uniform sampler2D source; varying vec2 vUv;\n      void main() { gl_FragColor = vec4(texture2D(source, vUv).rgb, 1.0);\n        #include <tonemapping_fragment>\n        #include <colorspace_fragment>\n      }",
-      uniforms: { source: { value: sumTarget.texture } },
-      vertexShader,
-    });
-    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sumMaterial);
+    const passTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }),
+      sumTarget = new THREE.WebGLRenderTarget(1, 1, {
+        depthBuffer: false,
+        type: THREE.HalfFloatType,
+      }),
+      quadScene = new THREE.Scene(),
+      quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+      vertexShader =
+        "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+      sumMaterial = new THREE.ShaderMaterial({
+        blending: THREE.AdditiveBlending,
+        depthTest: false,
+        depthWrite: false,
+        fragmentShader:
+          "uniform sampler2D source; varying vec2 vUv; void main() { gl_FragColor = texture2D(source, vUv); }",
+        toneMapped: false,
+        transparent: true,
+        uniforms: { source: { value: passTarget.texture } },
+        vertexShader,
+      }),
+      outputMaterial = new THREE.ShaderMaterial({
+        depthTest: false,
+        depthWrite: false,
+        fragmentShader:
+          "uniform sampler2D source; varying vec2 vUv;\n      void main() { gl_FragColor = vec4(texture2D(source, vUv).rgb, 1.0);\n        #include <tonemapping_fragment>\n        #include <colorspace_fragment>\n      }",
+        uniforms: { source: { value: sumTarget.texture } },
+        vertexShader,
+      }),
+      quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sumMaterial);
     quadScene.add(quad);
     const size = new THREE.Vector2(),
       black = new THREE.Color(0);
@@ -1000,21 +1020,19 @@
         sumTarget.setSize(size.x, size.y);
       }
       const saved = {
-        autoClear: renderer.autoClear,
-        background: scene.background,
-        clearAlpha: renderer.getClearAlpha(),
-        clearColor: renderer.getClearColor(new THREE.Color()),
-        shadows: renderer.shadowMap.needsUpdate,
-        sunVisible: sunlight.visible,
-        target: renderer.getRenderTarget(),
-        toneMapping: renderer.toneMapping,
-      };
-      const emission = [...materials]
-        .filter((m) => m.emissive)
-        .map((m) => [m, m.emissiveIntensity]);
-      const unlit = [...materials]
-        .filter((m) => !m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial && m.colorWrite)
-        .map((m) => [m, m.colorWrite]);
+          autoClear: renderer.autoClear,
+          background: scene.background,
+          clearAlpha: renderer.getClearAlpha(),
+          clearColor: renderer.getClearColor(new THREE.Color()),
+          shadows: renderer.shadowMap.needsUpdate,
+          sunVisible: sunlight.visible,
+          target: renderer.getRenderTarget(),
+          toneMapping: renderer.toneMapping,
+        },
+        emission = [...materials].filter((m) => m.emissive).map((m) => [m, m.emissiveIntensity]),
+        unlit = [...materials]
+          .filter((m) => !m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial && m.colorWrite)
+          .map((m) => [m, m.colorWrite]);
       try {
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0, 1);
@@ -2560,11 +2578,11 @@
     selectionCard = $("selectionCard");
   Object.assign(catalog, decorCatalog);
   let compileTimer,
-    currentProgram,
     compiledSource,
+    currentProgram,
     firstPerson = false,
-    focusRoom,
     focusFloor,
+    focusRoom,
     wallRoots = [],
     ceilingRoots = [],
     ceilingsCollapsed = true,
@@ -2572,10 +2590,10 @@
     gridVisible = false,
     hoverOutline,
     hoveredGroup,
-    selectionPinned = false,
-    selectionPointer,
     lastPointer,
     looking = false,
+    selectionPinned = false,
+    selectionPointer,
     wallRoot,
     wallsCollapsed = false;
   const pressedKeys = new Set();
@@ -2836,10 +2854,10 @@
     }
     const linked = token.match(/^(.*)<([^<>]*)>$/u),
       url = productUrl(linked?.[2], line),
-      object = linked ? linked[1] : token;
-    const match = object.match(
-      /^([a-z][a-z0-9_]*|[1-9]\d*)(?:@(-?\d+(?:\.\d+)?))?(?:\[(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\])?(?:\(([a-z][a-z0-9_]*_on_top)\))?(?:~(north|east|south|west))?$/iu,
-    );
+      object = linked ? linked[1] : token,
+      match = object.match(
+        /^([a-z][a-z0-9_]*|[1-9]\d*)(?:@(-?\d+(?:\.\d+)?))?(?:\[(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\])?(?:\(([a-z][a-z0-9_]*_on_top)\))?(?:~(north|east|south|west))?$/iu,
+      );
     if (!match) {
       fail(`Invalid object "${token}"`, line);
     }
@@ -3349,15 +3367,15 @@
     }
     for (const stop of elevatorStops) {
       const aligned = elevatorStops.filter(
-        (other) =>
-          other !== stop &&
-          other.x === stop.x &&
-          other.z === stop.z &&
-          other.halfX === stop.halfX &&
-          other.halfZ === stop.halfZ &&
-          (other.token.yaw - stop.token.yaw) % 360 === 0,
-      );
-      const upper = aligned.find((other) => other.room.floor === stop.room.floor + 1);
+          (other) =>
+            other !== stop &&
+            other.x === stop.x &&
+            other.z === stop.z &&
+            other.halfX === stop.halfX &&
+            other.halfZ === stop.halfZ &&
+            (other.token.yaw - stop.token.yaw) % 360 === 0,
+        ),
+        upper = aligned.find((other) => other.room.floor === stop.room.floor + 1);
       if (!upper && !aligned.some((other) => other.room.floor === stop.room.floor - 1)) {
         fail(
           "Elevators need aligned stops with matching size and rotation on at least two consecutive floors",
@@ -3421,9 +3439,9 @@
   scene.add(sceneRoot);
   const shadowRoot = new THREE.Group(),
     shadowMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  let renderDirty = true,
-    fixtureOverride,
-    previousDaylight;
+  let fixtureOverride,
+    previousDaylight,
+    renderDirty = true;
   const lastView = new THREE.Matrix4(),
     renderFixtures = createFixtureRenderer(renderer, scene, camera, sunlight);
   function requestRender() {
@@ -3660,12 +3678,6 @@
   const grainTexture = surfaceTexture("wood"),
     weaveTexture = surfaceTexture("fabric"),
     colors = {
-      ochre: "#c96a16",
-      linen: "#a49d8e",
-      plaster: "#f1ede3",
-      stone: "#c9c1b2",
-      slate: "#655f54",
-      terracotta: "#ad6442",
       amber: "#edb956",
       ceiling: "#f5f2eb",
       clay: "#b97861",
@@ -3676,9 +3688,15 @@
       floor: "#9f7656",
       glow: "#d6fff1",
       green: "#5c956f",
+      linen: "#a49d8e",
       metal: "#586873",
+      ochre: "#c96a16",
+      plaster: "#f1ede3",
       rug: "#aa7055",
       screen: "#16232b",
+      slate: "#655f54",
+      stone: "#c9c1b2",
+      terracotta: "#ad6442",
       wall: "#d4d0c7",
       water: "#42bfd1",
       white: "#ebe9e2",
@@ -3841,33 +3859,40 @@
       group.add(leaf);
     }
   }
-  // Merge only static, opaque siblings. Keep token groups intact for picking and editing.
-  // Lights and transparent panes retain their individual render/lifecycle behavior.
   function batchFurniture(group) {
     const batches = new Map();
     for (const child of group.children) {
       if (
         !child.isMesh ||
-        child.children.length ||
+        child.children.length > 0 ||
         Array.isArray(child.material) ||
         child.material.transparent
-      )
+      ) {
         continue;
+      }
       const key = `${child.material.uuid}:${child.castShadow}:${child.receiveShadow}`;
-      if (!batches.has(key)) batches.set(key, []);
+      if (!batches.has(key)) {
+        batches.set(key, []);
+      }
       batches.get(key).push(child);
     }
     for (const meshes of batches.values()) {
-      if (meshes.length < 2) continue;
+      if (meshes.length < 2) {
+        continue;
+      }
       const parts = meshes.map((mesh) => {
-        mesh.updateMatrix();
-        const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
-        geometry.applyMatrix4(mesh.matrix);
-        return geometry;
-      });
-      const geometry = mergeGeometries(parts);
+          mesh.updateMatrix();
+          const geometry = mesh.geometry.index
+            ? mesh.geometry.toNonIndexed()
+            : mesh.geometry.clone();
+          geometry.applyMatrix4(mesh.matrix);
+          return geometry;
+        }),
+        geometry = mergeGeometries(parts);
       parts.forEach((part) => part.dispose());
-      if (!geometry) continue;
+      if (!geometry) {
+        continue;
+      }
       const combined = new THREE.Mesh(geometry, meshes[0].material);
       combined.castShadow = meshes[0].castShadow;
       combined.receiveShadow = meshes[0].receiveShadow;
@@ -4219,8 +4244,8 @@
           }
           for (const side of [-1, 1]) {
             for (let i = 0; i < 12; i += 1) {
-              const z = cd / 2 - ((i + 0.5) * cd) / 12;
-              const y = (ch * (i + 0.5)) / 12;
+              const z = cd / 2 - ((i + 0.5) * cd) / 12,
+                y = (ch * (i + 0.5)) / 12;
               box(
                 group,
                 0.035,
@@ -4882,8 +4907,8 @@
       room.daylightOpenings = [];
       for (const dir of ["north", "east", "south", "west"]) {
         if (!room.walls.includes(dir)) {
-          const vertical = dir === "east" || dir === "west";
-          const span = vertical ? depth : width;
+          const vertical = dir === "east" || dir === "west",
+            span = vertical ? depth : width;
           room.daylightOpenings.push({
             area: span * wallHeight,
             dir,
@@ -4895,63 +4920,63 @@
         }
       }
       const floorMaterial =
-        room.style === "mediterranean"
-          ? room.kind === "balcony"
-            ? material.terracotta
-            : material.stone
-          : room.style === "liminal"
-            ? material.yellow
-            : room.style === "industrial"
-              ? material.concrete
-              : room.style === "aquatic"
-                ? material.white
-                : room.kind === "balcony"
-                  ? mat("#b9aa95")
-                  : /(bath|wash)/u.test(room.name)
-                    ? mat("#d6e0db")
-                    : /(kitchen)/u.test(room.name)
-                      ? mat("#ccc7b9")
-                      : material.floor;
-      const openings = program.connectors
-        .filter((link) => link.upper === room)
-        .map((link) => ({
-          x1: (link.x - link.halfX - program.cols / 2) * program.grid,
-          x2: (link.x + link.halfX - program.cols / 2) * program.grid,
-          z1: (link.z - link.halfZ - program.rows / 2) * program.grid,
-          z2: (link.z + link.halfZ - program.rows / 2) * program.grid,
-        }));
-      const floorPart = (w, h, d, x, y, z, finish, parent = roomRoot, holes = openings) => {
-        let parts = [{ x1: x - w / 2, x2: x + w / 2, z1: z - d / 2, z2: z + d / 2 }];
-        for (const hole of holes) {
-          parts = parts.flatMap((part) => {
-            const x1 = Math.max(part.x1, hole.x1),
-              x2 = Math.min(part.x2, hole.x2),
-              z1 = Math.max(part.z1, hole.z1),
-              z2 = Math.min(part.z2, hole.z2);
-            if (x1 >= x2 || z1 >= z2) {
-              return [part];
-            }
-            return [
-              { x1: part.x1, x2: x1, z1: part.z1, z2: part.z2 },
-              { x1: x2, x2: part.x2, z1: part.z1, z2: part.z2 },
-              { x1, x2, z1: part.z1, z2: z1 },
-              { x1, x2, z1: z2, z2: part.z2 },
-            ].filter((piece) => piece.x2 > piece.x1 && piece.z2 > piece.z1);
-          });
-        }
-        for (const part of parts) {
-          box(
-            parent,
-            part.x2 - part.x1,
-            h,
-            part.z2 - part.z1,
-            (part.x1 + part.x2) / 2,
-            y,
-            (part.z1 + part.z2) / 2,
-            finish,
-          );
-        }
-      };
+          room.style === "mediterranean"
+            ? room.kind === "balcony"
+              ? material.terracotta
+              : material.stone
+            : room.style === "liminal"
+              ? material.yellow
+              : room.style === "industrial"
+                ? material.concrete
+                : room.style === "aquatic"
+                  ? material.white
+                  : room.kind === "balcony"
+                    ? mat("#b9aa95")
+                    : /(bath|wash)/u.test(room.name)
+                      ? mat("#d6e0db")
+                      : /(kitchen)/u.test(room.name)
+                        ? mat("#ccc7b9")
+                        : material.floor,
+        openings = program.connectors
+          .filter((link) => link.upper === room)
+          .map((link) => ({
+            x1: (link.x - link.halfX - program.cols / 2) * program.grid,
+            x2: (link.x + link.halfX - program.cols / 2) * program.grid,
+            z1: (link.z - link.halfZ - program.rows / 2) * program.grid,
+            z2: (link.z + link.halfZ - program.rows / 2) * program.grid,
+          })),
+        floorPart = (w, h, d, x, y, z, finish, parent = roomRoot, holes = openings) => {
+          let parts = [{ x1: x - w / 2, x2: x + w / 2, z1: z - d / 2, z2: z + d / 2 }];
+          for (const hole of holes) {
+            parts = parts.flatMap((part) => {
+              const x1 = Math.max(part.x1, hole.x1),
+                x2 = Math.min(part.x2, hole.x2),
+                z1 = Math.max(part.z1, hole.z1),
+                z2 = Math.min(part.z2, hole.z2);
+              if (x1 >= x2 || z1 >= z2) {
+                return [part];
+              }
+              return [
+                { x1: part.x1, x2: x1, z1: part.z1, z2: part.z2 },
+                { x1: x2, x2: part.x2, z1: part.z1, z2: part.z2 },
+                { x1, x2, z1: part.z1, z2: z1 },
+                { x1, x2, z1: z2, z2: part.z2 },
+              ].filter((piece) => piece.x2 > piece.x1 && piece.z2 > piece.z1);
+            });
+          }
+          for (const part of parts) {
+            box(
+              parent,
+              part.x2 - part.x1,
+              h,
+              part.z2 - part.z1,
+              (part.x1 + part.x2) / 2,
+              y,
+              (part.z1 + part.z2) / 2,
+              finish,
+            );
+          }
+        };
       floorPart(width + 0.02, 0.17, depth + 0.02, centerX, -0.105, centerZ, floorMaterial);
       if (room.kind !== "balcony") {
         const ceiling = new THREE.Group(),
@@ -5201,14 +5226,14 @@
               room.style === "mediterranean" ? material.wood : material.white,
             );
           }
-          const leafLength = gap - 0.1;
-          const outward = { east: 1, north: -1, south: 1, west: -1 }[dir];
-          const glazed =
-            room.style === "mediterranean" &&
-            (!sharedEdge ||
-              program.rooms.some(
-                (other) => other.kind === "balcony" && sharedWall(room, other, dir),
-              ));
+          const leafLength = gap - 0.1,
+            outward = { east: 1, north: -1, south: 1, west: -1 }[dir],
+            glazed =
+              room.style === "mediterranean" &&
+              (!sharedEdge ||
+                program.rooms.some(
+                  (other) => other.kind === "balcony" && sharedWall(room, other, dir),
+                ));
           if (glazed) {
             const leaf = new THREE.Group();
             leaf.position.set(
@@ -5598,12 +5623,12 @@
       );
       return;
     }
-    const destination = floor === link.room.floor ? link.upper : link.room;
-    const standing = findStandingPosition(
-      destination,
-      (link.x - currentProgram.cols / 2) * currentProgram.grid,
-      (link.z - currentProgram.rows / 2) * currentProgram.grid,
-    );
+    const destination = floor === link.room.floor ? link.upper : link.room,
+      standing = findStandingPosition(
+        destination,
+        (link.x - currentProgram.cols / 2) * currentProgram.grid,
+        (link.z - currentProgram.rows / 2) * currentProgram.grid,
+      );
     if (!standing) {
       showStatus("The destination has no clear landing", "warn");
       return;
@@ -6265,8 +6290,8 @@
       clearHover();
     }
   });
-  const requestedExample = new URLSearchParams(location.search).get("example");
-  const sharedSource = new URLSearchParams(location.hash.slice(1)).get("scene");
+  const requestedExample = new URLSearchParams(location.search).get("example"),
+    sharedSource = new URLSearchParams(location.hash.slice(1)).get("scene");
   if (sharedSource === null) {
     loadExample(examples[requestedExample] ? requestedExample : "Living room");
   } else {
