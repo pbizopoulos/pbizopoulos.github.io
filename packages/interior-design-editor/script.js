@@ -4,20 +4,26 @@
     archway: [3.6, 0.3, 2.7],
     awning: [3.6, 1.8, 2.65],
     bbq: [0.85, 0.55, 0.95],
+    breakfast_bar: [1.5, 0.48, 1.05],
+    cafe_setting: [0.65, 0.38, 0.22],
     canopy_bed: [1.55, 2.05, 1.95],
     ceiling_fan: [1.2, 1.2, 2.65],
     citrus_tree: [2.2, 2.2, 2.8],
+    curtain_pair: [1.8, 0.18, 2.5],
     cypress: [1.2, 1.2, 3.5],
     dumbbells: [0.85, 0.48, 0.32],
     fireplace: [1.35, 0.65, 2.7],
     floor_drain: [0.18, 0.18, 0.015],
+    flower_border: [2.4, 0.65, 0.65],
     folding_chair: [0.5, 0.58, 0.88],
     garden_steps: [1.5, 1.5, 0.6],
     garment_rack: [1.05, 0.5, 1.7],
     globe_lamp: [0.42, 0.42, 1.65],
+    grape_trellis: [2.4, 0.4, 2.5],
     gym_bench: [0.65, 1.45, 1.1],
     gym_mat: [1.8, 1.2, 0.025],
     kilim_rug: [1.4, 0.8, 0.015],
+    kitchen_accessories: [0.65, 0.32, 0.42],
     kitchenette: [2.4, 0.65, 2.25],
     olive_tree: [2.5, 2.5, 2.8],
     outdoor_kitchen: [2.4, 0.7, 0.95],
@@ -35,6 +41,7 @@
     timber_pergola: [3.6, 2.8, 2.7],
     timber_rail: [2.4, 0.1, 1.05],
     topiary_tree: [2.2, 2.2, 3.2],
+    towel_rail: [0.65, 0.14, 1.25],
     towel_stack: [0.48, 0.32, 0.24],
     trellis: [1.8, 0.12, 1.8],
     wicker_basket: [0.5, 0.36, 0.3],
@@ -56,28 +63,123 @@
         part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
         return part;
       };
-    if (["cypress", "citrus_tree", "olive_tree", "topiary_tree"].includes(name)) {
+    if (name === "breakfast_bar") {
+      b(w, 0.055, d, 0, h - 0.028, 0, m.woodDark);
+      for (const x of [-0.55, 0.55]) {
+        rod([x, h - 0.07, 0.18], [x, h - 0.48, -0.18], 0.025, m.wood);
+        b(0.05, 0.5, 0.04, x, h - 0.3, -0.2);
+      }
+    } else if (name === "cafe_setting") {
+      b(w, 0.025, d, 0, 0.014, 0, m.wicker);
+      for (const x of [-0.2, 0.2]) {
+        cylinder(group, 0.105, 0.09, 0.014, x, 0.04, 0, m.white);
+        cylinder(group, 0.055, 0.042, 0.08, x, 0.087, 0, m.white);
+        cylinder(group, 0.047, 0.047, 0.003, x, 0.129, 0, m.woodDark);
+        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.027, 0.008, 5, 10), m.white);
+        handle.position.set(x + 0.055, 0.092, 0);
+        group.add(handle);
+      }
+      cylinder(group, 0.048, 0.055, 0.17, 0, 0.11, -0.06, m.clay);
+      foliage(group, 0, 0.19, -0.06, 0.08, 0.07, 4);
+    } else if (name === "kitchen_accessories") {
+      b(0.28, 0.018, 0.26, -0.15, 0.01, 0, m.wood);
+      for (const [x, height, finish] of [
+        [0.08, 0.27, m.olive],
+        [0.23, 0.22, m.clay],
+      ]) {
+        cylinder(group, 0.045, 0.045, height, x, height / 2, -0.06, finish);
+        cylinder(group, 0.018, 0.021, 0.07, x, height + 0.035, -0.06, m.woodDark);
+      }
+      cylinder(group, 0.065, 0.055, 0.16, -0.2, 0.1, -0.04, m.white);
+      for (let i = 0; i < 4; i += 1) {
+        rod([-0.23 + i * 0.02, 0.12, -0.04], [-0.26 + i * 0.035, 0.39, -0.04], 0.008, m.wood);
+        const spoon = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), m.wood);
+        spoon.scale.set(0.019, 0.032, 0.009);
+        spoon.position.set(-0.26 + i * 0.035, 0.39, -0.04);
+        group.add(spoon);
+      }
+    } else if (name === "curtain_pair") {
+      rod([-w / 2, h - 0.025, 0], [w / 2, h - 0.025, 0], 0.018, m.woodDark);
+      for (const side of [-1, 1]) {
+        const geometry = new THREE.PlaneGeometry(w * 0.23, h - 0.09, 16, 8),
+          positions = geometry.attributes.position;
+        for (let i = 0; i < positions.count; i += 1) {
+          const x = positions.getX(i),
+            y = positions.getY(i);
+          positions.setZ(
+            i,
+            Math.cos((x / (w * 0.23)) * Math.PI * 12) * 0.035 + 0.012 * Math.sin(y * 3),
+          );
+        }
+        geometry.computeVertexNormals();
+        const panel = new THREE.Mesh(geometry, m.curtain);
+        panel.position.set(side * w * 0.36, (h - 0.09) / 2 + 0.025, 0.025);
+        panel.castShadow = true;
+        panel.receiveShadow = true;
+        group.add(panel);
+      }
+    } else if (name === "towel_rail") {
+      rod([-0.29, h - 0.025, 0.06], [0.29, h - 0.025, 0.06], 0.013, m.metal);
+      for (const x of [-0.29, 0.29]) {
+        rod([x, h - 0.025, -0.05], [x, h - 0.025, 0.06], 0.018, m.metal);
+      }
+      b(0.4, 0.6, 0.025, -0.03, h - 0.33, 0.075, m.linen);
+      b(0.4, 0.022, 0.03, -0.03, h - 0.59, 0.078, m.cream);
+    } else if (name === "flower_border") {
+      b(w, 0.065, d, 0, 0.032, 0, m.soil);
+      for (let i = 0; i < 15; i += 1) {
+        const x = (i / 14 - 0.5) * (w - 0.2),
+          z = Math.sin(i * 2.4) * 0.2;
+        foliage(group, x, 0.055, z, 0.27 + (i % 3) * 0.08, 0.17, 5);
+        for (let j = 0; j < 3; j += 1) {
+          const flower = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(0.038, 0),
+            i % 3 ? m.lavender : m.cream,
+          );
+          flower.position.set(
+            x + Math.cos(j * 2.4) * 0.09,
+            0.36 + (i % 3) * 0.08,
+            z + Math.sin(j * 2.4) * 0.09,
+          );
+          flower.scale.y = 2;
+          group.add(flower);
+        }
+      }
+    } else if (name === "grape_trellis") {
+      for (const x of [-w / 2, w / 2]) {
+        b(0.045, h, 0.045, x, h / 2, 0, m.woodDark);
+      }
+      for (let i = 0; i < 5; i += 1) {
+        rod([-w / 2, 0.5 + i * 0.47, 0], [w / 2, 0.5 + i * 0.47, 0], 0.009, m.metal);
+        for (let j = 0; j < 4; j += 1) {
+          foliage(group, -0.95 + j * 0.6, 0.3 + i * 0.45, 0, 0.35, 0.26, 6);
+        }
+      }
+    } else if (["cypress", "citrus_tree", "olive_tree", "topiary_tree"].includes(name)) {
       cylinder(group, 0.07, 0.13, h * 0.62, 0, h * 0.31, 0, m.woodDark);
       const leaf = (x, y, z, sx, sy, sz, finish) => {
         const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), finish);
         mesh.position.set(x, y, z);
-        mesh.scale.set(sx, sy, sz);
+        mesh.scale.set(sx * 0.78, sy * 0.82, sz * 0.78);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         group.add(mesh);
         if (sx < 0.1) {
           return;
         }
-        for (let i = 0; i < 24; i += 1) {
+        for (let i = 0; i < 48; i += 1) {
           const angle = i * 2.4,
-            latitude = Math.acos(1 - (2 * (i + 0.5)) / 24),
-            tuft = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), finish);
+            latitude = Math.acos(1 - (2 * (i + 0.5)) / 48),
+            tuft = new THREE.Mesh(
+              new THREE.IcosahedronGeometry(0.13, 0),
+              i % 5 ? finish : m.leafLight,
+            );
           tuft.position.set(
             x + sx * Math.sin(latitude) * Math.cos(angle),
             y + sy * Math.cos(latitude),
             z + sz * Math.sin(latitude) * Math.sin(angle),
           );
-          tuft.scale.set(1, 0.35, 1.7);
+          tuft.scale.set(1 + (i % 3) * 0.2, 0.28, 1.7);
           tuft.rotation.set(angle, latitude, angle * 0.3);
           tuft.castShadow = true;
           tuft.receiveShadow = true;
@@ -564,6 +666,13 @@
       b(0.52, 0.013, 0.32, -0.48, 0.941, 0.02, m.slate);
       rod([-0.48, 0.94, -0.21], [-0.48, 1.22, -0.21], 0.018, m.metal);
       rod([-0.48, 1.22, -0.21], [-0.48, 1.22, -0.04], 0.018, m.metal);
+      const accessories = new THREE.Group();
+      addReferenceAsset("kitchen_accessories", accessories);
+      accessories.position.set(0.05, 0.93, 0);
+      group.add(accessories);
+      for (const x of [-0.95, -0.7, -0.4]) {
+        cylinder(group, 0.065, 0.06, 0.12, x, h - 0.36, -0.1, m.white);
+      }
       b(0.53, 0.018, 0.48, 0.86, 0.94, 0, m.screen);
       b(0.47, 0.46, 0.015, 0.9, 0.47, d / 2 + 0.055, m.screen);
       b(0.36, 0.025, 0.035, 0.9, 0.72, d / 2 + 0.075, m.metal);
@@ -621,11 +730,12 @@
           0,
           [
             [2, 2, "bed(pillows_on_top)"],
-            [0, 2, "nightstand"],
+            [0, 2, "nightstand(bedside_on_top)"],
             [4, 2, "nightstand"],
             [6, 1, "garment_rack"],
             [1, 7, "sofa_bed@90"],
             [2, 4, "kilim_rug"],
+            [6, 8, "console_table(tea_on_top)~east"],
           ],
           { doors: ["east", "south"], mounts: [["north", 2, "painting"]], windows: ["west"] },
         ),
@@ -672,6 +782,7 @@
             [2, 3, "toilet~south"],
             [2, 2, "floor_drain"],
             [4, 1, "shower_set~east"],
+            [4, 3, "towel_rail[0.6x0.14x1.25]~east"],
           ],
           { doors: ["north"], mounts: [["west", 2, "mirror"]] },
         ),
@@ -688,14 +799,18 @@
             [6, 8, "fireplace~east"],
             [1, 5, "sofa_bed@90"],
             [3, 7, "woven_chair@30"],
-            [2, 8, "coffee_table"],
+            [2, 8, "coffee_table(tea_on_top)"],
             [6, 2, "kilim_rug@90"],
             [0, 8, "plant"],
+            [1, 1, "breakfast_bar~west"],
+            [2, 1, "woven_chair@90"],
+            [3, 9, "curtain_pair@180[2.4x0.18x2.5]"],
           ],
           {
             doors: ["east", "south"],
             mounts: [
               ["west", 3, "painting"],
+              ["west", 7, "wall_shelf"],
               ["east", 8, "air_conditioner"],
             ],
           },
@@ -722,7 +837,7 @@
           10,
           [
             [4, 1, "awning[5.2x2.8x2.65]"],
-            [4, 2, "dining_table[1.55x0.8x0.75]"],
+            [4, 2, "dining_table[1.55x0.8x0.75](tea_on_top)"],
             [3, 1, "patio_chair"],
             [5, 1, "patio_chair"],
             [3, 3, "patio_chair@180"],
@@ -730,7 +845,7 @@
             [4, 0, "ceiling_fan"],
             [1, 2, "bbq"],
             [4, 3, "archway[5.2x0.25x2.7]"],
-            [0, 1, "trellis@90[1.8x0.12x1.8]"],
+            [0, 1, "grape_trellis@90[2.4x0.4x2.5]"],
           ],
           { kind: "balcony", rails: ["east", "west"], surface: "stone" },
         ),
@@ -743,17 +858,20 @@
           0,
           [
             [3, 2, "sleeping_loft"],
-            [2, 6, "canopy_bed"],
+            [2, 6, "canopy_bed(towels_on_top)"],
             [0, 6, "side_table"],
             [4, 6, "side_table(towels_on_top)"],
             [6, 6, "garment_rack"],
             [1, 8, "kilim_rug"],
+            [6, 2, "washing_machine~east"],
+            [3, 9, "curtain_pair@180[2.4x0.18x2.5]"],
           ],
           {
             doors: ["east", "south"],
             height: 3.8,
             mounts: [
               ["west", 5, "painting"],
+              ["north", 1, "wall_shelf"],
               ["east", 1, "air_conditioner"],
             ],
           },
@@ -771,7 +889,7 @@
           10,
           [
             [4, 0, "awning[5.2x2.1x2.65]"],
-            [3, 1, "slatted_table"],
+            [3, 1, "slatted_table(tea_on_top)"],
             [2, 1, "folding_chair@270"],
             [4, 1, "folding_chair@90"],
             [6, 1, "planter"],
@@ -803,6 +921,13 @@
             [4, 3, "globe_lamp"],
             [8, 8, "globe_lamp"],
             [6, 1, "garden_steps"],
+            [2, 1, "flower_border"],
+            [10, 1, "flower_border"],
+            [1, 5, "flower_border@90"],
+            [11, 7, "flower_border@90"],
+            [4, 6, "olive_tree[2x2x2.8]"],
+            [1, 10, "terracotta_pot"],
+            [11, 10, "terracotta_pot"],
           ],
           { kind: "garden", rails: [], surface: "grass" },
         ),
@@ -823,7 +948,9 @@
       ],
       {
         baskets: ["wicker_basket | wicker_basket"],
+        bedside: ["table_lamp"],
         pillows: ["pillow | pillow"],
+        tea: ["cafe_setting"],
         towels: ["towel_stack"],
       },
     );
@@ -1454,6 +1581,40 @@
       node.children.forEach((child) => visit(child, name));
     }
     visit(root);
+    const exteriorMaterials = new Map();
+    root.traverse((node) => {
+      if (!node.isMesh) {
+        return;
+      }
+      const finish = (source) => {
+        if (
+          !source.isMeshStandardMaterial ||
+          source.customProgramCacheKey() === "room-daylight-v1"
+        ) {
+          return source;
+        }
+        if (!exteriorMaterials.has(source)) {
+          const copy = source.clone();
+          daylightSourceMaterials.add(source);
+          copy.userData.ownedTexture = false;
+          copy.onBeforeCompile = (shader) => {
+            shader.uniforms.daylightStrength = daylightStrength;
+            shader.uniforms.daylightPass = daylightPass;
+            shader.fragmentShader = `uniform float daylightStrength; uniform float daylightPass;\n${shader.fragmentShader}`;
+            shader.fragmentShader = shader.fragmentShader.replace(
+              "#include <lights_fragment_end>",
+              "irradiance += vec3(0.32, 0.38, 0.46) * daylightStrength * daylightPass * PI;\n#include <lights_fragment_end>",
+            );
+          };
+          copy.customProgramCacheKey = () => "exterior-sky-v1";
+          exteriorMaterials.set(source, copy);
+        }
+        return exteriorMaterials.get(source);
+      };
+      node.material = Array.isArray(node.material)
+        ? node.material.map(finish)
+        : finish(node.material);
+    });
   }
   function createFixtureRenderer(renderer, scene, camera, sunlight) {
     const passTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }),
@@ -4229,6 +4390,7 @@
       clay: "#b97861",
       concrete: "#b5bab6",
       cream: "#e7d5ba",
+      curtain: "#e5dac6",
       fabric: "#8fa7a0",
       fabricDark: "#627f79",
       flagstone: "#9c9b8b",
@@ -4236,12 +4398,14 @@
       foliage: "#426b32",
       glow: "#d6fff1",
       grass: "#77934b",
-      green: "#5c956f",
+      green: "#426c40",
       kilim: "#ffffff",
+      lavender: "#82749a",
+      leafLight: "#78934e",
       linen: "#a49d8e",
       metal: "#586873",
       ochre: "#c96a16",
-      olive: "#85936a",
+      olive: "#5d7045",
       opal: "#f3eddf",
       plaster: "#f1ede3",
       rug: "#aa7055",
@@ -4277,14 +4441,59 @@
     item.roughness = 0.56;
     item.userData.textureScale = 0.6;
   }
-  for (const key of ["fabric", "fabricDark", "cream", "rug", "linen", "ochre", "wicker"]) {
+  for (const key of [
+    "fabric",
+    "fabricDark",
+    "cream",
+    "curtain",
+    "rug",
+    "linen",
+    "ochre",
+    "wicker",
+  ]) {
     material[key].map = weaveTexture;
     material[key].bumpMap = weaveTexture;
     material[key].bumpScale = 0.002;
     material[key].userData.textureScale = 0.22;
   }
+  function tiledSurface(terracotta = false) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const context = canvas.getContext("2d");
+    context.fillStyle = terracotta ? "#8b7e6c" : "#b3afa5";
+    context.fillRect(0, 0, 512, 512);
+    let seed = 93;
+    const random = () => {
+      seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+      return seed / 4_294_967_296;
+    };
+    for (let row = 0; row < 4; row += 1) {
+      for (let col = 0; col < 4; col += 1) {
+        const value = 77 + random() * 9;
+        context.fillStyle = `hsl(${terracotta ? 23 : 42} ${terracotta ? 37 : 9}% ${value}%)`;
+        context.fillRect(col * 128 + 1, row * 128 + 1, 125, 125);
+        for (let i = 0; i < 650; i += 1) {
+          context.fillStyle = `rgba(${random() > 0.5 ? "255,255,255" : "75,65,50"},0.035)`;
+          context.fillRect(
+            col * 128 + 2 + random() * 123,
+            row * 128 + 2 + random() * 123,
+            2 + random() * 6,
+            1,
+          );
+        }
+      }
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return texture;
+  }
   const plasterTexture = surfaceTexture("plaster"),
-    tileTexture = surfaceTexture("tile");
+    tileTexture = tiledSurface(),
+    clayTexture = tiledSurface(true);
   material.plaster.bumpMap = plasterTexture;
   material.plaster.bumpScale = 0.008;
   material.plaster.userData.textureScale = 0.5;
@@ -4327,10 +4536,10 @@
   material.kilim.bumpMap = weaveTexture;
   material.kilim.bumpScale = 0.001;
   for (const key of ["stone", "terracotta"]) {
-    material[key].map = tileTexture;
-    material[key].bumpMap = tileTexture;
+    material[key].map = key === "stone" ? tileTexture : clayTexture;
+    material[key].bumpMap = material[key].map;
     material[key].bumpScale = 0.002;
-    material[key].userData.textureScale = key === "stone" ? 0.6 : 0.3;
+    material[key].userData.textureScale = key === "stone" ? 2.4 : 1.2;
     material[key].roughness = 0.72;
   }
   const pavingCanvas = document.createElement("canvas");
@@ -4362,9 +4571,37 @@
   material.flagstone.bumpMap = pavingTexture;
   material.flagstone.bumpScale = 0.015;
   material.flagstone.userData.textureScale = 2;
-  material.grass.bumpMap = plasterTexture;
+  const lawnCanvas = document.createElement("canvas");
+  lawnCanvas.width = 256;
+  lawnCanvas.height = 256;
+  const lawn = lawnCanvas.getContext("2d");
+  lawn.fillStyle = "#8e995e";
+  lawn.fillRect(0, 0, 256, 256);
+  let lawnSeed = 47;
+  const lawnRandom = () => {
+    lawnSeed = (lawnSeed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+    return lawnSeed / 4_294_967_296;
+  };
+  for (let i = 0; i < 6500; i += 1) {
+    const x = lawnRandom() * 256,
+      z = lawnRandom() * 256;
+    lawn.strokeStyle = ["#a9ad75", "#75834b", "#979b60", "#bbc18b"][i % 4];
+    lawn.beginPath();
+    lawn.moveTo(x, z);
+    lawn.lineTo(x + Math.sin(i) * 2, z - 2 - (i % 4));
+    lawn.stroke();
+  }
+  const lawnTexture = new THREE.CanvasTexture(lawnCanvas);
+  lawnTexture.wrapS = THREE.RepeatWrapping;
+  lawnTexture.wrapT = THREE.RepeatWrapping;
+  lawnTexture.colorSpace = THREE.SRGBColorSpace;
+  lawnTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  material.grass.map = lawnTexture;
+  material.grass.color.set("#a2ad80");
+  material.grass.bumpMap = lawnTexture;
   material.grass.bumpScale = 0.015;
-  material.grass.userData.textureScale = 0.12;
+  material.grass.userData.textureScale = 1.5;
+  material.curtain.side = THREE.DoubleSide;
   material.white.roughness = 0.3;
   material.cabinetGlass.transparent = true;
   material.cabinetGlass.opacity = 0.25;
@@ -4389,7 +4626,7 @@
       radius = Math.min(upholstered ? 0.065 : 0.018, Math.min(w, h, d) * 0.24),
       geometry =
         parent.userData.detailed && Math.min(w, h, d) > 0.06
-          ? new RoundedBoxGeometry(w, h, d, 2, radius)
+          ? new RoundedBoxGeometry(w, h, d, upholstered ? 2 : 1, radius)
           : new THREE.BoxGeometry(w, h, d);
     if (m.userData.textureScale) {
       const positions = geometry.attributes.position,
@@ -4472,7 +4709,7 @@
           material.green,
         );
       group.add(stem);
-      const geometry = new THREE.SphereGeometry(1, 16, 10),
+      const geometry = new THREE.SphereGeometry(1, 6, 4),
         positions = geometry.attributes.position;
       for (let j = 0; j < positions.count; j += 1) {
         const along = positions.getY(j);
@@ -4489,6 +4726,11 @@
     }
   }
   function batchFurniture(group) {
+    for (const child of group.children) {
+      if (child.isGroup && !child.userData.token) {
+        batchFurniture(child);
+      }
+    }
     const batches = new Map();
     for (const child of group.children) {
       if (
@@ -6171,7 +6413,10 @@
   function findCollisions(entries) {
     const warnings = [],
       broad = (e) => {
-        const [w, d] = e.token.dimensions,
+        const tree = ["olive_tree", "citrus_tree", "topiary_tree", "palm"].includes(e.token.name),
+          [width, depth] = e.token.dimensions,
+          w = tree ? Math.max(0.3, width * 0.16) : width,
+          d = tree ? w : depth,
           a = THREE.MathUtils.degToRad(e.token.yaw);
         return {
           d: Math.abs(w * Math.sin(a)) + Math.abs(d * Math.cos(a)),
@@ -6191,6 +6436,7 @@
             "kilim_rug",
             "ceiling_fan",
             "floor_drain",
+            "curtain_pair",
             "gym_mat",
             "stone_path",
             "archway",
@@ -6203,6 +6449,7 @@
             "kilim_rug",
             "ceiling_fan",
             "floor_drain",
+            "curtain_pair",
             "gym_mat",
             "stone_path",
             "archway",
@@ -6627,6 +6874,7 @@
           "rug",
           "kilim_rug",
           "floor_drain",
+          "curtain_pair",
           "ceiling_fan",
           "gym_mat",
           "stone_path",
@@ -7275,7 +7523,6 @@
     [
       {
         cols: 24,
-        height: 3.8,
         items: [
           "sleeping_loft",
           "canopy_bed",
@@ -7297,9 +7544,18 @@
           "dumbbells",
           "shower_set",
           "floor_drain",
+          "breakfast_bar",
+          "cafe_setting",
+          "curtain_pair",
+          "flower_border",
+          "kitchen_accessories",
+          "towel_rail",
+          "grape_trellis",
         ].map((name, index) => [3 + (index % 4) * 5, 2 + Math.floor(index / 4) * 5, name]),
+        kind: "balcony",
         name: "reference_details",
-        rows: 24,
+        rails: [],
+        rows: 34,
         style: "mediterranean",
         surface: "tile",
         walls: ["north", "west"],
