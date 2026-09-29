@@ -132,6 +132,22 @@
         "END",
       ].join("\n"),
     };
+  for (const name of [
+    "Bedroom",
+    "Creative studio",
+    "Dining room",
+    "Kitchen & dining",
+    "Living room",
+  ]) {
+    const lines = examples[name].split("\n");
+    lines.splice(lines.indexOf("DOORS south") + 1, 0, "WINDOWS north east west");
+    for (const index of [lines.indexOf("LAYOUT main") + 1, lines.indexOf("END") - 1]) {
+      const cells = lines[index].split(" | ");
+      cells[index === lines.indexOf("END") - 1 ? cells.length - 3 : 2] = "ceiling_light";
+      lines[index] = cells.join(" | ");
+    }
+    examples[name] = lines.join("\n");
+  }
   function buildExample(description, grid, rooms, sublayouts = {}) {
     const lines = [`# ${description}`, `GRID ${grid}`];
     for (const room of rooms) {
@@ -166,6 +182,28 @@
           throw new Error(`Invalid example placement in ${room.name}`);
         }
         cells[row][col] = token;
+      }
+      if (
+        room.kind !== "balcony" &&
+        room.windows?.length !== 0 &&
+        !["liminal", "industrial", "aquatic"].includes(room.style) &&
+        !room.items.some((item) => ["ceiling_light", "fluorescent_light"].includes(item[2]))
+      ) {
+        const count = room.cols * room.rows * grid ** 2 >= 18 ? 2 : 1;
+        for (let i = 0; i < count; i += 1) {
+          const targetCol = ((i + 1) * (room.cols - 1)) / (count + 1),
+            targetRow = ((i + 1) * (room.rows - 1)) / (count + 1),
+            [free] = cells
+              .flatMap((row, z) => row.flatMap((cell, x) => (cell === "." ? [{ x, z }] : [])))
+              .toSorted(
+                (a, b) =>
+                  Math.hypot(a.x - targetCol, a.z - targetRow) -
+                  Math.hypot(b.x - targetCol, b.z - targetRow),
+              );
+          if (free) {
+            cells[free.z][free.x] = "ceiling_light";
+          }
+        }
       }
       lines.push("", `LAYOUT ${room.name}`, ...cells.map((row) => row.join(" | ")), "END");
     }
@@ -1379,6 +1417,7 @@
       bistro_table: [0.75, 0.75, 0.72],
       book: [0.23, 0.17, 0.045],
       bookshelf: [0.9, 0.36, 1.85],
+      ceiling_light: [0.5, 0.5, 2.7],
       chair: [0.5, 0.54, 0.87],
       coat_rack: [0.6, 0.6, 1.75],
       coffee_maker: [0.25, 0.3, 0.35],
@@ -2346,7 +2385,7 @@
     lightingPreview?.invalidate();
   }
   $("indoorLights").addEventListener("change", updateIndoorLights);
-  const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation"],
+  const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation", "Exposure"],
     sharedSettings = new URLSearchParams(location.hash.slice(1)),
     today = new Date();
   $("sunDate").value =
@@ -2434,6 +2473,7 @@
       )
       .multiplyScalar(radius * 3)
       .add(sunlight.target.position);
+    renderer.toneMappingExposure = 1.05 * 2 ** $("sunExposure").valueAsNumber;
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
     sunlight.castShadow = altitude > 0;
     sunlight.color.setHSL(0.1, 0.15 + 0.55 * (1 - Math.min(1, daylight * 3)), 0.9);
@@ -2753,6 +2793,15 @@
           cylinder(group, cw * 0.4, cw * 0.4, ch, 0, ch / 2, 0, material.concrete, 12);
           box(group, cw, 0.12, cd, 0, 0.06, 0, material.white);
           box(group, cw, 0.12, cd, 0, ch - 0.06, 0, material.white);
+          break;
+        }
+        case "ceiling_light": {
+          cylinder(group, cw / 2, cw / 2, 0.08, 0, ch - 0.04, 0, material.white);
+          const diffuser = mat("#fff1d8", 0.65);
+          diffuser.emissive.set("#ffe3b0");
+          diffuser.emissiveIntensity = 1;
+          cylinder(group, cw * 0.42, cw * 0.42, 0.015, 0, ch - 0.085, 0, diffuser);
+          fixtureLight(group, 18, 0, ch - 0.12, 0);
           break;
         }
         case "fluorescent_light": {
@@ -3769,11 +3818,17 @@
                   ? other.x === room.x + room.cols &&
                     other.z < room.z + room.rows &&
                     other.z + other.rows > room.z
-                  : false),
+                  : dir === "south"
+                    ? other.z === room.z + room.rows &&
+                      other.x < room.x + room.cols &&
+                      other.x + other.cols > room.x
+                    : other.x + other.cols === room.x &&
+                      other.z < room.z + room.rows &&
+                      other.z + other.rows > room.z),
           ),
           hasWindow =
             room.windows === undefined
-              ? !hasDoor && !sharedEdge && length > 2.2 && (dir === "north" || dir === "east")
+              ? !hasDoor && !sharedEdge && length > 2.2
               : room.windows.includes(dir),
           opening = new THREE.Group(),
           wallParent = wallRoot,
@@ -3798,7 +3853,7 @@
             start = source.toLowerCase().indexOf(dir);
           opening.userData.token = {
             dimensions: [
-              hasDoor ? Math.min(1.15, length * 0.4) : Math.min(1.35, length * 0.48),
+              hasDoor ? Math.min(1.15, length * 0.4) : Math.min(2.1, length * 0.48),
               0.18,
               hasDoor ? 2.29 : 1.05,
             ],
@@ -3858,7 +3913,7 @@
             );
           }
         } else if (hasWindow) {
-          const span = Math.min(1.35, length * 0.48),
+          const span = Math.min(2.1, length * 0.48),
             offset = THREE.MathUtils.clamp(
               (dir === "north" ? 0.16 : -0.13) * length,
               -length / 2 + span / 2 + 0.15,
@@ -4021,8 +4076,8 @@
           b = entries[j];
         if (
           a.token.floor !== b.token.floor ||
-          ["rug", "fluorescent_light"].includes(a.token.name) ||
-          ["rug", "fluorescent_light"].includes(b.token.name)
+          ["rug", "ceiling_light", "fluorescent_light"].includes(a.token.name) ||
+          ["rug", "ceiling_light", "fluorescent_light"].includes(b.token.name)
         ) {
           continue;
         }
@@ -4332,7 +4387,10 @@
     }
     for (const entry of collisionEntries) {
       const { token } = entry;
-      if (token.floor !== floor || ["rug", "stairs", "fluorescent_light"].includes(token.name)) {
+      if (
+        token.floor !== floor ||
+        ["rug", "stairs", "ceiling_light", "fluorescent_light"].includes(token.name)
+      ) {
         continue;
       }
       const angle = (token.yaw * Math.PI) / 180,

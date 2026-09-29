@@ -129,6 +129,18 @@
                     Negative coordinates mean south or west. Set the UTC offset for your location
                     and date, including daylight saving.
                   </p>
+                  <label
+                    >Exposure (EV)
+                    <input
+                      id="sunExposure"
+                      type="number"
+                      min="-2"
+                      max="4"
+                      step="0.5"
+                      value="1"
+                      required
+                    />
+                  </label>
                   <output id="sunStatus" aria-live="polite"></output>
                   <label
                     >Lighting
@@ -149,8 +161,9 @@
                     Default location: Athens. Only the sun and placed lights illuminate rooms.
                     Walls, ceilings, and floors block light even when hidden for editing. Editing
                     shows direct light from the nearest eight fixtures; realistic preview includes
-                    all fixtures and bounced daylight through windows. Use Walk to view interiors.
-                    Stop moving to let the preview sharpen; large scenes take longer.
+                    all fixtures and up to six light bounces through the room. Exposure brightens
+                    the image without adding light. Use Walk to view interiors. Stop moving to let
+                    the preview sharpen; large scenes take longer.
                   </p>
                 </form>
               </details>
@@ -269,8 +282,8 @@
           Play &amp; discovery: <code>arcade_machine</code>, <code>vending_machine</code>,
           <code>aquarium</code>, <code>piano</code>, <code>treadmill</code>, <code>telescope</code>,
           <code>sculpture</code>, <code>server_rack</code>, and <code>hydroponic_rack</code>. Build
-          mazes with <code>partition</code> and <code>column</code>;
-          <code>fluorescent_light</code> sits overhead, leaving the floor passable. Try
+          mazes with <code>partition</code> and <code>column</code>; <code>ceiling_light</code> and
+          <code>fluorescent_light</code> sit overhead, leaving the floor passable. Try
           <code>STYLE liminal</code>, <code>STYLE industrial</code>, or <code>STYLE aquatic</code>.
         </li>
         <li>
