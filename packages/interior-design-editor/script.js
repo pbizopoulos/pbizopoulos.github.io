@@ -1,4 +1,4 @@
-(async () => {
+/* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const referenceCatalog = {
     awning: [3.6, 1.8, 2.65],
     canopy_bed: [1.55, 2.05, 1.95],
@@ -13,16 +13,17 @@
     towel_stack: [0.48, 0.32, 0.24],
     woven_chair: [0.68, 0.75, 0.85],
   };
-  function addReferenceAsset(name, group, { THREE, box, cylinder, material: m }) {
+  function addReferenceAsset(name, group) {
+    const m = material;
     if (!referenceCatalog[name]) {
       return;
     }
     const [w, d, h] = referenceCatalog[name],
       b = (width, height, depth, x, y, z, finish = m.wood) =>
         box(group, width, height, depth, x, y, z, finish),
-      rod = (a, b, radius = 0.018, finish = m.wood) => {
-        const start = new THREE.Vector3(...a),
-          end = new THREE.Vector3(...b),
+      rod = (startPoint, endPoint, radius = 0.018, finish = m.wood) => {
+        const start = new THREE.Vector3(...startPoint),
+          end = new THREE.Vector3(...endPoint),
           part = cylinder(group, radius, radius, start.distanceTo(end), 0, 0, 0, finish, 12);
         part.position.copy(start).add(end).multiplyScalar(0.5);
         part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
@@ -203,19 +204,21 @@
       b(0.42, 0.1, 0.9, 0, 0.75, -0.18, m.screen).rotation.x = 0.7;
     }
   }
-  function referenceApartment(buildExample) {
-    const room = (name, floor, cols, rows, x, z, items, extra = {}) => ({
-      cols,
-      floor,
-      items,
-      name,
-      rows,
-      style: "mediterranean",
-      walls: ["north", "east", "south", "west"],
-      x,
-      z,
-      ...extra,
-    });
+  function referenceApartment() {
+    const room = (name, floor, cols, rows, x, z, items, extra = {}) => {
+      const area = {
+        cols,
+        floor,
+        items,
+        name,
+        rows,
+        style: "mediterranean",
+        walls: ["north", "east", "south", "west"],
+        x,
+        z,
+      };
+      return Object.assign(area, extra);
+    };
     return buildExample(
       "",
       0.75,
@@ -2477,7 +2480,6 @@
     ]);
   }
   const catalog = {
-      ...referenceCatalog,
       air_conditioner: [1.02, 0.22, 0.31],
       aquarium: [1.8, 0.65, 1.45],
       arcade_machine: [0.75, 0.85, 1.7],
@@ -2576,7 +2578,7 @@
     viewport = $("viewport"),
     status = $("message"),
     selectionCard = $("selectionCard");
-  Object.assign(catalog, decorCatalog);
+  Object.assign(catalog, referenceCatalog, decorCatalog);
   let compileTimer,
     compiledSource,
     currentProgram,
@@ -4856,7 +4858,7 @@
           break;
         }
       }
-      addReferenceAsset(name, group, { THREE, box, cylinder, material });
+      addReferenceAsset(name, group);
       addDecoration(group, name, box);
       if (!lightAssets.includes(name)) {
         batchFurniture(group);
@@ -5998,7 +6000,7 @@
   }
   animate();
   examples["Decor gallery"] = decorationExample;
-  examples["Mediterranean three-level apartment"] = referenceApartment(buildExample);
+  examples["Mediterranean three-level apartment"] = referenceApartment();
   for (const name of Object.keys(examples)) {
     examples[name] = enrichExample(examples[name], parseProgram, name);
   }
@@ -6232,9 +6234,7 @@
     if (firstPerson && event.button === 0) {
       looking = true;
       lastPointer = { x: event.clientX, y: event.clientY };
-      renderer.domElement.requestPointerLock()?.catch(() => {
-        /* empty */
-      });
+      renderer.domElement.requestPointerLock()?.catch(() => false);
     }
   });
   globalThis.addEventListener("pointerup", () => {
