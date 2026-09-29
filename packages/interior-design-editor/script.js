@@ -1,19 +1,6 @@
 /* eslint-disable max-lines, max-lines-per-function -- Each standalone page keeps its scene and application logic in one script. */ /* eslint-disable prefer-named-capture-group -- The grammar parser consumes positional regex captures in a fixed order. */ /* eslint-disable no-magic-numbers -- Scene coordinates, dimensions, colors, and animation timings are literal design data. */ /* eslint-disable id-length -- Short coordinate and drawing parameter names follow the geometry notation. */ /* eslint-disable max-statements, max-params, complexity, max-depth -- Rendering and grammar routines keep their sequential operations together. */ /* eslint-disable one-var, sort-vars -- Declarations follow dependency and initialization order. */ /* eslint-disable func-style, no-use-before-define, unicorn/consistent-function-scoping -- Hoisted helpers and closures share application state inside an isolated entry point. */ /* eslint-disable no-ternary, no-nested-ternary, unicorn/no-nested-ternary -- Inline choices express visual variants and fallback values. */ /* eslint-disable init-declarations, no-undefined -- Optional application state is initialized when its resources become available. */ /* eslint-disable no-continue, unicorn/no-array-for-each -- Iteration guards skip inactive entities and process grammar rows. */ /* eslint-disable oxc/no-optional-chaining -- Optional scene and pointer state is intentionally nullable. */ /* eslint-disable oxc/no-async-await, unicorn/prefer-top-level-await -- The asynchronous entry point catches library-loading failures and reports them in the page. */ (async () => {
-  const {
-      lightAssets,
-      overheadLights,
-      sharedWall,
-      wallThickness,
-      enrichExample,
-      facadeMaterial,
-      applyFacade,
-      addExterior,
-      mergedEnclosure,
-    } = await import("./prm/scene-design.js"),
-    { decorCatalog, wallDecor, addDecoration, decorationExample } =
-      await import("./prm/decor-assets.js"),
-    { createFixtureRenderer } = await import("./prm/fixture-renderer.js"),
-    THREE = await import("three"),
+  const THREE = await import("three"),
+    { mergeGeometries } = await import("three/addons/utils/BufferGeometryUtils.js"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
@@ -29,123 +16,998 @@
       foldedRanges,
       unfoldEffect,
     } = await import("@codemirror/language"),
-    { defaultKeymap, history, historyKeymap, indentWithTab } = await import("@codemirror/commands"),
-    examples = {
-      Bedroom: [
-        "# A calm bedroom",
-        "ROOM 8x7",
-        "GRID 0.88",
-        "WALLS north east south west",
-        "DOORS south",
-        "MOUNT north 6 air_conditioner",
-        "LAYOUT main",
-        ". | . | . | . | . | . | . | .",
-        ". | nightstand(lamp_on_top)~north | . | bed(pillows_on_top)~north | . | . | dresser~north | .",
-        ". | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | .",
-        ". | plant | . | . | rug | . | . | .",
-        ". | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | .",
-        "END",
-        "",
-        "LAYOUT pillows",
-        "pillow | pillow",
-        "END",
-        "",
-        "LAYOUT lamp",
-        "table_lamp",
-        "END",
-      ].join("\n"),
-      "Creative studio": [
-        "# Work, make, think",
-        "ROOM 10x7",
-        "GRID 0.8",
-        "WALLS north east south west",
-        "DOORS south",
-        "LAYOUT main",
-        ". | . | . | . | bookshelf~north | . | . | . | . | .",
-        ". | plant | . | . | . | . | . | . | lamp | .",
-        ". | . | desk(work_on_top) | . | . | . | side_table | . | . | .",
-        ". | . | chair@180 | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | . | .",
-        ". | . | . | . | rug | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | . | .",
-        "END",
-        "",
-        "LAYOUT work",
-        "book | monitor | mug",
-        "END",
-      ].join("\n"),
-      "Dining room": [
-        "# A table ready for dinner",
-        "ROOM 9x8",
-        "GRID 0.85",
-        "WALLS north east south west",
-        "DOORS south",
-        "LAYOUT main",
-        ". | . | . | . | . | . | . | . | .",
-        ". | plant | . | . | . | . | . | bookshelf~north | .",
-        ". | . | . | chair@0 | . | . | . | . | .",
-        ". | . | chair@90 | . | dining_table(setting_on_top) | . | chair@270 | . | .",
-        ". | . | . | chair@180 | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | .",
-        "END",
-        "",
-        "LAYOUT setting",
-        "mug | . | mug",
-        "END",
-      ].join("\n"),
-      "Kitchen & dining": [
-        "# Kitchen cabinets, appliances, and a dining set",
-        "ROOM 10x8",
-        "GRID 0.85",
-        "WALLS north east south west",
-        "DOORS south",
-        "LAYOUT main",
-        ". | . | . | . | . | . | . | . | . | .",
-        ". | fridge~north | . | kitchen_counter~north | . | . | sink~north | . | stove~north | .",
-        ". | . | . | . | . | kitchen_chair@0 | . | . | . | .",
-        ". | . | . | . | . | . | . | . | . | .",
-        ". | . | . | kitchen_chair@90 | . | kitchen_table(place_setting_on_top) | . | kitchen_chair@270 | . | .",
-        ". | . | . | . | . | kitchen_chair@180 | . | . | . | .",
-        ". | plant | . | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | . | .",
-        "END",
-        "",
-        "LAYOUT place_setting",
-        "mug | . | mug",
-        "END",
-      ].join("\n"),
-      "Living room": [
-        "# A relaxed living room",
-        "ROOM 9x7",
-        "GRID 0.82",
-        "WALLS north east south west",
-        "DOORS south",
-        "STYLE blue",
-        "MOUNT north 7 air_conditioner",
-        "MOUNT north 1 wall_lamp",
-        "LAYOUT main",
-        ". | . | . | . | bookshelf~north | . | . | . | .",
-        ". | . | . | . | . | . | . | plant | .",
-        ". | sofa~west | . | . | coffee_table(top_on_top) | . | tv_stand(tv_on_top)~east | . | .",
-        ". | . | . | . | . | . | . | . | .",
-        ". | . | armchair@135 | . | rug | . | . | . | .",
-        ". | lamp | . | . | . | . | . | . | .",
-        ". | . | . | . | . | . | . | . | .",
-        "END",
-        "",
-        "LAYOUT top",
-        "book | . | mug",
-        "END",
-        "",
-        "LAYOUT tv",
-        "tv",
-        "END",
-      ].join("\n"),
+    { defaultKeymap, history, historyKeymap, indentWithTab } = await import("@codemirror/commands");
+  const lightAssets = [
+    "ceiling_light",
+    "fluorescent_light",
+    "pendant_light",
+    "track_light",
+    "downlight",
+    "garden_lamp",
+    "lantern",
+    "lamp",
+    "table_lamp",
+    "wall_lamp",
+  ];
+  const overheadLights = lightAssets.slice(0, 5);
+  function sharedWall(room, other, dir) {
+    if (room === other || room.floor !== other.floor) {
+      return false;
+    }
+    const horizontalOverlap = other.x < room.x + room.cols && other.x + other.cols > room.x;
+    const verticalOverlap = other.z < room.z + room.rows && other.z + other.rows > room.z;
+    return dir === "north"
+      ? other.z + other.rows === room.z && horizontalOverlap
+      : dir === "south"
+        ? other.z === room.z + room.rows && horizontalOverlap
+        : dir === "east"
+          ? other.x === room.x + room.cols && verticalOverlap
+          : other.x + other.cols === room.x && verticalOverlap;
+  }
+  function wallThickness(program, room, side) {
+    return program.rooms.some((other) => sharedWall(room, other, side))
+      ? program.interiorWallThickness
+      : program.exteriorWallThickness;
+  }
+  function enrichExample(source, parse, name = "") {
+    const program = parse(source),
+      lines = source.split("\n");
+    for (const room of program.rooms) {
+      const additions = [];
+      if (room.kind !== "balcony") {
+        const exterior = ["north", "east", "south", "west"].filter(
+          (dir) => !program.rooms.some((other) => sharedWall(room, other, dir)),
+        );
+        const walls = [...new Set([...room.walls, ...exterior])];
+        const wallCommand = `WALLS ${walls.join(" ") || "none"}`;
+        if (room.wallsLine) {
+          lines[room.wallsLine - 1] = wallCommand;
+        } else {
+          additions.push(wallCommand);
+        }
+        const eligible = exterior.filter(
+          (dir) => (dir === "east" || dir === "west" ? room.rows : room.cols) * program.grid > 2.2,
+        );
+        const doors = [...room.doors];
+        if (
+          eligible.length > 0 &&
+          eligible.every((dir) => doors.includes(dir)) &&
+          doors.length > 1
+        ) {
+          doors.splice(doors.indexOf(eligible[0]), 1);
+          const doorCommand = `DOORS ${doors.join(" ")}`;
+          if (room.doorsLine) {
+            lines[room.doorsLine - 1] = doorCommand;
+          } else {
+            additions.push(doorCommand);
+          }
+        }
+        const windows = eligible.filter((dir) => !doors.includes(dir));
+        const command = `WINDOWS ${windows.join(" ") || "none"}`;
+        if (room.windowsLine) {
+          lines[room.windowsLine - 1] = command;
+        } else {
+          additions.push(command);
+        }
+        if (windows.length === 0) {
+          additions.push("# Enclosed room: artificial lighting; no eligible exterior window wall.");
+        }
+      }
+      const existing =
+        program.layouts[room.name]
+          .flat()
+          .filter((token) => token && lightAssets.includes(token.name)).length +
+        room.mounts.filter((mount) => mount.name === "wall_lamp").length +
+        room.lights.length;
+      const desired = Math.max(
+        room.kind === "balcony" ? 1 : 2,
+        Math.min(6, Math.ceil((room.cols * room.rows * program.grid ** 2) / 24)),
+      );
+      const occupiedLights = [];
+      for (let i = existing; i < desired; i += 1) {
+        const fraction = (i + 1) / (desired + 1);
+        let x = ((room.cols - 1) * fraction).toFixed(1),
+          z = ((room.rows - 1) * (i % 2 ? 0.65 : 0.35)).toFixed(1);
+        const asset =
+          room.kind === "balcony"
+            ? i % 2
+              ? "lantern"
+              : "garden_lamp"
+            : room.style === "industrial"
+              ? "track_light"
+              : room.style === "liminal"
+                ? "fluorescent_light"
+                : room.style === "aquatic"
+                  ? "downlight"
+                  : i % 2
+                    ? "pendant_light"
+                    : "downlight";
+        if (room.kind === "balcony") {
+          const candidates = [];
+          const layout = program.layouts[room.name];
+          for (let row = 0; row < room.rows; row += 1) {
+            for (let col = 0; col < room.cols; col += 1) {
+              const clear =
+                !layout[row]?.[col] &&
+                !occupiedLights.some((p) => Math.hypot(p.x - col, p.z - row) < 1) &&
+                layout.every((tokens, r) =>
+                  tokens.every((token, c) => {
+                    if (!token) {
+                      return true;
+                    }
+                    const angle = (token.yaw * Math.PI) / 180,
+                      [w, d] = token.dimensions;
+                    const halfX =
+                      (Math.abs(w * Math.cos(angle)) + Math.abs(d * Math.sin(angle)) + 0.35) / 2;
+                    const halfZ =
+                      (Math.abs(w * Math.sin(angle)) + Math.abs(d * Math.cos(angle)) + 0.35) / 2;
+                    return (
+                      Math.abs((col - c) * program.grid) > halfX ||
+                      Math.abs((row - r) * program.grid) > halfZ
+                    );
+                  }),
+                );
+              if (clear) {
+                candidates.push({ x: col, z: row });
+              }
+            }
+          }
+          const [nearest] = candidates.toSorted(
+            (a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z),
+          );
+          if (!nearest) {
+            continue;
+          }
+          ({ x, z } = nearest);
+          occupiedLights.push(nearest);
+        }
+        additions.push(`LIGHT ${asset} AT ${x},${z} POWER ${room.kind === "balcony" ? 8 : 18}`);
+      }
+      lines[room.line - 1] += additions.length > 0 ? `\n${additions.join("\n")}` : "";
+    }
+    const site = /lunar/iu.test(name)
+      ? "sand"
+      : /cloud city/iu.test(name)
+        ? "none"
+        : /rooftop|drowned/iu.test(name)
+          ? "paving"
+          : "grass";
+    const facade = /lunar|museum/iu.test(name)
+      ? "concrete"
+      : /loft|library/iu.test(name)
+        ? "brick"
+        : "plaster";
+    return `WALL_THICKNESS 0.24 0.12\nSITE ${site} 5\nFACADE ${facade}\nROOF flat\n${lines.join("\n")}`;
+  }
+  function facadeMaterial(kind) {
+    if (kind === "none") {
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d"),
+      colors = { brick: "#a56e50", concrete: "#a6aaa7", plaster: "#d6cdbb", timber: "#9e7955" };
+    ctx.fillStyle = colors[kind];
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.strokeStyle = kind === "brick" ? "#c5bcb0" : "#776d60";
+    ctx.lineWidth = kind === "brick" ? 3 : 1;
+    if (kind === "brick" || kind === "timber") {
+      for (let y = 0; y <= 128; y += 16) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(128, y);
+        ctx.stroke();
+        if (kind === "brick") {
+          for (let x = ((y / 16) % 2) * 32; x <= 128; x += 64) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 16);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    const material = new THREE.MeshStandardMaterial({
+      bumpMap: texture,
+      bumpScale: kind === "brick" ? 0.018 : 0.004,
+      map: texture,
+      roughness: 0.85,
+    });
+    material.userData.ownedTexture = true;
+    return material;
+  }
+  function applyFacade(mesh, dir, finish) {
+    if (!finish) {
+      return;
+    }
+    const index = { east: 0, north: 5, south: 4, west: 1 }[dir];
+    mesh.material = Array.from({ length: 6 }).fill(mesh.material);
+    mesh.material[index] = finish;
+    const { position, uv } = mesh.geometry.attributes;
+    const face = mesh.geometry.groups[index];
+    const indices = mesh.geometry.index;
+    for (let i = face.start; i < face.start + face.count; i += 1) {
+      const vertex = indices.getX(i);
+      uv.setXY(
+        vertex,
+        dir === "east" || dir === "west"
+          ? position.getZ(vertex) + mesh.position.z
+          : position.getX(vertex) + mesh.position.x,
+        position.getY(vertex) + mesh.position.y,
+      );
+    }
+  }
+  function addExterior(program, root, ceilings, addBox) {
+    const finish = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+    const trim = finish("#aaa497"),
+      roof = finish(program.roof === "pitched" ? "#655149" : "#69716e");
+    const width = program.cols * program.grid,
+      depth = program.rows * program.grid;
+    if (program.site !== "none") {
+      const group = new THREE.Group();
+      root.add(group);
+      const ground = finish({ grass: "#748961", paving: "#a5aaa5", sand: "#bcad88" }[program.site]);
+      addBox(
+        group,
+        width + program.margin * 2,
+        0.12,
+        depth + program.margin * 2,
+        0,
+        -0.27,
+        0,
+        ground,
+      );
+      for (const sign of [-1, 1]) {
+        addBox(group, width + 2, 0.04, 1, 0, -0.19, sign * (depth / 2 + 0.5), trim);
+        addBox(group, 1, 0.04, depth, sign * (width / 2 + 0.5), -0.19, 0, trim);
+      }
+    }
+    for (const room of program.rooms) {
+      if (room.kind === "balcony") {
+        continue;
+      }
+      const w = room.cols * program.grid,
+        d = room.rows * program.grid;
+      const base = new THREE.Group();
+      base.userData.floor = room.floor;
+      root.add(base);
+      if (room.floor === 0 && program.site !== "none") {
+        addBox(base, w + 0.14, 0.18, d + 0.14, room.centerX, -0.19, room.centerZ, trim);
+      }
+      const covered = program.rooms.some(
+        (other) =>
+          other.floor > room.floor &&
+          other.x < room.x + room.cols &&
+          other.x + other.cols > room.x &&
+          other.z < room.z + room.rows &&
+          other.z + other.rows > room.z,
+      );
+      if (covered || program.roof === "none") {
+        continue;
+      }
+      const cap = new THREE.Group();
+      cap.userData.floor = room.floor;
+      root.add(cap);
+      ceilings.push(cap);
+      cap.position.set(room.centerX, room.elevation + 2.82, room.centerZ);
+      if (program.roof === "pitched") {
+        const shape = new THREE.Shape();
+        shape.moveTo(-w / 2 - 0.2, 0);
+        shape.lineTo(0, Math.min(w * 0.3, 2));
+        shape.lineTo(w / 2 + 0.2, 0);
+        shape.closePath();
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          bevelEnabled: false,
+          depth: d + 0.4,
+          steps: 1,
+        });
+        geometry.translate(0, 0, -d / 2 - 0.2);
+        const mesh = new THREE.Mesh(geometry, roof);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        cap.add(mesh);
+      } else {
+        addBox(cap, w + 0.24, 0.12, d + 0.24, 0, 0, 0, roof);
+        for (const dir of room.walls) {
+          if (program.rooms.some((other) => sharedWall(room, other, dir))) {
+            continue;
+          }
+          const vertical = dir === "east" || dir === "west";
+          addBox(
+            cap,
+            vertical ? 0.12 : w + 0.24,
+            0.2,
+            vertical ? d + 0.24 : 0.12,
+            dir === "east" ? w / 2 : dir === "west" ? -w / 2 : 0,
+            0.12,
+            dir === "south" ? d / 2 : dir === "north" ? -d / 2 : 0,
+            trim,
+          );
+        }
+      }
+    }
+  }
+  function mergedEnclosure(root, material) {
+    const copy = root.clone(true),
+      parts = [];
+    copy.traverse((node) => {
+      node.visible = true;
+      if (node.userData.fullHeight) {
+        node.scale.y = 1;
+      }
+    });
+    copy.updateMatrixWorld(true);
+    copy.traverse((node) => {
+      if (!node.isMesh || !node.castShadow) {
+        return;
+      }
+      const geometry = node.geometry.index ? node.geometry.toNonIndexed() : node.geometry.clone();
+      geometry.applyMatrix4(node.matrixWorld);
+      for (const name of Object.keys(geometry.attributes)) {
+        if (name !== "position") {
+          geometry.deleteAttribute(name);
+        }
+      }
+      parts.push(geometry);
+    });
+    if (parts.length === 0) {
+      return;
+    }
+    const geometry = mergeGeometries(parts);
+    parts.forEach((part) => part.dispose());
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    return mesh;
+  }
+  const decorCatalog = {
+    mirror: [0.6, 0.06, 0.9],
+    painting: [0.85, 0.055, 0.65],
+    poster: [0.6, 0.025, 0.85],
+    vase: [0.22, 0.22, 0.34],
+    wall_clock: [0.32, 0.06, 0.32],
+    wall_shelf: [0.8, 0.22, 0.32],
+  };
+  const wallDecor = ["poster", "painting", "mirror", "wall_clock", "wall_shelf"];
+  function addDecoration(group, name, addBox) {
+    if (!decorCatalog[name]) {
+      return;
+    }
+    group.userData.detailed = false;
+    const [w, d, h] = decorCatalog[name];
+    const material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.78 });
+    const frame = material("#6a4a35"),
+      paper = material("#f3e4c7"),
+      ink = material("#285d64"),
+      accent = material("#c36d42");
+    const mesh = (geometry, finish, x = 0, y = 0, z = 0) => {
+      const part = new THREE.Mesh(geometry, finish);
+      part.position.set(x, y, z);
+      part.castShadow = true;
+      part.receiveShadow = true;
+      group.add(part);
+      return part;
     };
+    if (name === "vase") {
+      const profile = [
+        [0.055, 0],
+        [0.09, 0.025],
+        [0.11, 0.11],
+        [0.075, 0.23],
+        [0.045, 0.3],
+        [0.05, 0.34],
+        [0.04, 0.34],
+        [0.035, 0.3],
+        [0.065, 0.23],
+        [0.1, 0.11],
+        [0.075, 0.025],
+      ];
+      mesh(
+        new THREE.LatheGeometry(
+          profile.map(([x, y]) => new THREE.Vector2(x, y)),
+          24,
+        ),
+        accent,
+      );
+    } else if (name === "wall_clock") {
+      const rim = mesh(new THREE.CylinderGeometry(w / 2, w / 2, d, 32), frame, 0, h / 2);
+      rim.rotation.x = Math.PI / 2;
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (i * Math.PI) / 6;
+        const tick = addBox(
+          group,
+          0.009,
+          0.02,
+          0.005,
+          Math.sin(angle) * w * 0.36,
+          h / 2 + Math.cos(angle) * w * 0.36,
+          d / 2 + 0.006,
+          ink,
+        );
+        tick.rotation.z = -angle;
+      }
+      addBox(group, 0.009, h * 0.28, 0.007, 0, h * 0.62, d / 2 + 0.01, ink);
+      const hand = addBox(group, w * 0.24, 0.009, 0.009, w * 0.1, h / 2, d / 2 + 0.012, accent);
+      hand.rotation.z = -0.35;
+    } else if (name === "wall_shelf") {
+      addBox(group, w, 0.04, d, 0, 0.02, 0, frame);
+      for (let i = 0; i < 5; i += 1) {
+        addBox(
+          group,
+          0.07,
+          0.18 + (i % 2) * 0.04,
+          d * 0.65,
+          -w * 0.3 + i * 0.085,
+          0.14 + (i % 2) * 0.02,
+          0,
+          i % 2 ? accent : ink,
+        );
+      }
+      for (const x of [-w * 0.36, w * 0.36]) {
+        addBox(group, 0.03, h, 0.025, x, h / 2, -d / 2 + 0.015, frame);
+      }
+    } else {
+      addBox(group, w, h, d, 0, h / 2, 0, frame);
+      if (name === "mirror") {
+        const silver = new THREE.MeshStandardMaterial({
+          color: "#c0d4d7",
+          metalness: 0.92,
+          roughness: 0.08,
+        });
+        addBox(group, w - 0.05, h - 0.05, 0.004, 0, h / 2, d / 2 + 0.002, silver);
+      } else {
+        addBox(group, w - 0.025, h - 0.025, 0.003, 0, h / 2, d / 2 + 0.002, paper);
+        addBox(group, w * 0.62, h * 0.3, 0.003, -w * 0.07, h * 0.35, d / 2 + 0.006, ink);
+        mesh(new THREE.CircleGeometry(w * 0.16, 24), accent, w * 0.17, h * 0.69, d / 2 + 0.009);
+        for (let i = 0; i < 3; i += 1) {
+          addBox(
+            group,
+            w * (0.55 - i * 0.08),
+            0.009,
+            0.003,
+            0,
+            h * (0.85 + i * 0.035),
+            d / 2 + 0.006,
+            ink,
+          );
+        }
+      }
+    }
+  }
+  const decorationExample =
+    "# Posters, artwork, a clock, a shelf, and a ceramic vase\nGRID 1\nROOM gallery 8x8 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS north east west\nMOUNT south 1 poster\nMOUNT south 6 mirror\nMOUNT east 0 painting\nMOUNT east 7 wall_shelf\nMOUNT north 0 wall_clock\nLIGHT track_light AT 2,2 POWER 24\nLIGHT pendant_light AT 5,5 POWER 18\nLAYOUT gallery\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | vase | . | . | . | . | .\n. | . | . | . | . | . | . | .\nEND";
+  const daylightStrength = { value: 0 },
+    daylightPass = { value: 1 },
+    daylightSourceMaterials = new Set(),
+    daylightCeilings = new Set();
+  function addDaylightFill(program, root) {
+    const sources = new Map(
+      program.rooms.map((room) => [
+        room,
+        room.daylightOpenings
+          .filter((opening) => !opening.shared)
+          .reduce((area, opening) => area + opening.area, 0),
+      ]),
+    );
+    const roomMaterials = new Map();
+    for (const room of program.rooms) {
+      const area = room.cols * room.rows * program.grid ** 2;
+      const openings = room.daylightOpenings.map((opening) => {
+        let weight = opening.area;
+        if (opening.shared) {
+          weight = 0;
+          for (const other of program.rooms) {
+            if (!sharedWall(room, other, opening.dir)) {
+              continue;
+            }
+            const opposite = { east: "west", north: "south", south: "north", west: "east" };
+            const linked = other.daylightOpenings.some(
+              (candidate) =>
+                candidate.dir === opposite[opening.dir] &&
+                Math.hypot(candidate.x - opening.x, candidate.z - opening.z) <
+                  (candidate.span + opening.span) / 2,
+            );
+            if (linked) {
+              weight +=
+                opening.area *
+                0.2 *
+                Math.min(
+                  1,
+                  sources.get(other) / Math.sqrt(other.cols * other.rows * program.grid ** 2),
+                );
+            }
+          }
+        }
+        return new THREE.Vector4(opening.x, opening.z, weight / Math.sqrt(area), 0);
+      });
+      while (openings.length < 4) {
+        openings.push(new THREE.Vector4());
+      }
+      roomMaterials.set(room.name, { materials: new Map(), openings });
+    }
+    function visit(node, roomName) {
+      const name = node.userData.token?.room || roomName;
+      const entry = roomMaterials.get(name);
+      if (node.isMesh && entry) {
+        const finish = (source) => {
+          if (!source.isMeshStandardMaterial || source.userData.windowPane) {
+            return source;
+          }
+          if (!entry.materials.has(source)) {
+            const copy = source.clone();
+            daylightSourceMaterials.add(source);
+            copy.userData.ownedTexture = false;
+            if (source === material.ceiling) {
+              daylightCeilings.add(copy);
+            }
+            copy.onBeforeCompile = (shader) => {
+              shader.uniforms.daylightStrength = daylightStrength;
+              shader.uniforms.daylightPass = daylightPass;
+              shader.uniforms.daylightOpenings = { value: entry.openings };
+              shader.vertexShader = `varying vec3 daylightPosition;\n${shader.vertexShader}`;
+              shader.vertexShader = shader.vertexShader.replace(
+                "#include <project_vertex>",
+                "#include <project_vertex>\ndaylightPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;",
+              );
+              shader.fragmentShader = [
+                "varying vec3 daylightPosition;",
+                "uniform float daylightStrength;",
+                "uniform float daylightPass;",
+                "uniform vec4 daylightOpenings[4];",
+                shader.fragmentShader,
+              ].join("\n");
+              shader.fragmentShader = shader.fragmentShader.replace(
+                "#include <lights_fragment_end>",
+                [
+                  "float daylightFill = 0.0;",
+                  "for (int i = 0; i < 4; i++) {",
+                  "  float distanceToOpening = distance(daylightPosition.xz, daylightOpenings[i].xy);",
+                  "  daylightFill += daylightOpenings[i].z / (1.0 + 0.18 * distanceToOpening * distanceToOpening);",
+                  "}",
+                  "irradiance += vec3(0.82, 0.9, 1.0) * min(daylightFill, 0.8) * daylightStrength * daylightPass * PI;",
+                  "#include <lights_fragment_end>",
+                ].join("\n"),
+              );
+            };
+            copy.customProgramCacheKey = () => "room-daylight-v1";
+            entry.materials.set(source, copy);
+          }
+          return entry.materials.get(source);
+        };
+        node.material = Array.isArray(node.material)
+          ? node.material.map(finish)
+          : finish(node.material);
+      }
+      node.children.forEach((child) => visit(child, name));
+    }
+    visit(root);
+  }
+  function createFixtureRenderer(renderer, scene, camera, sunlight) {
+    const passTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    const sumTarget = new THREE.WebGLRenderTarget(1, 1, {
+      depthBuffer: false,
+      type: THREE.HalfFloatType,
+    });
+    const quadScene = new THREE.Scene(),
+      quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const vertexShader =
+      "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+    const sumMaterial = new THREE.ShaderMaterial({
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+      fragmentShader:
+        "uniform sampler2D source; varying vec2 vUv; void main() { gl_FragColor = texture2D(source, vUv); }",
+      toneMapped: false,
+      transparent: true,
+      uniforms: { source: { value: passTarget.texture } },
+      vertexShader,
+    });
+    const outputMaterial = new THREE.ShaderMaterial({
+      depthTest: false,
+      depthWrite: false,
+      fragmentShader:
+        "uniform sampler2D source; varying vec2 vUv;\n      void main() { gl_FragColor = vec4(texture2D(source, vUv).rgb, 1.0);\n        #include <tonemapping_fragment>\n        #include <colorspace_fragment>\n      }",
+      uniforms: { source: { value: sumTarget.texture } },
+      vertexShader,
+    });
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sumMaterial);
+    quadScene.add(quad);
+    const size = new THREE.Vector2(),
+      black = new THREE.Color(0);
+    return function renderFixtures() {
+      const lights = [],
+        materials = new Set();
+      scene.traverseVisible((node) => {
+        if (node.isPointLight && node.intensity > 0) {
+          lights.push(node);
+        }
+        for (const material of [node.material].flat().filter(Boolean)) {
+          materials.add(material);
+        }
+      });
+      if (lights.length <= 4) {
+        renderer.render(scene, camera);
+        return;
+      }
+      renderer.getDrawingBufferSize(size);
+      if (passTarget.width !== size.x || passTarget.height !== size.y) {
+        passTarget.setSize(size.x, size.y);
+        sumTarget.setSize(size.x, size.y);
+      }
+      const saved = {
+        autoClear: renderer.autoClear,
+        background: scene.background,
+        clearAlpha: renderer.getClearAlpha(),
+        clearColor: renderer.getClearColor(new THREE.Color()),
+        shadows: renderer.shadowMap.needsUpdate,
+        sunVisible: sunlight.visible,
+        target: renderer.getRenderTarget(),
+        toneMapping: renderer.toneMapping,
+      };
+      const emission = [...materials]
+        .filter((m) => m.emissive)
+        .map((m) => [m, m.emissiveIntensity]);
+      const unlit = [...materials]
+        .filter((m) => !m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial && m.colorWrite)
+        .map((m) => [m, m.colorWrite]);
+      try {
+        renderer.toneMapping = THREE.NoToneMapping;
+        renderer.setClearColor(0, 1);
+        renderer.setRenderTarget(sumTarget);
+        renderer.clear();
+        for (let start = 0; start < lights.length; start += 4) {
+          lights.forEach((light, index) => {
+            light.visible = index >= start && index < start + 4;
+          });
+          if (start > 0) {
+            scene.background = black;
+            sunlight.visible = false;
+            daylightPass.value = 0;
+            emission.forEach(([material]) => {
+              material.emissiveIntensity = 0;
+            });
+            unlit.forEach(([material]) => {
+              material.colorWrite = false;
+            });
+          }
+          renderer.shadowMap.needsUpdate = saved.shadows;
+          renderer.autoClear = true;
+          renderer.setRenderTarget(passTarget);
+          renderer.render(scene, camera);
+          renderer.autoClear = false;
+          renderer.setRenderTarget(sumTarget);
+          quad.material = sumMaterial;
+          renderer.render(quadScene, quadCamera);
+        }
+        renderer.toneMapping = saved.toneMapping;
+        renderer.setRenderTarget(saved.target);
+        renderer.autoClear = true;
+        quad.material = outputMaterial;
+        renderer.render(quadScene, quadCamera);
+      } finally {
+        lights.forEach((light) => {
+          light.visible = true;
+        });
+        emission.forEach(([material, intensity]) => {
+          material.emissiveIntensity = intensity;
+        });
+        unlit.forEach(([material, colorWrite]) => {
+          material.colorWrite = colorWrite;
+        });
+        sunlight.visible = saved.sunVisible;
+        daylightPass.value = 1;
+        scene.background = saved.background;
+        renderer.toneMapping = saved.toneMapping;
+        renderer.autoClear = saved.autoClear;
+        renderer.setClearColor(saved.clearColor, saved.clearAlpha);
+        renderer.setRenderTarget(saved.target);
+      }
+    };
+  }
+  function createLightingPreview(renderer, camera, status, fallback, pathTracing) {
+    const { GradientEquirectTexture, WebGLPathTracer } = pathTracing;
+    const tracer = new WebGLPathTracer(renderer),
+      sky = new GradientEquirectTexture(64),
+      view = new THREE.Matrix4(),
+      projection = new THREE.Matrix4(),
+      ownedMaterials = new Set(),
+      ownedGeometries = new Set(),
+      previousShaderError = renderer.debug.onShaderError;
+    let dirtyAt = performance.now(),
+      ready = false,
+      sampleLimit = 128,
+      lastMotion = 0,
+      shaderFailed = false,
+      lastStatus = "";
+    tracer.bounces = 6;
+    tracer.transmissiveBounces = 6;
+    tracer.renderScale = 0.65;
+    tracer.tiles.set(3, 3);
+    tracer.textureSize.set(256, 256);
+    tracer.renderDelay = 350;
+    tracer.minSamples = 1;
+    tracer.rasterizeSceneCallback = fallback;
+    renderer.debug.onShaderError = () => {
+      shaderFailed = true;
+    };
+    sky.topColor.set("#c9e0ff");
+    sky.bottomColor.copy(sky.topColor).multiplyScalar(0.15);
+    sky.update();
+    function report(message) {
+      if (lastStatus !== message) {
+        status.textContent = message;
+        lastStatus = message;
+      }
+    }
+    function releaseMaterials() {
+      for (const item of ownedMaterials) {
+        item.dispose();
+      }
+      ownedMaterials.clear();
+      for (const geometry of ownedGeometries) {
+        geometry.dispose();
+      }
+      ownedGeometries.clear();
+    }
+    function rebuild(root, sunlight, background) {
+      releaseMaterials();
+      const snapshot = new THREE.Scene(),
+        building = root.clone(true),
+        materials = new Map(),
+        sun = sunlight.clone();
+      function previewMaterial(source) {
+        if (!materials.has(source)) {
+          const copy = source.userData.windowPane
+            ? new THREE.MeshPhysicalMaterial({
+                color: "#f5fcff",
+                ior: 1.5,
+                roughness: 0.05,
+                thickness: 0.025,
+                transmission: 1,
+              })
+            : source.clone();
+          if (source.userData.enclosure) {
+            copy.opacity = 1;
+            copy.transparent = false;
+            copy.depthWrite = true;
+          }
+          materials.set(source, copy);
+          ownedMaterials.add(copy);
+        }
+        return materials.get(source);
+      }
+      building.traverse((node) => {
+        node.visible = !node.isLine && !node.isPoints;
+        if (node.userData.fullHeight) {
+          node.scale.y = 1;
+        }
+        if (node.isMesh) {
+          node.material = Array.isArray(node.material)
+            ? node.material.map(previewMaterial)
+            : previewMaterial(node.material);
+        }
+      });
+      const multiMaterialMeshes = [];
+      building.traverse((node) => {
+        if (node.isMesh && Array.isArray(node.material)) {
+          multiMaterialMeshes.push(node);
+        }
+      });
+      for (const node of multiMaterialMeshes) {
+        const source = node.geometry,
+          faces = new Map();
+        for (const group of source.groups) {
+          const material = node.material[group.materialIndex];
+          if (!faces.has(material)) {
+            faces.set(material, []);
+          }
+          const indices = faces.get(material);
+          for (let i = group.start; i < group.start + group.count; i += 1) {
+            indices.push(source.index ? source.index.getX(i) : i);
+          }
+        }
+        for (const [material, indices] of faces) {
+          const part = node.clone(false),
+            geometry = source.clone();
+          geometry.setIndex(indices);
+          geometry.clearGroups();
+          ownedGeometries.add(geometry);
+          part.geometry = geometry;
+          part.material = material;
+          node.parent.add(part);
+        }
+        node.removeFromParent();
+      }
+      sun.target = sunlight.target.clone();
+      snapshot.add(building, sun, sun.target);
+      snapshot.environment = sky;
+      snapshot.environmentIntensity = (sunlight.intensity / 2.4) * 0.6;
+      snapshot.background = background.clone();
+      tracer.setScene(snapshot, camera);
+      view.copy(camera.matrixWorld);
+      projection.copy(camera.projectionMatrix);
+      ready = true;
+    }
+    return {
+      dispose() {
+        renderer.debug.onShaderError = previousShaderError;
+        tracer.dispose();
+        sky.dispose();
+        releaseMaterials();
+      },
+      invalidate() {
+        dirtyAt = performance.now();
+        ready = false;
+        report("Preparing realistic lighting…");
+      },
+      render(root, sunlight, background) {
+        if (shaderFailed) {
+          throw new Error("The graphics driver could not compile realistic lighting");
+        }
+        if (!ready) {
+          report("Preparing realistic lighting…");
+          if (performance.now() - dirtyAt < 250) {
+            return false;
+          }
+          rebuild(root, sunlight, background);
+        }
+        camera.updateMatrixWorld();
+        if (
+          camera.matrixWorld.elements.some(
+            (value, index) => Math.abs(value - view.elements[index]) > 0.00001,
+          ) ||
+          !projection.equals(camera.projectionMatrix)
+        ) {
+          lastMotion = performance.now();
+          tracer.updateCamera();
+          view.copy(camera.matrixWorld);
+          projection.copy(camera.projectionMatrix);
+        }
+        if (performance.now() - lastMotion < 200) {
+          return false;
+        }
+        if (tracer.samples >= sampleLimit) {
+          report(`Realistic preview · ${sampleLimit} samples · complete`);
+          return true;
+        }
+        tracer.renderSample();
+        report(
+          tracer.isCompiling
+            ? "Preparing realistic lighting · first use can take a while"
+            : tracer.samples < 1
+              ? "Realistic preview · stop moving to refine"
+              : `Realistic preview · ${Math.floor(tracer.samples)} samples · refining`,
+        );
+        return true;
+      },
+      setQuality(quality) {
+        tracer.renderScale = quality === "fast" ? 0.4 : quality === "high" ? 1 : 0.65;
+        sampleLimit = quality === "fast" ? 64 : quality === "high" ? 256 : 128;
+        tracer.reset();
+      },
+    };
+  }
+  const examples = {
+    Bedroom: [
+      "# A calm bedroom",
+      "ROOM 8x7",
+      "GRID 0.88",
+      "WALLS north east south west",
+      "DOORS south",
+      "MOUNT north 6 air_conditioner",
+      "LAYOUT main",
+      ". | . | . | . | . | . | . | .",
+      ". | nightstand(lamp_on_top)~north | . | bed(pillows_on_top)~north | . | . | dresser~north | .",
+      ". | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | .",
+      ". | plant | . | . | rug | . | . | .",
+      ". | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | .",
+      "END",
+      "",
+      "LAYOUT pillows",
+      "pillow | pillow",
+      "END",
+      "",
+      "LAYOUT lamp",
+      "table_lamp",
+      "END",
+    ].join("\n"),
+    "Creative studio": [
+      "# Work, make, think",
+      "ROOM 10x7",
+      "GRID 0.8",
+      "WALLS north east south west",
+      "DOORS south",
+      "LAYOUT main",
+      ". | . | . | . | bookshelf~north | . | . | . | . | .",
+      ". | plant | . | . | . | . | . | . | lamp | .",
+      ". | . | desk(work_on_top) | . | . | . | side_table | . | . | .",
+      ". | . | chair@180 | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | . | .",
+      ". | . | . | . | rug | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | . | .",
+      "END",
+      "",
+      "LAYOUT work",
+      "book | monitor | mug",
+      "END",
+    ].join("\n"),
+    "Dining room": [
+      "# A table ready for dinner",
+      "ROOM 9x8",
+      "GRID 0.85",
+      "WALLS north east south west",
+      "DOORS south",
+      "LAYOUT main",
+      ". | . | . | . | . | . | . | . | .",
+      ". | plant | . | . | . | . | . | bookshelf~north | .",
+      ". | . | . | chair@0 | . | . | . | . | .",
+      ". | . | chair@90 | . | dining_table(setting_on_top) | . | chair@270 | . | .",
+      ". | . | . | chair@180 | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | .",
+      "END",
+      "",
+      "LAYOUT setting",
+      "mug | . | mug",
+      "END",
+    ].join("\n"),
+    "Kitchen & dining": [
+      "# Kitchen cabinets, appliances, and a dining set",
+      "ROOM 10x8",
+      "GRID 0.85",
+      "WALLS north east south west",
+      "DOORS south",
+      "LAYOUT main",
+      ". | . | . | . | . | . | . | . | . | .",
+      ". | fridge~north | . | kitchen_counter~north | . | . | sink~north | . | stove~north | .",
+      ". | . | . | . | . | kitchen_chair@0 | . | . | . | .",
+      ". | . | . | . | . | . | . | . | . | .",
+      ". | . | . | kitchen_chair@90 | . | kitchen_table(place_setting_on_top) | . | kitchen_chair@270 | . | .",
+      ". | . | . | . | . | kitchen_chair@180 | . | . | . | .",
+      ". | plant | . | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | . | .",
+      "END",
+      "",
+      "LAYOUT place_setting",
+      "mug | . | mug",
+      "END",
+    ].join("\n"),
+    "Living room": [
+      "# A relaxed living room",
+      "ROOM 9x7",
+      "GRID 0.82",
+      "WALLS north east south west",
+      "DOORS south",
+      "STYLE blue",
+      "MOUNT north 7 air_conditioner",
+      "MOUNT north 1 wall_lamp",
+      "LAYOUT main",
+      ". | . | . | . | bookshelf~north | . | . | . | .",
+      ". | . | . | . | . | . | . | plant | .",
+      ". | sofa~west | . | . | coffee_table(top_on_top) | . | tv_stand(tv_on_top)~east | . | .",
+      ". | . | . | . | . | . | . | . | .",
+      ". | . | armchair@135 | . | rug | . | . | . | .",
+      ". | lamp | . | . | . | . | . | . | .",
+      ". | . | . | . | . | . | . | . | .",
+      "END",
+      "",
+      "LAYOUT top",
+      "book | . | mug",
+      "END",
+      "",
+      "LAYOUT tv",
+      "tv",
+      "END",
+    ].join("\n"),
+  };
   for (const name of [
     "Bedroom",
     "Creative studio",
@@ -2436,11 +3298,15 @@
       if (!renderer.capabilities.isWebGL2 || !renderer.extensions.has("EXT_color_buffer_float")) {
         throw new Error("Floating-point WebGL 2 rendering is unavailable");
       }
-      const { createLightingPreview } = await import("./prm/lighting-preview.js");
+      const pathTracing = await import("three-gpu-pathtracer");
       if (request === lightingRequest) {
         if (!lightingPreviewCache) {
-          lightingPreviewCache = createLightingPreview(renderer, camera, $("lightingStatus"), () =>
-            renderFixtures(),
+          lightingPreviewCache = createLightingPreview(
+            renderer,
+            camera,
+            $("lightingStatus"),
+            renderFixtures,
+            pathTracing,
           );
         }
         lightingPreviewCache.setQuality($("renderQuality").value);
@@ -2587,6 +3453,7 @@
       .multiplyScalar(radius * 3)
       .add(sunlight.target.position);
     renderer.toneMappingExposure = 1.05 * 2 ** $("sunExposure").valueAsNumber;
+    daylightStrength.value = Math.min(1, daylight * 4);
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
     sunlight.castShadow = altitude > 0;
     if (previousDaylight !== altitude > 0) {
@@ -3777,6 +4644,21 @@
         centerZ = (room.z + room.rows / 2 - program.rows / 2) * program.grid;
       room.centerX = centerX;
       room.centerZ = centerZ;
+      room.daylightOpenings = [];
+      for (const dir of ["north", "east", "south", "west"]) {
+        if (!room.walls.includes(dir)) {
+          const vertical = dir === "east" || dir === "west";
+          const span = vertical ? depth : width;
+          room.daylightOpenings.push({
+            area: span * wallHeight,
+            dir,
+            shared: program.rooms.some((other) => sharedWall(room, other, dir)),
+            span,
+            x: centerX + (dir === "east" ? width / 2 : dir === "west" ? -width / 2 : 0),
+            z: centerZ + (dir === "south" ? depth / 2 : dir === "north" ? -depth / 2 : 0),
+          });
+        }
+      }
       const floorMaterial =
         room.style === "liminal"
           ? material.yellow
@@ -4005,6 +4887,14 @@
         if (hasDoor) {
           const gap = Math.min(1.15, length * 0.4),
             segmentLength = (length - gap) / 2;
+          room.daylightOpenings.push({
+            area: gap * 2.29,
+            dir,
+            shared: sharedEdge,
+            span: gap,
+            x: vertical ? fixed : middle,
+            z: vertical ? middle : fixed,
+          });
           for (const offset of [-(gap + segmentLength) / 2, (gap + segmentLength) / 2]) {
             addWallPart(offset, segmentLength);
             box(
@@ -4074,6 +4964,14 @@
             windowY = 1.67,
             glass = mat("#b7d6d8", 0.12);
           glass.userData.windowPane = true;
+          room.daylightOpenings.push({
+            area: span * 1.05,
+            dir,
+            shared: sharedEdge,
+            span,
+            x: vertical ? fixed : center,
+            z: vertical ? center : fixed,
+          });
           glass.transparent = true;
           glass.opacity = 0.34;
           glass.depthWrite = false;
@@ -4380,6 +5278,16 @@
         }
       }
     });
+    for (const item of daylightSourceMaterials) {
+      if (!sharedMaterials.has(item) && !disposed.has(item)) {
+        if (item.userData.ownedTexture) {
+          item.map?.dispose();
+        }
+        item.dispose();
+      }
+    }
+    daylightSourceMaterials.clear();
+    daylightCeilings.clear();
     sceneRoot.clear();
   }
   function compile(resetView = false) {
@@ -4480,6 +5388,7 @@
       return;
     }
     collisionEntries = entries;
+    addDaylightFill(program, sceneRoot);
     updateIndoorLights();
     updateFloorVisibility();
     const warnings = findCollisions(entries);
@@ -4643,6 +5552,10 @@
       material.ceiling.opacity = ceilingTarget;
     }
     material.ceiling.depthWrite = material.ceiling.opacity === 1;
+    for (const ceiling of daylightCeilings) {
+      ceiling.opacity = material.ceiling.opacity;
+      ceiling.depthWrite = material.ceiling.depthWrite;
+    }
     for (const ceiling of ceilingRoots) {
       ceiling.visible = material.ceiling.opacity > 0;
     }
