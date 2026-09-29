@@ -156,14 +156,24 @@
                       <option value="off">Off</option>
                     </select>
                   </label>
+                  <label
+                    >Quality
+                    <select id="renderQuality">
+                      <option value="fast">Fast</option>
+                      <option value="balanced" selected>Balanced</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
                   <output id="lightingStatus" aria-live="polite">Editing lighting</output>
                   <p>
                     Default location: Athens. Only the sun and placed lights illuminate rooms.
                     Walls, ceilings, and floors block light even when hidden for editing. Editing
-                    shows direct light from the nearest eight fixtures; realistic preview includes
-                    all fixtures and up to six light bounces through the room. Exposure brightens
-                    the image without adding light. Use Walk to view interiors. Stop moving to let
-                    the preview sharpen; large scenes take longer.
+                    shows direct light from the nearest 4–8 fixtures, depending on quality;
+                    realistic preview includes all fixtures and up to six light bounces through the
+                    room. Exposure brightens the image without adding light. Use Walk to view
+                    interiors. Stop moving to let the preview sharpen; it pauses when sufficiently
+                    refined. Fast quality reduces resolution and lighting cost. Large scenes take
+                    longer.
                   </p>
                 </form>
               </details>
@@ -264,6 +274,26 @@
       <form method="dialog"><button class="close-button" aria-label="Close">×</button></form>
       <div class="eyebrow">DESIGN GUIDE</div>
       <h2>Quick guide</h2>
+      <p>The scene text also describes the exterior and independent light fixtures:</p>
+      <pre>
+SITE grass 5&#10;FACADE brick&#10;ROOF pitched&#10;GRID 1&#10;ROOM living 4x4 AT 0,0&#10;WINDOWS north east west&#10;LIGHT pendant_light AT 1,1 POWER 18&#10;LIGHT track_light AT 2,2 POWER 24&#10;LAYOUT living&#10;. | . | . | .&#10;. | . | . | .&#10;. | . | . | .&#10;. | . | . | .&#10;END</pre>
+      <p>
+        <code>SITE none|grass|paving|sand [margin]</code> sets ground and paving around the building
+        (margin 1–30 metres). <code>FACADE none|plaster|brick|timber|concrete</code> changes
+        exterior wall faces. <code>ROOF none|flat|pitched</code> caps exposed rooms; roofs follow
+        the ceiling visibility control. These settings go outside LAYOUT blocks and are included
+        when copying or sharing the scene.
+      </p>
+      <p>
+        <code>LIGHT asset AT column,row [POWER number]</code> places a fixture independently of
+        occupied furniture cells. Coordinates refer to cell centres and can be fractional; power is
+        a relative intensity from 0–200. Assets include <code>pendant_light</code>,
+        <code>track_light</code>, <code>downlight</code>, <code>ceiling_light</code>,
+        <code>fluorescent_light</code>, <code>garden_lamp</code>, <code>lantern</code>,
+        <code>lamp</code>, and <code>table_lamp</code>. Use <code>MOUNT east 2 wall_lamp</code> for
+        wall fixtures. Overhead fixtures leave the floor walkable. Interior rooms with no exterior
+        wall use fixtures rather than windows into neighbouring rooms.
+      </p>
       <ul>
         <li><code>ROOM living 8x6 AT 0,0</code> — size and position in grid cells.</li>
         <li><code>FLOOR 1</code> — subsequent rooms sit 3m above floor 0; levels 0–31.</li>

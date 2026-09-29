@@ -1,5 +1,15 @@
 /* eslint-disable max-lines, max-lines-per-function -- Each standalone page keeps its scene and application logic in one script. */ /* eslint-disable prefer-named-capture-group -- The grammar parser consumes positional regex captures in a fixed order. */ /* eslint-disable no-magic-numbers -- Scene coordinates, dimensions, colors, and animation timings are literal design data. */ /* eslint-disable id-length -- Short coordinate and drawing parameter names follow the geometry notation. */ /* eslint-disable max-statements, max-params, complexity, max-depth -- Rendering and grammar routines keep their sequential operations together. */ /* eslint-disable one-var, sort-vars -- Declarations follow dependency and initialization order. */ /* eslint-disable func-style, no-use-before-define, unicorn/consistent-function-scoping -- Hoisted helpers and closures share application state inside an isolated entry point. */ /* eslint-disable no-ternary, no-nested-ternary, unicorn/no-nested-ternary -- Inline choices express visual variants and fallback values. */ /* eslint-disable init-declarations, no-undefined -- Optional application state is initialized when its resources become available. */ /* eslint-disable no-continue, unicorn/no-array-for-each -- Iteration guards skip inactive entities and process grammar rows. */ /* eslint-disable oxc/no-optional-chaining -- Optional scene and pointer state is intentionally nullable. */ /* eslint-disable oxc/no-async-await, unicorn/prefer-top-level-await -- The asynchronous entry point catches library-loading failures and reports them in the page. */ (async () => {
-  const THREE = await import("three"),
+  const {
+      lightAssets,
+      overheadLights,
+      sharedWall,
+      enrichExample,
+      facadeMaterial,
+      applyFacade,
+      addExterior,
+      mergedEnclosure,
+    } = await import("./prm/scene-design.js"),
+    THREE = await import("three"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
@@ -1426,12 +1436,14 @@
       console_table: [1.1, 0.35, 0.8],
       desk: [1.35, 0.7, 0.75],
       dining_table: [1.55, 0.9, 0.75],
+      downlight: [0.22, 0.22, 2.7],
       dresser: [1.03, 0.49, 0.92],
       elevator: [1.6, 1.6, 3],
       filing_cabinet: [0.48, 0.55, 0.68],
       fluorescent_light: [1.2, 0.3, 2.7],
       fountain: [1.8, 1.8, 1.5],
       fridge: [0.73, 0.7, 1.82],
+      garden_lamp: [0.22, 0.22, 0.9],
       hedge: [2, 0.65, 1.7],
       hot_tub: [2.2, 2.2, 0.85],
       hydroponic_rack: [1.8, 0.7, 2],
@@ -1440,6 +1452,7 @@
       kitchen_island: [1.55, 0.85, 0.91],
       kitchen_table: [1.52, 0.86, 0.75],
       lamp: [0.4, 0.4, 1.48],
+      lantern: [0.3, 0.3, 0.5],
       laundry_basket: [0.44, 0.4, 0.56],
       monitor: [0.48, 0.12, 0.39],
       mug: [0.11, 0.11, 0.12],
@@ -1448,6 +1461,7 @@
       outdoor_chair: [0.6, 0.6, 0.82],
       parasol: [2.6, 2.6, 2.5],
       partition: [2, 0.18, 2.65],
+      pendant_light: [0.5, 0.5, 2.7],
       piano: [1.5, 0.65, 1.2],
       pillow: [0.38, 0.3, 0.1],
       plant: [0.48, 0.48, 1.12],
@@ -1470,6 +1484,7 @@
       telescope: [1.1, 1.2, 1.65],
       toilet: [0.43, 0.65, 0.72],
       towel_rack: [0.65, 0.32, 0.95],
+      track_light: [1.2, 0.22, 2.7],
       treadmill: [0.9, 1.8, 1.3],
       tv: [0.93, 0.09, 0.6],
       tv_stand: [1.33, 0.42, 0.53],
@@ -1648,6 +1663,7 @@
     editor.dispatch({ effects });
   }
   function clearHover() {
+    requestRender();
     selectionPinned = false;
     hoveredGroup = undefined;
     selectionCard.hidden = true;
@@ -1700,6 +1716,7 @@
     hoveredGroup = group;
     hoveredGroup.userData.token = token;
     hoverOutline = new THREE.BoxHelper(group, "#4a9e69");
+    requestRender();
     scene.add(hoverOutline);
     selectionCard.replaceChildren();
     const title = document.createElement("strong");
@@ -1868,7 +1885,18 @@
     };
   }
   function parseProgram(source) {
-    const program = { cols: 0, grid: 0.82, layouts: {}, rooms: [], rows: 0, warnings: [] },
+    const program = {
+        cols: 0,
+        facade: "none",
+        grid: 0.82,
+        layouts: {},
+        margin: 5,
+        roof: "none",
+        rooms: [],
+        rows: 0,
+        site: "none",
+        warnings: [],
+      },
       raw = source.split("\n");
     let active,
       currentRoom,
@@ -1881,7 +1909,54 @@
       if (!text) {
         return;
       }
-      if (/^FLOOR\s+/iu.test(text)) {
+      if (/^(SITE|FACADE|ROOF)\b/iu.test(text)) {
+        if (active) {
+          fail("Exterior settings belong outside layouts", line);
+        }
+        const fields = text.toLowerCase().split(/\s+/u),
+          [setting, value] = fields,
+          choices = {
+            facade: ["none", "plaster", "brick", "timber", "concrete"],
+            roof: ["none", "flat", "pitched"],
+            site: ["none", "grass", "paving", "sand"],
+          };
+        if (!choices[setting].includes(value) || fields.length > (setting === "site" ? 3 : 2)) {
+          fail(
+            "Use SITE none/grass/paving/sand [margin], FACADE none/plaster/brick/timber/concrete, or ROOF none/flat/pitched",
+            line,
+          );
+        }
+        if (setting === "site" && fields[2] !== undefined) {
+          const margin = Number(fields[2]);
+          if (!Number.isFinite(margin) || margin < 1 || margin > 30) {
+            fail("SITE margin must be 1–30 metres", line);
+          }
+          program.margin = margin;
+        }
+        program[setting] = value;
+      } else if (/^LIGHT\b/iu.test(text)) {
+        const match = text.match(
+          /^LIGHT\s+(\w+)\s+AT\s+(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)(?:\s+POWER\s+(\d+(?:\.\d+)?))?$/iu,
+        );
+        if (!currentRoom || active || !match || !lightAssets.includes(match[1].toLowerCase())) {
+          fail("Use LIGHT asset AT column,row [POWER 0–200] inside a room definition", line);
+        }
+        if (match[1].toLowerCase() === "wall_lamp") {
+          fail("Use MOUNT east 2 wall_lamp for wall fixtures", line);
+        }
+        const x = Number(match[2]),
+          z = Number(match[3]),
+          power = match[4] === undefined ? undefined : Number(match[4]);
+        if (
+          x > currentRoom.cols - 1 ||
+          z > currentRoom.rows - 1 ||
+          (power !== undefined && (!Number.isFinite(power) || power > 200)) ||
+          currentRoom.lights.length >= 64
+        ) {
+          fail("LIGHT must fit the room, with POWER 0–200 and at most 64 fixtures per room", line);
+        }
+        currentRoom.lights.push({ line, name: match[1].toLowerCase(), power, x, z });
+      } else if (/^FLOOR\s+/iu.test(text)) {
         const match = text.match(/^FLOOR\s+(\d+)$/iu);
         if (!match || Number(match[1]) > 31 || active) {
           fail("Use FLOOR 0–31 outside a layout", line);
@@ -1905,6 +1980,7 @@
             elevation: floor * 3,
             floor,
             kind,
+            lights: [],
             line,
             mounts: [],
             name: (m[2] || "main").toLowerCase(),
@@ -2243,8 +2319,10 @@
   scene.background = new THREE.Color("#eff2ee");
   const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 250),
     renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2272,43 +2350,52 @@
   scene.add(sceneRoot);
   const shadowRoot = new THREE.Group(),
     shadowMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  let fixtureLights = [];
+  let fixtureLights = [],
+    renderDirty = true,
+    lightLimit = 6;
+  const lastLightPosition = new THREE.Vector3(Infinity, Infinity, Infinity),
+    lastView = new THREE.Matrix4();
+  function requestRender() {
+    renderDirty = true;
+  }
+  controls.addEventListener("change", requestRender);
+  viewport.addEventListener("pointermove", requestRender);
+  viewport.addEventListener("pointerleave", requestRender);
+  document.addEventListener("input", requestRender);
+  document.addEventListener("click", requestRender);
   scene.add(shadowRoot);
   function updateShadowEnclosure() {
     shadowRoot.clear();
-    const enclosure = sceneRoot.clone(true),
-      omitted = [];
-    enclosure.traverse((node) => {
-      node.visible = true;
-      if (node.userData.fullHeight) {
-        node.scale.y = 1;
-      }
-      if (node.isLight || (node.geometry && (!node.isMesh || !node.castShadow))) {
-        omitted.push(node);
-      } else if (node.isMesh) {
-        node.material = shadowMaterial;
-        node.receiveShadow = false;
-      }
-    });
-    for (const node of omitted) {
-      node.removeFromParent();
-    }
+    const enclosure = mergedEnclosure(sceneRoot, shadowMaterial);
     sceneRoot.traverse((node) => {
       if (node.isMesh) {
         node.castShadow = false;
       }
     });
-    shadowRoot.add(enclosure);
+    if (enclosure) {
+      shadowRoot.add(enclosure);
+    }
+    renderer.shadowMap.needsUpdate = true;
   }
   function updateVisibleLights() {
+    if (lastLightPosition.distanceToSquared(camera.position) < 0.25) {
+      return;
+    }
+    lastLightPosition.copy(camera.position);
     const position = new THREE.Vector3();
-    fixtureLights.sort(
-      (a, b) =>
-        a.getWorldPosition(position).distanceToSquared(camera.position) -
-        b.getWorldPosition(position).distanceToSquared(camera.position),
-    );
+    for (const light of fixtureLights) {
+      light.userData.cameraDistance = light
+        .getWorldPosition(position)
+        .distanceToSquared(camera.position);
+    }
+    fixtureLights.sort((a, b) => a.userData.cameraDistance - b.userData.cameraDistance);
     fixtureLights.forEach((light, index) => {
-      light.visible = index < 8;
+      const visible = index < lightLimit;
+      if (light.visible !== visible) {
+        renderer.shadowMap.needsUpdate = true;
+        renderDirty = true;
+      }
+      light.visible = visible;
     });
   }
   function fixtureLight(parent, intensity, x, y, z) {
@@ -2327,6 +2414,7 @@
   function stopLightingPreview(message = "Editing lighting") {
     lightingRequest += 1;
     lightingPreview = undefined;
+    renderDirty = true;
     $("lightingMode").value = "edit";
     $("lightingStatus").textContent = message;
   }
@@ -2353,8 +2441,11 @@
       const { createLightingPreview } = await import("./prm/lighting-preview.js");
       if (request === lightingRequest) {
         if (!lightingPreviewCache) {
-          lightingPreviewCache = createLightingPreview(renderer, camera, $("lightingStatus"));
+          lightingPreviewCache = createLightingPreview(renderer, camera, $("lightingStatus"), () =>
+            renderer.render(scene, camera),
+          );
         }
+        lightingPreviewCache.setQuality($("renderQuality").value);
         lightingPreview = lightingPreviewCache;
         lightingPreview.invalidate();
       }
@@ -2365,6 +2456,8 @@
     }
   });
   function updateIndoorLights() {
+    renderDirty = true;
+    renderer.shadowMap.needsUpdate = true;
     const enabled = $("indoorLights").value === "on";
     sceneRoot.traverse((node) => {
       if (node.isLight) {
@@ -2385,6 +2478,16 @@
     lightingPreview?.invalidate();
   }
   $("indoorLights").addEventListener("change", updateIndoorLights);
+  $("renderQuality").addEventListener("change", () => {
+    const quality = $("renderQuality").value;
+    lightLimit = quality === "fast" ? 4 : quality === "high" ? 8 : 6;
+    renderer.setPixelRatio(
+      Math.min(devicePixelRatio, quality === "fast" ? 1 : quality === "high" ? 2 : 1.5),
+    );
+    lastLightPosition.set(Infinity, Infinity, Infinity);
+    lightingPreviewCache?.setQuality(quality);
+    resize();
+  });
   const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation", "Exposure"],
     sharedSettings = new URLSearchParams(location.hash.slice(1)),
     today = new Date();
@@ -2440,6 +2543,8 @@
     };
   }
   function updateSun() {
+    renderDirty = true;
+    renderer.shadowMap.needsUpdate = true;
     if (!$("sunSettings").checkValidity()) {
       $("sunStatus").textContent = "Enter a valid date, time, and values within the shown ranges.";
       return;
@@ -2795,6 +2900,36 @@
           box(group, cw, 0.12, cd, 0, ch - 0.06, 0, material.white);
           break;
         }
+        case "pendant_light": {
+          cylinder(group, 0.07, 0.07, 0.06, 0, ch - 0.03, 0, material.metal);
+          cylinder(group, 0.008, 0.008, 0.55, 0, ch - 0.3, 0, material.metal);
+          cylinder(group, 0.08, cw / 2, 0.2, 0, ch - 0.65, 0, material.white);
+          fixtureLight(group, 18, 0, ch - 0.78, 0);
+          break;
+        }
+        case "track_light": {
+          box(group, cw, 0.055, 0.07, 0, ch - 0.03, 0, material.metal);
+          for (const x of [-cw * 0.32, 0, cw * 0.32]) {
+            cylinder(group, 0.065, 0.085, 0.14, x, ch - 0.12, 0, material.metal);
+          }
+          fixtureLight(group, 24, 0, ch - 0.22, 0);
+          break;
+        }
+        case "garden_lamp":
+        case "lantern": {
+          const emitter = mat("#fff2d5");
+          emitter.emissive.set("#ffd496");
+          emitter.emissiveIntensity = 1;
+          cylinder(group, cw * 0.48, cw * 0.5, 0.06, 0, 0.03, 0, material.metal);
+          if (name === "garden_lamp") {
+            cylinder(group, 0.035, 0.05, ch * 0.7, 0, ch * 0.35, 0, material.metal);
+          }
+          cylinder(group, cw * 0.35, cw * 0.35, ch * 0.25, 0, ch * 0.78, 0, emitter);
+          cylinder(group, cw * 0.5, cw * 0.5, 0.04, 0, ch * 0.94, 0, material.metal);
+          fixtureLight(group, 8, 0, ch * 0.78, cw * 0.45);
+          break;
+        }
+        case "downlight":
         case "ceiling_light": {
           cylinder(group, cw / 2, cw / 2, 0.08, 0, ch - 0.04, 0, material.white);
           const diffuser = mat("#fff1d8", 0.65);
@@ -3592,7 +3727,8 @@
     return group;
   }
   function addArchitecture(program) {
-    const trim = mat("#886f60"),
+    const outsideFinish = facadeMaterial(program.facade),
+      trim = mat("#886f60"),
       wallHeight = 2.75,
       largeScene =
         program.rooms.reduce((area, room) => area + room.cols * room.rows * program.grid ** 2, 0) >
@@ -3806,26 +3942,7 @@
             : centerZ + (dir === "south" ? depth / 2 : -depth / 2),
           middle = vertical ? centerZ : centerX,
           hasDoor = room.doors.includes(dir),
-          sharedEdge = program.rooms.some(
-            (other) =>
-              other !== room &&
-              other.floor === room.floor &&
-              (dir === "north"
-                ? other.z + other.rows === room.z &&
-                  other.x < room.x + room.cols &&
-                  other.x + other.cols > room.x
-                : dir === "east"
-                  ? other.x === room.x + room.cols &&
-                    other.z < room.z + room.rows &&
-                    other.z + other.rows > room.z
-                  : dir === "south"
-                    ? other.z === room.z + room.rows &&
-                      other.x < room.x + room.cols &&
-                      other.x + other.cols > room.x
-                    : other.x + other.cols === room.x &&
-                      other.z < room.z + room.rows &&
-                      other.z + other.rows > room.z),
-          ),
+          sharedEdge = program.rooms.some((other) => sharedWall(room, other, dir)),
           hasWindow =
             room.windows === undefined
               ? !hasDoor && !sharedEdge && length > 2.2
@@ -3845,6 +3962,9 @@
                 wallMaterial,
               );
             wall.castShadow = true;
+            if (!sharedEdge) {
+              applyFacade(wall, dir, outsideFinish);
+            }
           };
         if (hasDoor || hasWindow) {
           wallRoot.add(opening);
@@ -4076,8 +4196,8 @@
           b = entries[j];
         if (
           a.token.floor !== b.token.floor ||
-          ["rug", "ceiling_light", "fluorescent_light"].includes(a.token.name) ||
-          ["rug", "ceiling_light", "fluorescent_light"].includes(b.token.name)
+          ["rug", ...overheadLights].includes(a.token.name) ||
+          ["rug", ...overheadLights].includes(b.token.name)
         ) {
           continue;
         }
@@ -4103,7 +4223,8 @@
     const room = currentProgram.rooms.find((item) => item.name === focusRoom),
       extent = Math.max(
         Math.max(room?.cols || currentProgram.cols, room?.rows || currentProgram.rows) *
-          currentProgram.grid,
+          currentProgram.grid +
+          (room || currentProgram.site === "none" ? 0 : Math.min(currentProgram.margin, 5)),
         focusFloor === undefined && !room ? (currentProgram.floors.at(-1) + 1) * 3 : 3,
       ),
       framing = Math.max(1, 1.1 / camera.aspect),
@@ -4163,6 +4284,9 @@
     }
   }
   function updateFloorVisibility() {
+    renderDirty = true;
+    renderer.shadowMap.needsUpdate = true;
+    lastLightPosition.set(Infinity, Infinity, Infinity);
     clearHover();
     for (const group of sceneRoot.children) {
       if (group.userData.floor === undefined) {
@@ -4213,6 +4337,9 @@
   }
   function clearScene() {
     clearHover();
+    for (const child of shadowRoot.children) {
+      child.geometry?.dispose();
+    }
     shadowRoot.clear();
     fixtureLights = [];
     sceneRoot.traverse((node) => {
@@ -4228,6 +4355,9 @@
       }
       for (const item of [node.material].flat().filter(Boolean)) {
         if (!sharedMaterials.has(item) && !disposed.has(item)) {
+          if (item.userData.ownedTexture) {
+            item.map?.dispose();
+          }
           item.dispose();
           disposed.add(item);
         }
@@ -4263,6 +4393,7 @@
     camera.far = Math.max(250, sceneExtent * 8);
     camera.updateProjectionMatrix();
     addArchitecture(program);
+    addExterior(program, sceneRoot, ceilingRoots, box);
     updateShadowEnclosure();
     updateSun();
     if (!program.rooms.some((room) => room.name === focusRoom)) {
@@ -4289,6 +4420,43 @@
     try {
       for (const room of program.rooms) {
         entries.push(...placeLayout(program, room.name, room));
+        for (const fixture of room.lights) {
+          const token = {
+              dimensions: catalog[fixture.name],
+              end: editor.state.doc.line(fixture.line).length,
+              floor: room.floor,
+              line: fixture.line,
+              name: fixture.name,
+              room: room.name,
+              start: 0,
+              yaw: 0,
+            },
+            group = makeFurniture(token),
+            x = room.centerX + (fixture.x - (room.cols - 1) / 2) * program.grid,
+            z = room.centerZ + (fixture.z - (room.rows - 1) / 2) * program.grid;
+          group.position.set(x, room.elevation, z);
+          group.userData.floor = room.floor;
+          if (fixture.power !== undefined) {
+            let initialPower = 0;
+            group.traverse((node) => {
+              if (node.isLight) {
+                initialPower += node.intensity;
+              }
+            });
+            const factor = initialPower ? fixture.power / initialPower : 0;
+            group.traverse((node) => {
+              if (node.isLight) {
+                node.intensity *= factor;
+              }
+              if (node.material?.emissive?.getHex()) {
+                node.material = node.material.clone();
+                node.material.emissiveIntensity *= factor;
+              }
+            });
+          }
+          sceneRoot.add(group);
+          entries.push({ group, token, x, z });
+        }
       }
     } catch (error) {
       showStatus(error.message, "error");
@@ -4300,6 +4468,7 @@
         fixtureLights.push(node);
       }
     });
+    lastLightPosition.set(Infinity, Infinity, Infinity);
     updateIndoorLights();
     updateFloorVisibility();
     const warnings = findCollisions(entries);
@@ -4320,6 +4489,8 @@
     }
   }
   function resize() {
+    renderDirty = true;
+    lightingPreview?.invalidate();
     const w = viewport.clientWidth,
       h = viewport.clientHeight;
     if (!w || !h) {
@@ -4387,10 +4558,7 @@
     }
     for (const entry of collisionEntries) {
       const { token } = entry;
-      if (
-        token.floor !== floor ||
-        ["rug", "stairs", "ceiling_light", "fluorescent_light"].includes(token.name)
-      ) {
+      if (token.floor !== floor || ["rug", "stairs", ...overheadLights].includes(token.name)) {
         continue;
       }
       const angle = (token.yaw * Math.PI) / 180,
@@ -4451,6 +4619,9 @@
     const blend = 1 - Math.exp(-Math.max(0, time - lastFrameTime) * 0.012);
     lastFrameTime = time;
     const ceilingTarget = ceilingsCollapsed ? 0 : 1;
+    if (material.ceiling.opacity !== ceilingTarget) {
+      renderDirty = true;
+    }
     material.ceiling.opacity += (ceilingTarget - material.ceiling.opacity) * blend;
     if (Math.abs(ceilingTarget - material.ceiling.opacity) < 0.001) {
       material.ceiling.opacity = ceilingTarget;
@@ -4461,6 +4632,10 @@
     }
     for (const walls of wallRoots) {
       const target = wallsCollapsed ? 0.045 : 1;
+      if (walls.scale.y !== target) {
+        renderDirty = true;
+        renderer.shadowMap.needsUpdate = true;
+      }
       walls.scale.y += (target - walls.scale.y) * blend;
       if (Math.abs(target - walls.scale.y) < 0.001) {
         walls.scale.y = target;
@@ -4490,17 +4665,26 @@
     if (hoverOutline) {
       hoverOutline.update();
     }
+    camera.updateMatrixWorld();
+    if (!lastView.equals(camera.matrixWorld)) {
+      renderDirty = true;
+      lastView.copy(camera.matrixWorld);
+    }
     updateVisibleLights();
     try {
-      if (!lightingPreview?.render(sceneRoot, sunlight, scene.background)) {
+      if (!lightingPreview?.render(sceneRoot, sunlight, scene.background) && renderDirty) {
         renderer.render(scene, camera);
       }
+      renderDirty = false;
     } catch (error) {
       lightingFailed(error);
       renderer.render(scene, camera);
     }
   }
   animate();
+  for (const name of Object.keys(examples)) {
+    examples[name] = enrichExample(examples[name], parseProgram, name);
+  }
   const exampleGroups = {
     "Apartments and open plans": [
       "Micro apartment",

@@ -3,15 +3,18 @@ import { GradientEquirectTexture, WebGLPathTracer } from "three-gpu-pathtracer";
 
 // The pinned WebGL release matches the editor's Three.js version.
 // A separate scene keeps editing cutaways from becoming openings for daylight.
-export function createLightingPreview(renderer, camera, status) {
+export function createLightingPreview(renderer, camera, status, fallback) {
   const tracer = new WebGLPathTracer(renderer),
     sky = new GradientEquirectTexture(64),
     view = new THREE.Matrix4(),
     projection = new THREE.Matrix4(),
     ownedMaterials = new Set(),
+    ownedGeometries = new Set(),
     previousShaderError = renderer.debug.onShaderError;
   let dirtyAt = performance.now(),
     ready = false,
+    sampleLimit = 128,
+    lastMotion = 0,
     shaderFailed = false,
     lastStatus = "";
   tracer.bounces = 6;
@@ -21,6 +24,7 @@ export function createLightingPreview(renderer, camera, status) {
   tracer.textureSize.set(256, 256);
   tracer.renderDelay = 350;
   tracer.minSamples = 1;
+  tracer.rasterizeSceneCallback = fallback;
   renderer.debug.onShaderError = () => {
     shaderFailed = true;
   };
@@ -40,6 +44,8 @@ export function createLightingPreview(renderer, camera, status) {
       item.dispose();
     }
     ownedMaterials.clear();
+    for (const geometry of ownedGeometries) geometry.dispose();
+    ownedGeometries.clear();
   }
 
   function rebuild(root, sunlight, background) {
@@ -80,6 +86,33 @@ export function createLightingPreview(renderer, camera, status) {
           : previewMaterial(node.material);
       }
     });
+    // This path-tracer release assigns one material index per mesh. Split facade
+    // faces in the snapshot so multi-material walls cannot shift later indices.
+    const multiMaterialMeshes = [];
+    building.traverse(node => {
+      if (node.isMesh && Array.isArray(node.material)) multiMaterialMeshes.push(node);
+    });
+    for (const node of multiMaterialMeshes) {
+      const source = node.geometry, faces = new Map();
+      for (const group of source.groups) {
+        const material = node.material[group.materialIndex];
+        if (!faces.has(material)) faces.set(material, []);
+        const indices = faces.get(material);
+        for (let i = group.start; i < group.start + group.count; i++) {
+          indices.push(source.index ? source.index.getX(i) : i);
+        }
+      }
+      for (const [material, indices] of faces) {
+        const part = node.clone(false), geometry = source.clone();
+        geometry.setIndex(indices);
+        geometry.clearGroups();
+        ownedGeometries.add(geometry);
+        part.geometry = geometry;
+        part.material = material;
+        node.parent.add(part);
+      }
+      node.removeFromParent();
+    }
     sun.target = sunlight.target.clone();
     snapshot.add(building, sun, sun.target);
     snapshot.environment = sky;
@@ -92,6 +125,11 @@ export function createLightingPreview(renderer, camera, status) {
   }
 
   return {
+    setQuality(quality) {
+      tracer.renderScale = quality === "fast" ? 0.4 : quality === "high" ? 1 : 0.65;
+      sampleLimit = quality === "fast" ? 64 : quality === "high" ? 256 : 128;
+      tracer.reset();
+    },
     invalidate() {
       dirtyAt = performance.now();
       ready = false;
@@ -113,9 +151,15 @@ export function createLightingPreview(renderer, camera, status) {
         camera.matrixWorld.elements.some((value, index) => Math.abs(value - view.elements[index]) > 0.00001) ||
         !projection.equals(camera.projectionMatrix)
       ) {
+        lastMotion = performance.now();
         tracer.updateCamera();
         view.copy(camera.matrixWorld);
         projection.copy(camera.projectionMatrix);
+      }
+      if (performance.now() - lastMotion < 200) return false;
+      if (tracer.samples >= sampleLimit) {
+        report(`Realistic preview · ${sampleLimit} samples · complete`);
+        return true;
       }
       tracer.renderSample();
       report(
