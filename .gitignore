@@ -8,6 +8,8 @@
 !/checks/
 !/checks/installIsoVmWithDisko/
 !/checks/installIsoVmWithDisko/default.nix
+!/checks/interior-design-editor-video/
+!/checks/interior-design-editor-video/default.nix
 !/checks/laptopVmWithDisko/
 !/checks/laptopVmWithDisko/default.nix
 !/flake.lock
@@ -22,5 +24,14 @@
 !/packages/cv/
 !/packages/cv/default.nix
 !/packages/cv/index.html
+!/packages/interior-design-editor-video/
+!/packages/interior-design-editor-video/default.nix
+!/packages/interior-design-editor-video/main.py
+!/packages/interior-design-editor-video/test_main.py
+!/packages/interior-design-editor/
+!/packages/interior-design-editor/default.nix
+!/packages/interior-design-editor/index.html
+!/packages/interior-design-editor/script.js
+!/packages/interior-design-editor/style.css
 !/prm/
 !/prm/**
