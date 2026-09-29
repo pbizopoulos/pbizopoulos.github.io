@@ -1234,6 +1234,18 @@
         return next;
       },
     });
+  function updateFoldButton(state) {
+    const collapsed = foldedRanges(state).size > 0,
+      button = $("foldButton");
+    button.title = collapsed ? "Expand all layout sections" : "Collapse all layout sections";
+    button.setAttribute("aria-label", button.title);
+    button
+      .querySelector("path")
+      .setAttribute(
+        "d",
+        collapsed ? "m8 7 4-4 4 4M4 12h16m-12 5 4 4 4-4" : "m8 3 4 4 4-4M4 12h16m-12 9 4-4 4 4",
+      );
+  }
   function editorState(doc) {
     return EditorState.create({
       doc,
@@ -1262,6 +1274,7 @@
           ...historyKeymap,
         ]),
         EditorView.updateListener.of((update) => {
+          updateFoldButton(update.state);
           if (!update.docChanged) {
             return;
           }
@@ -2267,7 +2280,7 @@
         case "dresser":
         case "sideboard": {
           legs(group, cw, cd, 0.12);
-          box(group, cw, ch - 0.12, cd, 0, (ch + 0.12) / 2, 0, material.woodDark);
+          box(group, cw, ch - 0.16, cd - 0.04, 0, (ch + 0.08) / 2, -0.02, material.woodDark);
           box(group, cw, 0.04, cd, 0, ch - 0.02, 0, material.wood);
           const drawers = name === "dresser" ? 3 : 2,
             drawerHeight = (ch - 0.19) / drawers;
@@ -2309,7 +2322,7 @@
         case "stove":
         case "kitchen_island": {
           box(group, cw - 0.06, 0.1, cd - 0.07, 0, 0.05, -0.02, material.woodDark);
-          box(group, cw, ch - 0.15, cd, 0, (ch + 0.05) / 2, 0, material.woodDark);
+          box(group, cw, ch - 0.15, cd - 0.04, 0, (ch + 0.05) / 2, -0.02, material.woodDark);
           const doors = Math.max(1, Math.round(cw / 0.55)),
             doorWidth = (cw - 0.025) / doors;
           for (let i = 0; i < doors; i += 1) {
@@ -3633,6 +3646,7 @@
   function loadExample(name) {
     clearTimeout(compileTimer);
     editor.setState(editorState(examples[name]));
+    updateFoldButton(editor.state);
     focusRoom = undefined;
     focusFloor = undefined;
     select.value = name;
@@ -3681,10 +3695,14 @@
     }
   });
   $("foldButton").addEventListener("click", () => {
+    const collapsed = foldedRanges(editor.state).size > 0;
     clearHover();
-    foldAll(editor);
+    if (collapsed) {
+      unfoldAll(editor);
+    } else {
+      foldAll(editor);
+    }
   });
-  $("unfoldButton").addEventListener("click", () => unfoldAll(editor));
   document.addEventListener("keydown", (event) => {
     if (
       event.key === "?" &&
@@ -3849,6 +3867,7 @@
     loadExample(examples[requestedExample] ? requestedExample : "Living room");
   } else {
     editor.setState(editorState(sharedSource));
+    updateFoldButton(editor.state);
     select.value = "custom";
     compile(true);
   }
