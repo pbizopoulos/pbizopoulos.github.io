@@ -2,7 +2,6 @@
   const THREE = await import("three"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
-    { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
     { EditorView, Decoration, keymap, lineNumbers, drawSelection } =
       await import("@codemirror/view"),
@@ -2203,7 +2202,6 @@
   }
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#eff2ee");
-  scene.fog = new THREE.Fog("#eff2ee", 25, 80);
   const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 250),
     renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -2212,12 +2210,6 @@
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  const environment = new RoomEnvironment(),
-    environmentGenerator = new THREE.PMREMGenerator(renderer),
-    environmentMap = environmentGenerator.fromScene(environment, 0.04);
-  scene.environment = environmentMap.texture;
-  environment.dispose();
-  environmentGenerator.dispose();
   viewport.prepend(renderer.domElement);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -2227,8 +2219,6 @@
   controls.maxDistance = 100;
   controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
   controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
-  const skylight = new THREE.HemisphereLight("#faf4e9", "#65746e", 0.8);
-  scene.add(skylight);
   const sunlight = new THREE.DirectionalLight("#ffedd3", 2.4);
   sunlight.castShadow = true;
   sunlight.shadow.mapSize.set(2048, 2048);
@@ -2241,6 +2231,57 @@
   scene.add(sunlight, sunlight.target);
   const sceneRoot = new THREE.Group();
   scene.add(sceneRoot);
+  const shadowRoot = new THREE.Group(),
+    shadowMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+  let fixtureLights = [];
+  scene.add(shadowRoot);
+  function updateShadowEnclosure() {
+    shadowRoot.clear();
+    const enclosure = sceneRoot.clone(true),
+      omitted = [];
+    enclosure.traverse((node) => {
+      node.visible = true;
+      if (node.userData.fullHeight) {
+        node.scale.y = 1;
+      }
+      if (node.isLight || (node.geometry && (!node.isMesh || !node.castShadow))) {
+        omitted.push(node);
+      } else if (node.isMesh) {
+        node.material = shadowMaterial;
+        node.receiveShadow = false;
+      }
+    });
+    for (const node of omitted) {
+      node.removeFromParent();
+    }
+    sceneRoot.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = false;
+      }
+    });
+    shadowRoot.add(enclosure);
+  }
+  function updateVisibleLights() {
+    const position = new THREE.Vector3();
+    fixtureLights.sort(
+      (a, b) =>
+        a.getWorldPosition(position).distanceToSquared(camera.position) -
+        b.getWorldPosition(position).distanceToSquared(camera.position),
+    );
+    fixtureLights.forEach((light, index) => {
+      light.visible = index < 8;
+    });
+  }
+  function fixtureLight(parent, intensity, x, y, z) {
+    const light = new THREE.PointLight("#ffe4ba", intensity, 0, 2);
+    light.position.set(x, y, z);
+    light.castShadow = true;
+    light.shadow.mapSize.set(512, 512);
+    light.shadow.camera.near = 0.01;
+    light.shadow.normalBias = 0.005;
+    parent.add(light);
+    return light;
+  }
   let lightingPreview,
     lightingPreviewCache,
     lightingRequest = 0;
@@ -2294,7 +2335,7 @@
         node.intensity = enabled ? node.userData.litIntensity : 0;
       }
       for (const item of [node.material].flat().filter(Boolean)) {
-        if (item.emissiveIntensity !== undefined) {
+        if (item.emissive && item.emissive.getHex() !== 0) {
           if (item.userData.litIntensity === undefined) {
             item.userData.litIntensity = item.emissiveIntensity;
           }
@@ -2396,9 +2437,7 @@
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
     sunlight.castShadow = altitude > 0;
     sunlight.color.setHSL(0.1, 0.15 + 0.55 * (1 - Math.min(1, daylight * 3)), 0.9);
-    skylight.intensity = 0.12 + 0.68 * Math.min(1, daylight * 3);
-    scene.background.set("#182333").lerp(new THREE.Color("#eff2ee"), Math.min(1, daylight * 4));
-    scene.fog.color.copy(scene.background);
+    scene.background.set("#000000").lerp(new THREE.Color("#eff2ee"), Math.min(1, daylight * 4));
     Object.assign(sunlight.shadow.camera, {
       bottom: -radius,
       far: radius * 5,
@@ -2717,6 +2756,7 @@
           break;
         }
         case "fluorescent_light": {
+          fixtureLight(group, 18, 0, ch - 0.13, 0);
           box(group, cw, 0.07, cd, 0, ch - 0.035, 0, material.metal);
           for (const side of [-1, 1]) {
             box(group, cw - 0.08, 0.025, 0.07, 0, ch - 0.075, side * 0.075, material.glow);
@@ -3252,9 +3292,7 @@
           );
           glow.position.set(0, ch * 0.55, cd * 0.26);
           group.add(glow);
-          const sconceLight = new THREE.PointLight("#ffd29a", 5, 3.5, 2);
-          sconceLight.position.set(0, ch * 0.55, cd * 0.48);
-          group.add(sconceLight);
+          fixtureLight(group, 5, 0, ch * 0.55, cd * 0.48);
           break;
         }
         case "bookshelf": {
@@ -3292,6 +3330,7 @@
           break;
         }
         case "lamp": {
+          fixtureLight(group, 8, 0, ch - 0.32, 0);
           cylinder(group, 0.16, 0.19, 0.055, 0, 0.025, 0, material.metal);
           cylinder(group, 0.025, 0.025, ch * 0.69, 0, ch * 0.36, 0, material.metal);
           const shade = new THREE.Mesh(
@@ -3474,6 +3513,7 @@
           break;
         }
         case "table_lamp": {
+          fixtureLight(group, 3, 0, ch - 0.18, 0);
           cylinder(group, 0.095, 0.1, 0.03, 0, 0.015, 0, material.metal);
           cylinder(group, 0.015, 0.015, 0.23, 0, 0.14, 0, material.wood);
           cylinder(group, 0.08, 0.14, 0.17, 0, ch - 0.085, 0, material.cream);
@@ -3645,16 +3685,6 @@
           }
           plank += 1;
         }
-      }
-      if (room.kind !== "balcony" && program.rooms.length <= 8) {
-        const light = new THREE.PointLight(
-          room.style === "blue" ? "#ffe0b2" : "#ffe8ce",
-          18,
-          Math.max(width, depth) * 1.5,
-          2,
-        );
-        light.position.set(centerX, 2.4, centerZ);
-        roomRoot.add(light);
       }
       const wallMaterial =
         room.style === "liminal"
@@ -4128,6 +4158,13 @@
   }
   function clearScene() {
     clearHover();
+    shadowRoot.clear();
+    fixtureLights = [];
+    sceneRoot.traverse((node) => {
+      if (node.isLight) {
+        node.shadow?.dispose();
+      }
+    });
     const disposed = new Set();
     sceneRoot.traverse((node) => {
       if (node.geometry && !disposed.has(node.geometry)) {
@@ -4167,12 +4204,11 @@
       program.rows * program.grid,
       (program.floors.at(-1) + 1) * 3,
     );
-    scene.fog.near = Math.max(25, sceneExtent * 2);
-    scene.fog.far = Math.max(80, sceneExtent * 5);
     controls.maxDistance = Math.max(100, sceneExtent * 4);
     camera.far = Math.max(250, sceneExtent * 8);
     camera.updateProjectionMatrix();
     addArchitecture(program);
+    updateShadowEnclosure();
     updateSun();
     if (!program.rooms.some((room) => room.name === focusRoom)) {
       focusRoom = undefined;
@@ -4204,6 +4240,11 @@
       return;
     }
     collisionEntries = entries;
+    sceneRoot.traverse((node) => {
+      if (node.isPointLight) {
+        fixtureLights.push(node);
+      }
+    });
     updateIndoorLights();
     updateFloorVisibility();
     const warnings = findCollisions(entries);
@@ -4391,6 +4432,7 @@
     if (hoverOutline) {
       hoverOutline.update();
     }
+    updateVisibleLights();
     try {
       if (!lightingPreview?.render(sceneRoot, sunlight, scene.background)) {
         renderer.render(scene, camera);

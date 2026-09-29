@@ -70,7 +70,7 @@ export function createLightingPreview(renderer, camera, status) {
       return materials.get(source);
     }
     building.traverse((node) => {
-      node.visible = true;
+      node.visible = !node.isLine && !node.isPoints;
       if (node.userData.fullHeight) {
         node.scale.y = 1;
       }
@@ -83,7 +83,7 @@ export function createLightingPreview(renderer, camera, status) {
     sun.target = sunlight.target.clone();
     snapshot.add(building, sun, sun.target);
     snapshot.environment = sky;
-    snapshot.environmentIntensity = 0.001 + (sunlight.intensity / 2.4) * 0.6;
+    snapshot.environmentIntensity = (sunlight.intensity / 2.4) * 0.6;
     snapshot.background = background.clone();
     tracer.setScene(snapshot, camera);
     view.copy(camera.matrixWorld);
