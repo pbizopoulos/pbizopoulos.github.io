@@ -57,7 +57,8 @@ summary:focus-visible {
   display: grid;
   gap: 4px;
 }
-.sun-settings input {
+.sun-settings input,
+.sun-settings select {
   min-width: 0;
   width: 100%;
   padding: 6px;

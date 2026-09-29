@@ -9,8 +9,11 @@
     <script type="importmap">
       {
         "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
+          "three": "https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/",
+          "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/",
+          "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.5/build/index.module.js",
+          "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.24/build/index.module.js",
           "@codemirror/state": "https://esm.sh/@codemirror/state@6.7.6",
           "@codemirror/view": "https://esm.sh/@codemirror/view@6.43.13?external=@codemirror/state",
           "@codemirror/language": "https://esm.sh/@codemirror/language@6.12.4?external=@codemirror/state,@codemirror/view",
@@ -127,10 +130,26 @@
                     and date, including daylight saving.
                   </p>
                   <output id="sunStatus" aria-live="polite"></output>
+                  <label
+                    >Lighting
+                    <select id="lightingMode">
+                      <option value="edit">Editing</option>
+                      <option value="realistic">Realistic preview</option>
+                    </select>
+                  </label>
+                  <label
+                    >Indoor lights
+                    <select id="indoorLights">
+                      <option value="on">On</option>
+                      <option value="off">Off</option>
+                    </select>
+                  </label>
+                  <output id="lightingStatus" aria-live="polite">Editing lighting</output>
                   <p>
-                    Default location: Athens. Approximate clear-sky sunlight; indoor lights remain
-                    on. Restore walls and ceilings to study sunlight through windows. Hidden floors
-                    do not cast shadows.
+                    Default location: Athens. Editing uses approximate fill lighting; restore walls
+                    and ceilings to study direct sun. Realistic preview traces bounced daylight
+                    through windows with all walls, ceilings, and floors restored. Use Walk to view
+                    interiors. Stop moving to let the image sharpen; large scenes take longer.
                   </p>
                 </form>
               </details>

@@ -2241,6 +2241,70 @@
   scene.add(sunlight, sunlight.target);
   const sceneRoot = new THREE.Group();
   scene.add(sceneRoot);
+  let lightingPreview,
+    lightingPreviewCache,
+    lightingRequest = 0;
+  function stopLightingPreview(message = "Editing lighting") {
+    lightingRequest += 1;
+    lightingPreview = undefined;
+    $("lightingMode").value = "edit";
+    $("lightingStatus").textContent = message;
+  }
+  function lightingFailed(error) {
+    lightingPreviewCache?.dispose();
+    lightingPreviewCache = undefined;
+    stopLightingPreview(
+      "Realistic preview unavailable on this device or connection. Editing remains available.",
+    );
+    $("lightingStatus").title = error.message;
+  }
+  $("lightingMode").addEventListener("change", async () => {
+    if ($("lightingMode").value === "edit") {
+      stopLightingPreview();
+      return;
+    }
+    lightingRequest += 1;
+    const request = lightingRequest;
+    $("lightingStatus").textContent = "Loading realistic lighting…";
+    try {
+      if (!renderer.capabilities.isWebGL2 || !renderer.extensions.has("EXT_color_buffer_float")) {
+        throw new Error("Floating-point WebGL 2 rendering is unavailable");
+      }
+      const { createLightingPreview } = await import("./prm/lighting-preview.js");
+      if (request === lightingRequest) {
+        if (!lightingPreviewCache) {
+          lightingPreviewCache = createLightingPreview(renderer, camera, $("lightingStatus"));
+        }
+        lightingPreview = lightingPreviewCache;
+        lightingPreview.invalidate();
+      }
+    } catch (error) {
+      if (request === lightingRequest) {
+        lightingFailed(error);
+      }
+    }
+  });
+  function updateIndoorLights() {
+    const enabled = $("indoorLights").value === "on";
+    sceneRoot.traverse((node) => {
+      if (node.isLight) {
+        if (node.userData.litIntensity === undefined) {
+          node.userData.litIntensity = node.intensity;
+        }
+        node.intensity = enabled ? node.userData.litIntensity : 0;
+      }
+      for (const item of [node.material].flat().filter(Boolean)) {
+        if (item.emissiveIntensity !== undefined) {
+          if (item.userData.litIntensity === undefined) {
+            item.userData.litIntensity = item.emissiveIntensity;
+          }
+          item.emissiveIntensity = enabled ? item.userData.litIntensity : 0;
+        }
+      }
+    });
+    lightingPreview?.invalidate();
+  }
+  $("indoorLights").addEventListener("change", updateIndoorLights);
   const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation"],
     sharedSettings = new URLSearchParams(location.hash.slice(1)),
     today = new Date();
@@ -2344,6 +2408,7 @@
       top: radius,
     });
     sunlight.shadow.camera.updateProjectionMatrix();
+    lightingPreview?.invalidate();
     $("sunStatus").textContent =
       `${altitude > 0 ? "Daylight" : "Sun below horizon · no direct sunlight"} · Elevation ${altitude.toFixed(1)}° · Bearing ${azimuth.toFixed(1)}° from true north`;
   }
@@ -2420,6 +2485,7 @@
     sharedMaterials = new Set(Object.values(material)),
     woodPlanks = ["#a58a69", "#aa9070", "#a38968", "#b09576"].map((color) => mat(color, 0.76));
   woodPlanks.forEach((item) => sharedMaterials.add(item));
+  material.ceiling.userData.enclosure = true;
   for (const item of [material.wood, material.woodDark, material.floor, ...woodPlanks]) {
     item.map = grainTexture;
     item.bumpMap = grainTexture;
@@ -3462,6 +3528,7 @@
       selectableGroups.push(roomRoot);
       sceneRoot.add(roomRoot);
       wallRoot = new THREE.Group();
+      wallRoot.userData.fullHeight = true;
       wallRoot.scale.y = wallsCollapsed ? 0.045 : 1;
       wallRoots.push(wallRoot);
       roomRoot.add(wallRoot);
@@ -3692,7 +3759,7 @@
                 vertical ? spanCenter : fixed,
                 wallMaterial,
               );
-            wall.castShadow = false;
+            wall.castShadow = true;
           };
         if (hasDoor || hasWindow) {
           wallRoot.add(opening);
@@ -3786,6 +3853,7 @@
           const center = middle + offset,
             windowY = 1.67,
             glass = mat("#b7d6d8", 0.12);
+          glass.userData.windowPane = true;
           glass.transparent = true;
           glass.opacity = 0.34;
           glass.depthWrite = false;
@@ -4136,6 +4204,7 @@
       return;
     }
     collisionEntries = entries;
+    updateIndoorLights();
     updateFloorVisibility();
     const warnings = findCollisions(entries);
     showStatus(
@@ -4322,7 +4391,14 @@
     if (hoverOutline) {
       hoverOutline.update();
     }
-    renderer.render(scene, camera);
+    try {
+      if (!lightingPreview?.render(sceneRoot, sunlight, scene.background)) {
+        renderer.render(scene, camera);
+      }
+    } catch (error) {
+      lightingFailed(error);
+      renderer.render(scene, camera);
+    }
   }
   animate();
   const exampleGroups = {

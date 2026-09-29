@@ -31,6 +31,8 @@
 !/packages/interior-design-editor/
 !/packages/interior-design-editor/default.nix
 !/packages/interior-design-editor/index.html
+!/packages/interior-design-editor/prm/
+!/packages/interior-design-editor/prm/**
 !/packages/interior-design-editor/script.js
 !/packages/interior-design-editor/style.css
 !/prm/
