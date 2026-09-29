@@ -4699,9 +4699,8 @@
               material.white,
             );
           }
-          // The leaf rests against the wall at a right angle, leaving the doorway open.
           const leafLength = gap - 0.1;
-          const outward = { north: -1, south: 1, east: 1, west: -1 }[dir];
+          const outward = { east: 1, north: -1, south: 1, west: -1 }[dir];
           const leaf = box(
             opening,
             vertical ? leafLength : 0.055,
@@ -5518,7 +5517,11 @@
     if (event.key === "Escape" && selectionPinned) {
       clearHover();
     }
-    if (event.key === "Escape" && firstPerson && document.pointerLockElement !== renderer.domElement) {
+    if (
+      event.key === "Escape" &&
+      firstPerson &&
+      document.pointerLockElement !== renderer.domElement
+    ) {
       setFirstPerson(false);
       return;
     }
@@ -5625,7 +5628,9 @@
     if (firstPerson && event.button === 0) {
       looking = true;
       lastPointer = { x: event.clientX, y: event.clientY };
-      renderer.domElement.requestPointerLock()?.catch(() => {});
+      renderer.domElement.requestPointerLock()?.catch(() => {
+        /* empty */
+      });
     }
   });
   globalThis.addEventListener("pointerup", () => {
@@ -5633,7 +5638,12 @@
     lastPointer = undefined;
   });
   renderer.domElement.addEventListener("pointermove", (event) => {
-    if (firstPerson && looking && lastPointer && document.pointerLockElement !== renderer.domElement) {
+    if (
+      firstPerson &&
+      looking &&
+      lastPointer &&
+      document.pointerLockElement !== renderer.domElement
+    ) {
       camera.rotation.y -= (event.clientX - lastPointer.x) * 0.003;
       camera.rotation.x = THREE.MathUtils.clamp(
         camera.rotation.x - (event.clientY - lastPointer.y) * 0.003,
