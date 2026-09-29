@@ -12,8 +12,6 @@
           "three": "https://cdn.jsdelivr.net/npm/three@0.181.1/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/",
           "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.181.1/examples/jsm/",
-          "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.5/build/index.module.js",
-          "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.24/build/index.module.js",
           "@codemirror/state": "https://esm.sh/@codemirror/state@6.7.6",
           "@codemirror/view": "https://esm.sh/@codemirror/view@6.43.13?external=@codemirror/state",
           "@codemirror/language": "https://esm.sh/@codemirror/language@6.12.4?external=@codemirror/state,@codemirror/view",
@@ -27,7 +25,7 @@
       <main class="workspace">
         <section class="editor-panel" aria-label="Room layout editor">
           <div class="editor-toolbar">
-            <span class="file-tab"><span class="file-dot"></span> Room layout</span
+            <span class="file-tab">Room layout</span
             ><select id="exampleSelect" aria-label="Example scene"></select
             ><button
               id="copyButton"
@@ -64,7 +62,7 @@
           </div>
           <div class="editor-wrap"><div id="editor"></div></div>
           <div id="message" class="message" role="status" aria-live="polite" hidden>
-            <span class="status-light"></span><span></span>
+            <span></span>
           </div>
         </section>
         <section class="preview-panel" aria-label="3D scene preview">
@@ -142,13 +140,6 @@
                     />
                   </label>
                   <output id="sunStatus" aria-live="polite"></output>
-                  <label
-                    >Lighting
-                    <select id="lightingMode">
-                      <option value="edit">Editing</option>
-                      <option value="realistic">Realistic preview</option>
-                    </select>
-                  </label>
                   <output id="indoorLights" aria-live="polite">Automatic fixture lighting</output>
                   <label
                     >Quality
@@ -158,15 +149,12 @@
                       <option value="high">High</option>
                     </select>
                   </label>
-                  <output id="lightingStatus" aria-live="polite">Editing lighting</output>
                   <p>
                     Default location: Athens. Editing approximates diffuse daylight from exterior
                     openings. Walls, ceilings, and floors block direct light even when hidden for
                     editing. Editing adds room-aware daylight fill to direct light from all
-                    fixtures; realistic preview includes all fixtures and up to six light bounces
-                    through the room. Exposure brightens the image without adding light. Use Walk to
-                    view interiors. Stop moving to let the preview sharpen; it pauses when
-                    sufficiently refined. All fixtures switch on when the sun is below the horizon
+                    fixtures. Exposure brightens the image without adding light. Use first person
+                    to view interiors. All fixtures switch on when the sun is below the horizon
                     and off during daylight, regardless of camera position. Fast quality reduces
                     rendering resolution. Large scenes take longer.
                   </p>
@@ -215,41 +203,17 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M9 18h6m-5 3h4M8 12a6 6 0 1 1 8 0c-1 1-1 2-1 3H9c0-1 0-2-1-3Z" />
                 </svg></button
-              ><button
-                id="modeButton"
-                class="tool-button"
-                aria-pressed="false"
-                title="Toggle semantic boxes"
-                aria-label="Toggle semantic boxes"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="m3 7 9-5 9 5v10l-9 5-9-5V7Zm0 0 9 5 9-5m-9 5v10" />
-                </svg></button
-              ><button id="topButton" class="tool-button" title="Top view" aria-label="Top view">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <rect x="4" y="4" width="16" height="16" rx="1" />
-                  <path d="M4 10h10v10m0-16v6" />
-                </svg></button
-              ><button
-                id="firstPersonButton"
-                class="tool-button"
-                aria-pressed="false"
-                title="First person view"
-                aria-label="First person view"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <circle cx="12" cy="5" r="2" />
-                  <path d="m5 11 7-3 7 3m-7-3v7m-4 7 4-7 4 7" />
-                </svg></button
-              ><button
-                id="resetButton"
-                class="tool-button"
-                title="Reset camera"
-                aria-label="Reset camera"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" />
-                </svg></button
+              ><div class="view-buttons" role="group" aria-label="Views">
+                <button id="topButton" class="tool-button" title="Top view" aria-label="Top view" aria-pressed="false">Top</button>
+                <button id="resetButton" class="tool-button active" title="3D view" aria-label="3D view" aria-pressed="true">3D</button>
+                <button
+                  id="firstPersonButton"
+                  class="tool-button"
+                  aria-pressed="false"
+                  title="First person view"
+                  aria-label="First person view"
+                >1st person</button>
+              </div
               ><button
                 id="fullscreenButton"
                 class="tool-button"
@@ -269,137 +233,11 @@
             </div>
             <div id="navigationHint" class="navigation-hint">
               Drag to orbit <span>·</span> Scroll to zoom <span>·</span> Right drag to pan
-              <span>·</span> ? for help
             </div>
           </div>
         </section>
       </main>
     </div>
-    <dialog id="helpDialog" class="help-dialog">
-      <form method="dialog"><button class="close-button" aria-label="Close">×</button></form>
-      <div class="eyebrow">DESIGN GUIDE</div>
-      <h2>Quick guide</h2>
-      <p>The scene text also describes the exterior and independent light fixtures:</p>
-      <pre>
-SITE grass 5&#10;FACADE brick&#10;ROOF pitched&#10;GRID 1&#10;ROOM living 4x4 AT 0,0&#10;WINDOWS north east west&#10;LIGHT pendant_light AT 1,1 POWER 18&#10;LIGHT track_light AT 2,2 POWER 24&#10;LAYOUT living&#10;. | . | . | .&#10;. | . | . | .&#10;. | . | . | .&#10;. | . | . | .&#10;END</pre>
-      <p>
-        <code>SITE none|grass|paving|sand [margin]</code> sets ground and paving around the building
-        (margin 1–30 metres). <code>FACADE none|plaster|brick|timber|concrete</code> changes
-        exterior wall faces. <code>ROOF none|flat|pitched</code> caps exposed rooms; roofs follow
-        the ceiling visibility control. These settings go outside LAYOUT blocks and are included
-        when copying or sharing the scene.
-      </p>
-      <p>
-        <code>WALL_THICKNESS 0.24 0.12</code> sets exterior and interior wall thickness in metres
-        (each 0.06–0.6). These are the model defaults. Walls are centred on room boundaries;
-        openings, mounted objects, and walking clearance use this thickness.
-      </p>
-      <p>
-        The lightbulb button toggles every fixture together. A manual choice lasts until the next
-        sunrise or sunset in the scene's sun settings.
-      </p>
-      <p>
-        <code>LIGHT asset AT column,row [POWER number]</code> places a fixture independently of
-        occupied furniture cells. Coordinates refer to cell centres and can be fractional; power is
-        a relative intensity from 0–200. Assets include <code>pendant_light</code>,
-        <code>track_light</code>, <code>downlight</code>, <code>ceiling_light</code>,
-        <code>fluorescent_light</code>, <code>garden_lamp</code>, <code>lantern</code>,
-        <code>lamp</code>, and <code>table_lamp</code>. Use <code>MOUNT east 2 wall_lamp</code> for
-        wall fixtures. Overhead fixtures leave the floor walkable. Interior rooms with no exterior
-        wall use fixtures rather than windows into neighbouring rooms.
-      </p>
-      <p>
-        Decorations: <code>poster</code>, <code>painting</code>, <code>mirror</code>,
-        <code>wall_clock</code>, <code>wall_shelf</code>, and <code>vase</code>. Use
-        <code>MOUNT south 1 poster</code> for wall decorations or place them in a layout. Try “Decor
-        gallery”. The mirror uses a reflective material; editing mode does not show a live mirror
-        reflection.
-      </p>
-      <ul>
-        <li><code>ROOM living 8x6 AT 0,0</code> — size and position in grid cells.</li>
-        <li><code>FLOOR 1</code> — subsequent rooms sit 3m above floor 0; levels 0–31.</li>
-        <li>
-          Rooms support 2–40 cells per side, within a 40×40 floor plan, with up to 32 rooms. Choose
-          “Impossible destinations” for a 361-chamber labyrinth, Backrooms, a 24-floor skyscraper,
-          and more. Use the floor selector to explore the tower one level at a time.
-        </li>
-        <li>
-          Water &amp; outdoors: <code>pool</code>, <code>hot_tub</code>, <code>fountain</code>,
-          <code>sun_lounger</code>, <code>parasol</code>, <code>hedge</code>, and
-          <code>solar_panel</code>. Pools are raised basins; reserve space around their full
-          footprint.
-        </li>
-        <li>
-          Play &amp; discovery: <code>arcade_machine</code>, <code>vending_machine</code>,
-          <code>aquarium</code>, <code>piano</code>, <code>treadmill</code>, <code>telescope</code>,
-          <code>sculpture</code>, <code>server_rack</code>, and <code>hydroponic_rack</code>. Build
-          mazes with <code>partition</code> and <code>column</code>; <code>ceiling_light</code> and
-          <code>fluorescent_light</code> sit overhead, leaving the floor passable. Try
-          <code>STYLE liminal</code>, <code>STYLE industrial</code>, or <code>STYLE aquatic</code>.
-        </li>
-        <li>
-          <code>LAYOUT living</code> … <code>END</code> — rows north→south, cells west→east. Use
-          <code>|</code> between cells and <code>.</code> for blanks.
-        </li>
-        <li>
-          <code>stairs</code> — place beneath a room on the next floor; openings are automatic.
-          <code>elevator</code> — place aligned stops of the same size and rotation on two or more
-          consecutive floors, including the top floor. First person: E up, Shift+E down nearby.
-        </li>
-        <li>
-          <code>sofa@90</code> rotates; <code>desk[1.5x0.7x0.8]</code> sizes in metres;
-          <code>desk(work_on_top)</code> adds a named top layout. Fronts face south at 0°, east at
-          90°, north at 180°, and west at 270°; top layouts rotate with their parent.
-        </li>
-        <li>
-          Add a product URL after an object:
-          <code>sofa&lt;https://www.ikea.com/product-page&gt;</code> or
-          <code>desk(work_on_top)~north&lt;https://jysk.com/product-page&gt;</code>. Paste the
-          specific item's full HTTP(S) address between angle brackets. Each object can have its own
-          link, including objects on top and MOUNT fixtures. Click an object in the preview or its
-          item in the layout editor to keep its details open, then choose “View product”. Close the
-          details with × or Escape. Product links are included when copying layouts or sharing a
-          scene.
-        </li>
-        <li>
-          <code>sink~north</code> places its back against the north wall, facing into the room. Use
-          <code>~north</code>, <code>~east</code>, <code>~south</code>, or <code>~west</code> after
-          the whole object, e.g. <code>kitchen_counter(coffee_on_top)~north</code>. The cell sets
-          the position along the wall; depth sets the distance from it. Wall placement also supports
-          shared walls. Use it on room-level furniture without <code>@</code> rotation; objects on
-          top inherit the parent's position and rotation. Stairs, elevators, and plain objects stay
-          at cell centers.
-        </li>
-        <li>
-          <code>GRID 0.85</code> sets cell size. <code>WALLS north west</code>,
-          <code>DOORS west</code>, <code>STYLE blue</code> style the latest room.
-          <code>WINDOWS north west</code> chooses window walls; <code>WINDOWS none</code> removes
-          windows. Use walls longer than 2.2m without doors. Omit WINDOWS for automatic windows.
-        </li>
-        <li>
-          <code>BALCONY terrace 8x3 AT 0,6</code> + <code>RAILS south east</code> adds outdoor
-          space.
-        </li>
-        <li>
-          Drag to orbit; scroll to zoom. Walls and ceilings have separate collapse/restore controls.
-          Ceilings start collapsed for an open overview; balconies stay uncovered. Select a floor to
-          inspect it. First person: drag to look, W/S to move forward/back, A/D to turn left/right
-          (or use arrow keys), Esc to exit. Walls, furniture, and floor edges block movement; E /
-          Shift+E uses nearby connectors.
-        </li>
-        <li>
-          Hover over an object in the layout editor or preview to highlight it in the other view.
-          Edits update the preview automatically. Choose an example to explore; copy a share URL to
-          reopen your current design; <code>?</code> opens help.
-        </li>
-        <li>
-          Click a gutter arrow to fold or expand a layout, room settings, or floor section. Collapse
-          / Expand controls the whole layout. Collapsed sections remain visible in the preview and
-          copy in full; hovering a scene object reveals it in the layout editor. Undo/redo and
-          Ctrl/Cmd+Enter work in the editor.
-        </li>
-      </ul>
-    </dialog>
     <script src="./script.js"></script>
   </body>
 </html>

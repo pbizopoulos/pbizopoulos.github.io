@@ -177,14 +177,6 @@ h2 {
 .file-tab {
   color: #3e5147;
 }
-.file-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #77a58b;
-}
 .editor-toolbar > span:last-child {
   margin-left: auto;
   color: #8b9790;
@@ -265,7 +257,6 @@ h2 {
 .message.warn {
   color: #9b7435;
 }
-.status-light,
 .live-dot {
   display: inline-block;
   width: 6px;
@@ -273,12 +264,6 @@ h2 {
   margin-right: 6px;
   border-radius: 50%;
   background: #78aa88;
-}
-.message.error .status-light {
-  background: #c46a5a;
-}
-.message.warn .status-light {
-  background: #c9a45f;
 }
 .preview-panel {
   background: #f4f6f2;
@@ -297,6 +282,21 @@ h2 {
 }
 .preview-tools > * {
   pointer-events: auto;
+}
+.view-buttons {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid #d7dfd8;
+  border-radius: 6px;
+  background: #ffffffd9;
+}
+.view-buttons .tool-button {
+  width: auto;
+  min-width: 38px;
+  padding: 7px 9px;
+  border: 0;
+  white-space: nowrap;
 }
 .room-focus {
   max-width: 130px;
@@ -418,60 +418,11 @@ h2 {
   right: 0;
   color: #bb7770;
 }
-.help-dialog {
-  max-width: min(530px, calc(100vw - 30px));
-  padding: 25px;
-  border: 1px solid #d2dfd3;
-  border-radius: 8px;
-  background: #fff;
-  color: #2f4034;
-  box-shadow: 0 20px 70px #314b372e;
-}
-.help-dialog::backdrop {
-  background: #2a3a3066;
-}
-.help-dialog form {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-}
 .close-button {
   border: 0;
   background: none;
   color: #697d6e;
   font-size: 24px;
-}
-.help-dialog h2 {
-  margin-bottom: 12px;
-}
-.help-dialog ul {
-  padding-left: 18px;
-  color: #59695d;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.help-dialog li + li {
-  margin-top: 8px;
-}
-.help-dialog code {
-  color: #426d50;
-}
-.help-dialog pre {
-  overflow: auto;
-  padding: 13px;
-  border: 1px solid #e2e9e1;
-  border-radius: 5px;
-  background: #f8faf7;
-  color: #3c5b45;
-  font:
-    12px/1.6 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
-}
-.help-dialog .help-note {
-  color: #809084;
-  font-size: 11px;
 }
 @media (max-width: 900px) {
   .workspace {

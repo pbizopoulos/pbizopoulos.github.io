@@ -709,189 +709,6 @@
       }
     };
   }
-  function createLightingPreview(renderer, camera, status, fallback, pathTracing) {
-    const { GradientEquirectTexture, WebGLPathTracer } = pathTracing;
-    const tracer = new WebGLPathTracer(renderer),
-      sky = new GradientEquirectTexture(64),
-      view = new THREE.Matrix4(),
-      projection = new THREE.Matrix4(),
-      ownedMaterials = new Set(),
-      ownedGeometries = new Set(),
-      previousShaderError = renderer.debug.onShaderError;
-    let dirtyAt = performance.now(),
-      ready = false,
-      sampleLimit = 128,
-      lastMotion = 0,
-      shaderFailed = false,
-      lastStatus = "";
-    tracer.bounces = 6;
-    tracer.transmissiveBounces = 6;
-    tracer.renderScale = 0.65;
-    tracer.tiles.set(3, 3);
-    tracer.textureSize.set(256, 256);
-    tracer.renderDelay = 350;
-    tracer.minSamples = 1;
-    tracer.rasterizeSceneCallback = fallback;
-    renderer.debug.onShaderError = () => {
-      shaderFailed = true;
-    };
-    sky.topColor.set("#c9e0ff");
-    sky.bottomColor.copy(sky.topColor).multiplyScalar(0.15);
-    sky.update();
-    function report(message) {
-      if (lastStatus !== message) {
-        status.textContent = message;
-        lastStatus = message;
-      }
-    }
-    function releaseMaterials() {
-      for (const item of ownedMaterials) {
-        item.dispose();
-      }
-      ownedMaterials.clear();
-      for (const geometry of ownedGeometries) {
-        geometry.dispose();
-      }
-      ownedGeometries.clear();
-    }
-    function rebuild(root, sunlight, background) {
-      releaseMaterials();
-      const snapshot = new THREE.Scene(),
-        building = root.clone(true),
-        materials = new Map(),
-        sun = sunlight.clone();
-      function previewMaterial(source) {
-        if (!materials.has(source)) {
-          const copy = source.userData.windowPane
-            ? new THREE.MeshPhysicalMaterial({
-                color: "#f5fcff",
-                ior: 1.5,
-                roughness: 0.05,
-                thickness: 0.025,
-                transmission: 1,
-              })
-            : source.clone();
-          if (source.userData.enclosure) {
-            copy.opacity = 1;
-            copy.transparent = false;
-            copy.depthWrite = true;
-          }
-          materials.set(source, copy);
-          ownedMaterials.add(copy);
-        }
-        return materials.get(source);
-      }
-      building.traverse((node) => {
-        node.visible = !node.isLine && !node.isPoints;
-        if (node.userData.fullHeight) {
-          node.scale.y = 1;
-        }
-        if (node.isMesh) {
-          node.material = Array.isArray(node.material)
-            ? node.material.map(previewMaterial)
-            : previewMaterial(node.material);
-        }
-      });
-      const multiMaterialMeshes = [];
-      building.traverse((node) => {
-        if (node.isMesh && Array.isArray(node.material)) {
-          multiMaterialMeshes.push(node);
-        }
-      });
-      for (const node of multiMaterialMeshes) {
-        const source = node.geometry,
-          faces = new Map();
-        for (const group of source.groups) {
-          const material = node.material[group.materialIndex];
-          if (!faces.has(material)) {
-            faces.set(material, []);
-          }
-          const indices = faces.get(material);
-          for (let i = group.start; i < group.start + group.count; i += 1) {
-            indices.push(source.index ? source.index.getX(i) : i);
-          }
-        }
-        for (const [material, indices] of faces) {
-          const part = node.clone(false),
-            geometry = source.clone();
-          geometry.setIndex(indices);
-          geometry.clearGroups();
-          ownedGeometries.add(geometry);
-          part.geometry = geometry;
-          part.material = material;
-          node.parent.add(part);
-        }
-        node.removeFromParent();
-      }
-      sun.target = sunlight.target.clone();
-      snapshot.add(building, sun, sun.target);
-      snapshot.environment = sky;
-      snapshot.environmentIntensity = (sunlight.intensity / 2.4) * 0.6;
-      snapshot.background = background.clone();
-      tracer.setScene(snapshot, camera);
-      view.copy(camera.matrixWorld);
-      projection.copy(camera.projectionMatrix);
-      ready = true;
-    }
-    return {
-      dispose() {
-        renderer.debug.onShaderError = previousShaderError;
-        tracer.dispose();
-        sky.dispose();
-        releaseMaterials();
-      },
-      invalidate() {
-        dirtyAt = performance.now();
-        ready = false;
-        report("Preparing realistic lighting…");
-      },
-      render(root, sunlight, background) {
-        if (shaderFailed) {
-          throw new Error("The graphics driver could not compile realistic lighting");
-        }
-        if (!ready) {
-          report("Preparing realistic lighting…");
-          if (performance.now() - dirtyAt < 250) {
-            return false;
-          }
-          rebuild(root, sunlight, background);
-        }
-        camera.updateMatrixWorld();
-        if (
-          camera.matrixWorld.elements.some(
-            (value, index) => Math.abs(value - view.elements[index]) > 0.00001,
-          ) ||
-          !projection.equals(camera.projectionMatrix)
-        ) {
-          lastMotion = performance.now();
-          tracer.updateCamera();
-          view.copy(camera.matrixWorld);
-          projection.copy(camera.projectionMatrix);
-        }
-        if (performance.now() - lastMotion < 200) {
-          return false;
-        }
-        if (tracer.samples >= sampleLimit) {
-          report(`Realistic preview · ${sampleLimit} samples · complete`);
-          return true;
-        }
-        tracer.renderSample();
-        report(
-          tracer.isCompiling
-            ? "Preparing realistic lighting · first use can take a while"
-            : tracer.samples < 1
-              ? "Realistic preview · stop moving to refine"
-              : `Realistic preview · ${Math.floor(tracer.samples)} samples · refining`,
-        );
-        return true;
-      },
-      setQuality(quality) {
-        tracer.renderScale = quality === "fast" ? 0.4 : quality === "high" ? 1 : 0.65;
-        sampleLimit = quality === "fast" ? 64 : quality === "high" ? 256 : 128;
-        tracer.reset();
-      },
-    };
-  }
   const examples = {
     Bedroom: [
       "# A calm bedroom",
@@ -2381,8 +2198,7 @@
     status = $("message"),
     selectionCard = $("selectionCard");
   Object.assign(catalog, decorCatalog);
-  let boxMode = false,
-    compileTimer,
+  let compileTimer,
     currentProgram,
     compiledSource,
     firstPerson = false,
@@ -2537,7 +2353,7 @@
     if (editor.state.field(highlightedLine).size > 0) {
       editor.dispatch({ effects: highlightLine.of(-1) });
     }
-    renderer.domElement.style.cursor = firstPerson && looking ? "grabbing" : "";
+    renderer.domElement.style.cursor = firstPerson ? "crosshair" : "";
     if (hoverOutline) {
       scene.remove(hoverOutline);
       hoverOutline.geometry.dispose();
@@ -2620,7 +2436,7 @@
     status.className = `message${kind === "ok" ? "" : ` ${kind}`}`;
     status.lastElementChild.textContent = message;
     $("editorState").textContent =
-      kind === "error" ? "NEEDS ATTENTION" : kind === "warn" ? "CHECK PLACEMENT" : "DESIGN UPDATED";
+      kind === "error" ? "NEEDS ATTENTION" : kind === "warn" ? "CHECK PLACEMENT" : "ROOM LAYOUT";
   }
   function fail(message, line) {
     const error = new Error(message);
@@ -3268,57 +3084,6 @@
     parent.add(light);
     return light;
   }
-  let lightingPreview,
-    lightingPreviewCache,
-    lightingRequest = 0;
-  function stopLightingPreview(message = "Editing lighting") {
-    lightingRequest += 1;
-    lightingPreview = undefined;
-    renderDirty = true;
-    $("lightingMode").value = "edit";
-    $("lightingStatus").textContent = message;
-  }
-  function lightingFailed(error) {
-    lightingPreviewCache?.dispose();
-    lightingPreviewCache = undefined;
-    stopLightingPreview(
-      "Realistic preview unavailable on this device or connection. Editing remains available.",
-    );
-    $("lightingStatus").title = error.message;
-  }
-  $("lightingMode").addEventListener("change", async () => {
-    if ($("lightingMode").value === "edit") {
-      stopLightingPreview();
-      return;
-    }
-    lightingRequest += 1;
-    const request = lightingRequest;
-    $("lightingStatus").textContent = "Loading realistic lighting…";
-    try {
-      if (!renderer.capabilities.isWebGL2 || !renderer.extensions.has("EXT_color_buffer_float")) {
-        throw new Error("Floating-point WebGL 2 rendering is unavailable");
-      }
-      const pathTracing = await import("three-gpu-pathtracer");
-      if (request === lightingRequest) {
-        if (!lightingPreviewCache) {
-          lightingPreviewCache = createLightingPreview(
-            renderer,
-            camera,
-            $("lightingStatus"),
-            renderFixtures,
-            pathTracing,
-          );
-        }
-        lightingPreviewCache.setQuality($("renderQuality").value);
-        lightingPreview = lightingPreviewCache;
-        lightingPreview.invalidate();
-      }
-    } catch (error) {
-      if (request === lightingRequest) {
-        lightingFailed(error);
-      }
-    }
-  });
   function updateIndoorLights() {
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
@@ -3348,7 +3113,6 @@
         }
       }
     });
-    lightingPreview?.invalidate();
   }
   $("lightsButton").addEventListener("click", () => {
     fixtureOverride = $("lightsButton").getAttribute("aria-pressed") !== "true";
@@ -3359,7 +3123,6 @@
     renderer.setPixelRatio(
       Math.min(devicePixelRatio, quality === "fast" ? 1 : quality === "high" ? 2 : 1.5),
     );
-    lightingPreviewCache?.setQuality(quality);
     resize();
   });
   const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation", "Exposure"],
@@ -3472,7 +3235,6 @@
       top: radius,
     });
     sunlight.shadow.camera.updateProjectionMatrix();
-    lightingPreview?.invalidate();
     $("sunStatus").textContent =
       `${altitude > 0 ? "Daylight" : "Sun below horizon · no direct sunlight"} · Elevation ${altitude.toFixed(1)}° · Bearing ${azimuth.toFixed(1)}° from true north`;
   }
@@ -4937,6 +4699,20 @@
               material.white,
             );
           }
+          // The leaf rests against the wall at a right angle, leaving the doorway open.
+          const leafLength = gap - 0.1;
+          const outward = { north: -1, south: 1, east: 1, west: -1 }[dir];
+          const leaf = box(
+            opening,
+            vertical ? leafLength : 0.055,
+            2.12,
+            vertical ? 0.055 : leafLength,
+            vertical ? fixed + (outward * leafLength) / 2 : middle - gap / 2 + 0.055,
+            1.06,
+            vertical ? middle - gap / 2 + 0.055 : fixed + (outward * leafLength) / 2,
+            material.wood,
+          );
+          leaf.userData.openDoorLeaf = true;
         } else if (hasWindow) {
           const span = Math.min(2.1, length * 0.48),
             offset = THREE.MathUtils.clamp(
@@ -5019,7 +4795,7 @@
             url: mount.url,
             yaw: 0,
           },
-          fixture = makeFurniture(token, boxMode),
+          fixture = makeFurniture(token, false),
           horizontal = mount.side === "north" || mount.side === "south",
           along = (mount.cell - ((horizontal ? room.cols : room.rows) - 1) / 2) * program.grid,
           inset = wallThickness(program, room, mount.side) / 2 + catalog[mount.name][1] / 2 + 0.01;
@@ -5082,7 +4858,7 @@
           z = (r - (rowCount - 1) / 2) * (pd / Math.max(rowCount, 1)) * 0.67;
           holder = parent.group;
         }
-        const group = makeFurniture(token, boxMode);
+        const group = makeFurniture(token, false);
         group.userData.floor = room.floor;
         group.position.set(x, isRoot ? room.elevation : parent.token.dimensions[2], z);
         group.rotation.y = THREE.MathUtils.degToRad(token.yaw);
@@ -5158,6 +4934,10 @@
     );
     camera.lookAt(controls.target);
     controls.update();
+    $("topButton").classList.toggle("active", top);
+    $("topButton").setAttribute("aria-pressed", String(top));
+    $("resetButton").classList.toggle("active", !top);
+    $("resetButton").setAttribute("aria-pressed", String(!top));
   }
   function setFirstPerson(enabled) {
     if (firstPerson === enabled) {
@@ -5165,14 +4945,23 @@
     }
     firstPerson = enabled;
     looking = false;
+    if (!enabled && document.pointerLockElement === renderer.domElement) {
+      document.exitPointerLock();
+    }
     pressedKeys.clear();
     controls.enabled = !enabled;
     const button = $("firstPersonButton");
     button.classList.toggle("active", enabled);
     button.setAttribute("aria-pressed", enabled);
+    if (enabled) {
+      $("topButton").classList.remove("active");
+      $("topButton").setAttribute("aria-pressed", "false");
+      $("resetButton").classList.remove("active");
+      $("resetButton").setAttribute("aria-pressed", "false");
+    }
     $("navigationHint").innerHTML = enabled
-      ? "Drag to look <span>·</span> W/S: move <span>·</span> A/D: turn <span>·</span> E / Shift+E: up/down <span>·</span> Esc to exit <span>·</span> ? for help"
-      : "Drag to orbit <span>·</span> Scroll to zoom <span>·</span> Right drag to pan <span>·</span> ? for help";
+      ? "Click to look with mouse <span>·</span> WASD: move <span>·</span> E / Shift+E: up/down <span>·</span> Esc to release mouse"
+      : "Drag to orbit <span>·</span> Scroll to zoom <span>·</span> Right drag to pan";
     if (enabled && currentProgram) {
       const room =
         currentProgram.rooms.find((item) => item.name === focusRoom) ||
@@ -5196,8 +4985,10 @@
       camera.position.z = standing.z;
       camera.rotation.order = "YXZ";
       camera.rotation.set(0, 0, 0);
+      renderer.domElement.style.cursor = "crosshair";
     } else if (currentProgram) {
       resetCamera();
+      renderer.domElement.style.cursor = "";
     }
   }
   function updateFloorVisibility() {
@@ -5410,7 +5201,6 @@
   }
   function resize() {
     renderDirty = true;
-    lightingPreview?.invalidate();
     const w = viewport.clientWidth,
       h = viewport.clientHeight;
     if (!w || !h) {
@@ -5582,11 +5372,12 @@
       if (pressedKeys.has("s") || pressedKeys.has("arrowdown")) {
         moveFirstPerson(direction, -speed);
       }
+      const right = new THREE.Vector3(-direction.z, 0, direction.x);
       if (pressedKeys.has("d") || pressedKeys.has("arrowright")) {
-        camera.rotation.y -= 0.025;
+        moveFirstPerson(right, speed);
       }
       if (pressedKeys.has("a") || pressedKeys.has("arrowleft")) {
-        camera.rotation.y += 0.025;
+        moveFirstPerson(right, -speed);
       }
     } else {
       controls.update();
@@ -5599,14 +5390,9 @@
       renderDirty = true;
       lastView.copy(camera.matrixWorld);
     }
-    try {
-      if (!lightingPreview?.render(sceneRoot, sunlight, scene.background) && renderDirty) {
-        renderFixtures();
-      }
-      renderDirty = false;
-    } catch (error) {
-      lightingFailed(error);
+    if (renderDirty) {
       renderFixtures();
+      renderDirty = false;
     }
   }
   animate();
@@ -5729,21 +5515,10 @@
     if (event.target.closest(".sun-settings")) {
       return;
     }
-    if (
-      event.key === "?" &&
-      !editor.hasFocus &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey
-    ) {
-      event.preventDefault();
-      $("helpDialog").showModal();
-      return;
-    }
     if (event.key === "Escape" && selectionPinned) {
       clearHover();
     }
-    if (event.key === "Escape" && firstPerson) {
+    if (event.key === "Escape" && firstPerson && document.pointerLockElement !== renderer.domElement) {
       setFirstPerson(false);
       return;
     }
@@ -5784,12 +5559,6 @@
     event.currentTarget.setAttribute("aria-label", event.currentTarget.title);
     event.currentTarget.classList.toggle("active", ceilingsCollapsed);
     event.currentTarget.setAttribute("aria-pressed", ceilingsCollapsed);
-  });
-  $("modeButton").addEventListener("click", (event) => {
-    boxMode = !boxMode;
-    event.currentTarget.classList.toggle("active", boxMode);
-    event.currentTarget.setAttribute("aria-pressed", boxMode);
-    compile();
   });
   $("topButton").addEventListener("click", () => resetCamera(true));
   $("firstPersonButton").addEventListener("click", () => setFirstPerson(!firstPerson));
@@ -5856,7 +5625,7 @@
     if (firstPerson && event.button === 0) {
       looking = true;
       lastPointer = { x: event.clientX, y: event.clientY };
-      renderer.domElement.style.cursor = "grabbing";
+      renderer.domElement.requestPointerLock()?.catch(() => {});
     }
   });
   globalThis.addEventListener("pointerup", () => {
@@ -5864,7 +5633,7 @@
     lastPointer = undefined;
   });
   renderer.domElement.addEventListener("pointermove", (event) => {
-    if (firstPerson && looking && lastPointer) {
+    if (firstPerson && looking && lastPointer && document.pointerLockElement !== renderer.domElement) {
       camera.rotation.y -= (event.clientX - lastPointer.x) * 0.003;
       camera.rotation.x = THREE.MathUtils.clamp(
         camera.rotation.x - (event.clientY - lastPointer.y) * 0.003,
@@ -5873,9 +5642,25 @@
       );
       lastPointer = { x: event.clientX, y: event.clientY };
     }
-    hoverObject(event);
+    if (!firstPerson) {
+      hoverObject(event);
+    }
+  });
+  document.addEventListener("mousemove", (event) => {
+    if (!firstPerson || document.pointerLockElement !== renderer.domElement) {
+      return;
+    }
+    camera.rotation.y -= event.movementX * 0.003;
+    camera.rotation.x = THREE.MathUtils.clamp(
+      camera.rotation.x - event.movementY * 0.003,
+      -Math.PI * 0.48,
+      Math.PI * 0.48,
+    );
   });
   renderer.domElement.addEventListener("click", (event) => {
+    if (firstPerson) {
+      return;
+    }
     if (
       !selectionPointer ||
       Math.hypot(event.clientX - selectionPointer.x, event.clientY - selectionPointer.y) > 5
