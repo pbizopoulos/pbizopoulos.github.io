@@ -1,0 +1,50 @@
+@top Program { (Statement? newline)* Statement? }
+@skip { space | Comment }
+Statement {
+  WallThickness | Site | Facade | Roof | Light | Floor | Room | Grid |
+  Walls | Rails | Windows | Doors | Height | Surface | Style | Mount | Layout | End | Row
+}
+WallThickness { WALL_THICKNESS Number Number }
+Site { SITE Name Number? }
+Facade { FACADE Name }
+Roof { ROOF Name }
+Light { LIGHT Name AT Point (POWER Number)? }
+Floor { FLOOR SignedNumber }
+Room { (ROOM | BALCONY | GARDEN) Name? Dimensions2 (AT Point)? }
+Grid { GRID Number }
+Walls { WALLS Directions }
+Rails { RAILS Directions }
+Windows { WINDOWS Directions }
+Doors { DOORS Directions }
+Directions { Name (","? Name)* }
+Height { HEIGHT Number }
+Surface { SURFACE Name }
+Style { STYLE Name }
+Mount { MOUNT Name Number Name Link? }
+Layout { LAYOUT Name }
+End { END }
+Row { ObjectToken ("|"? ObjectToken)* }
+ObjectToken { Empty | Asset Rotation? Size? Child? Wall? Link? }
+Asset { Name | Number }
+Rotation { "@" SignedNumber }
+Size { "[" Dimensions3 "]" }
+Child { "(" Name ")" }
+Wall { "~" Name }
+@tokens {
+  space { $[ \t\r]+ }
+  newline { "\n" }
+  Comment { "#" ![\n]* }
+  Name { $[a-zA-Z] $[a-zA-Z0-9_]* }
+  Number { $[0-9]+ ("." $[0-9]+)? }
+  SignedNumber { "-"? $[0-9]+ ("." $[0-9]+)? }
+  Dimensions2 { $[0-9]+ $[xX] $[0-9]+ }
+  Dimensions3 { $[0-9]+ ("." $[0-9]+)? $[xX] $[0-9]+ ("." $[0-9]+)? $[xX] $[0-9]+ ("." $[0-9]+)? }
+  Point { $[0-9]+ ("." $[0-9]+)? "," $[0-9]+ ("." $[0-9]+)? }
+  Empty { "." | "-" }
+  Link { "<" ![<>\n]* ">" }
+}
+
+@external specialize { Name } specializeKeyword from "./layout-tokens.js" {
+  WALL_THICKNESS, SITE, FACADE, ROOF, LIGHT, AT, POWER, FLOOR, ROOM, BALCONY, GARDEN,
+  GRID, WALLS, RAILS, WINDOWS, DOORS, HEIGHT, SURFACE, STYLE, MOUNT, LAYOUT, END
+}

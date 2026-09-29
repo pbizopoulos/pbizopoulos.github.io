@@ -958,12 +958,16 @@
   const THREE = await import("three"),
     { mergeGeometries } = await import("three/addons/utils/BufferGeometryUtils.js"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
+    { PointerLockControls } = await import("three/addons/controls/PointerLockControls.js"),
+    { solarPosition, lunarDirection } = await import("./celestial.js"),
+    { default: TinyQueue } = await import("tinyqueue"),
+    { createCollisionIndex, overlapWarnings } = await import("./collisions.js"),
+    { readLayout, layoutLanguage } = await import("./layout-language.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
     { EditorView, Decoration, keymap, lineNumbers, drawSelection } =
       await import("@codemirror/view"),
     {
-      foldService,
       foldGutter,
       codeFolding,
       foldKeymap,
@@ -3288,46 +3292,7 @@
   let walkthrough,
     walkthroughRun = 0;
   let selectableGroups = [],
-    collisionEntries = [];
-  function grammarFold(state, from) {
-    const header = state.doc.lineAt(from),
-      kind = header.text
-        .trim()
-        .match(/^(LAYOUT|ROOM|BALCONY|GARDEN|FLOOR)\b/iu)?.[1]
-        .toUpperCase();
-    if (!kind) {
-      return;
-    }
-    let last = header,
-      roomCount = 0;
-    for (let number = header.number + 1; number <= state.doc.lines; number += 1) {
-      const line = state.doc.line(number),
-        text = line.text.trim();
-      if (/^(ROOM|BALCONY|GARDEN)\b/iu.test(text)) {
-        roomCount += 1;
-      }
-      if (kind === "LAYOUT") {
-        if (/^END(?:\s*#.*)?$/iu.test(text)) {
-          return { from: header.to, to: line.to };
-        }
-        if (/^(LAYOUT|ROOM|BALCONY|GARDEN|FLOOR)\b/iu.test(text)) {
-          return;
-        }
-      } else if (
-        (kind === "FLOOR" ? /^(FLOOR|LAYOUT)\b/iu : /^(ROOM|BALCONY|GARDEN|FLOOR|LAYOUT)\b/iu).test(
-          text,
-        )
-      ) {
-        break;
-      }
-      if (text) {
-        last = line;
-      }
-    }
-    return kind !== "LAYOUT" && last.number > header.number && (kind !== "FLOOR" || roomCount > 1)
-      ? { from: header.to, to: last.to }
-      : undefined;
-  }
+    collisionIndex = createCollisionIndex([]);
   const highlightLine = StateEffect.define(),
     highlightedLine = StateField.define({
       create: () => Decoration.none,
@@ -3368,7 +3333,7 @@
         drawSelection(),
         history(),
         highlightedLine,
-        foldService.of(grammarFold),
+        layoutLanguage,
         codeFolding(),
         foldGutter(),
         EditorState.tabSize.of(2),
@@ -3541,44 +3506,26 @@
       selectionCard.querySelector(".selection-hint").textContent = "Object details pinned";
     }
   }
-  function parseToken(token, line) {
-    if (token === "." || token === "0" || token === "-") {
-      return;
-    }
-    const linked = token.match(/^(.*)<([^<>]*)>$/u),
-      url = productUrl(linked?.[2], line),
-      object = linked ? linked[1] : token,
-      match = object.match(
-        /^([a-z][a-z0-9_]*|[1-9]\d*)(?:@(-?\d+(?:\.\d+)?))?(?:\[(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\])?(?:\(([a-z][a-z0-9_]*_on_top)\))?(?:~(north|east|south|west))?$/iu,
-      );
-    if (!match) {
-      fail(`Invalid object "${token}"`, line);
-    }
-    const name = aliases[match[1]] || match[1].toLowerCase();
-    if (!catalog[name]) {
-      fail(`Unknown object "${match[1]}"`, line);
-    }
-    const dimensions = match[3]
-      ? [Number(match[3]), Number(match[4]), Number(match[5])]
-      : catalog[name];
-    if (dimensions.some((n) => n <= 0 || n > 10)) {
+  function parseToken(syntax, line) {
+    const { text: token, yaw, wall, child, start, end } = syntax;
+    if ([".", "0", "-"].includes(token)) return;
+    const url = productUrl(syntax.url, line),
+      name = aliases[syntax.name] || syntax.name.toLowerCase();
+    if (!catalog[name]) fail(`Unknown object "${syntax.name}"`, line);
+    const dimensions = syntax.dimensions || catalog[name];
+    if (dimensions.some((n) => !Number.isFinite(n) || n <= 0 || n > 10)) {
       fail("Dimensions must be between 0 and 10 metres", line);
     }
-    const wall = match[7]?.toLowerCase();
-    if (wall && (match[2] !== undefined || ["stairs", "elevator"].includes(name))) {
-      fail(
-        "Wall placement sets the facing direction and cannot be used with @ or connectors",
-        line,
-      );
+    if (child && !/_on_top$/iu.test(child)) fail(`Invalid object "${token}"`, line);
+    if (wall && !["north", "east", "south", "west"].includes(wall)) {
+      fail(`Invalid wall "${wall}"`, line);
+    }
+    if (wall && (yaw !== undefined || ["stairs", "elevator"].includes(name))) {
+      fail("Wall placement sets the facing direction and cannot be used with @ or connectors", line);
     }
     return {
-      child: match[6]?.slice(0, -7),
-      dimensions,
-      line,
-      name,
-      url,
-      wall,
-      yaw: wall ? { east: 270, north: 0, south: 180, west: 90 }[wall] : Number(match[2] || 0),
+      child: child?.slice(0, -7), dimensions, line, name, url, wall, start, end,
+      yaw: wall ? { east: 270, north: 0, south: 180, west: 90 }[wall] : Number(yaw || 0),
     };
   }
   function floorPosition(program, room, token, col, row) {
@@ -3659,17 +3606,10 @@
     let active,
       currentRoom,
       floor = 0;
-    raw.forEach((original, index) => {
-      const line = index + 1,
-        text = original
-          .replaceAll(/<[^>]*>|#[^\n]*/gu, (part) => (part.startsWith("#") ? "" : part))
-          .trim();
-      if (!text) {
-        return;
-      }
-      if (/^WALL_THICKNESS\b/iu.test(text)) {
-        const fields = text.split(/\s+/u),
-          values = fields.slice(1).map(Number);
+    readLayout(source).forEach((statement) => {
+      const { line, text, kind } = statement;
+      if (kind === "WallThickness") {
+        const values = statement.numbers;
         if (
           active ||
           values.length !== 2 ||
@@ -3678,44 +3618,41 @@
           fail("Use WALL_THICKNESS exterior interior outside layouts, each 0.06–0.6 metres", line);
         }
         [program.exteriorWallThickness, program.interiorWallThickness] = values;
-      } else if (/^(SITE|FACADE|ROOF)\b/iu.test(text)) {
+      } else if (["Site", "Facade", "Roof"].includes(kind)) {
         if (active) {
           fail("Exterior settings belong outside layouts", line);
         }
-        const fields = text.toLowerCase().split(/\s+/u),
-          [setting, value] = fields,
+        const setting = kind.toLowerCase(),
+          value = statement.names[0].toLowerCase(),
           choices = {
             facade: ["none", "plaster", "brick", "timber", "concrete"],
             roof: ["none", "flat", "pitched", "terracotta"],
             site: ["none", "grass", "paving", "sand"],
           };
-        if (!choices[setting].includes(value) || fields.length > (setting === "site" ? 3 : 2)) {
+        if (!choices[setting].includes(value)) {
           fail(
             "Use SITE none/grass/paving/sand [margin], FACADE none/plaster/brick/timber/concrete, or ROOF none/flat/pitched/terracotta",
             line,
           );
         }
-        if (setting === "site" && fields[2] !== undefined) {
-          const margin = Number(fields[2]);
+        if (setting === "site" && statement.numbers[0] !== undefined) {
+          const margin = statement.numbers[0];
           if (!Number.isFinite(margin) || margin < 1 || margin > 30) {
             fail("SITE margin must be 1–30 metres", line);
           }
           program.margin = margin;
         }
         program[setting] = value;
-      } else if (/^LIGHT\b/iu.test(text)) {
-        const match = text.match(
-          /^LIGHT\s+(\w+)\s+AT\s+(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)(?:\s+POWER\s+(\d+(?:\.\d+)?))?$/iu,
-        );
-        if (!currentRoom || active || !match || !lightAssets.includes(match[1].toLowerCase())) {
+      } else if (kind === "Light") {
+        const name = statement.names[0].toLowerCase();
+        if (!currentRoom || active || !lightAssets.includes(name)) {
           fail("Use LIGHT asset AT column,row [POWER 0–200] inside a room definition", line);
         }
-        if (match[1].toLowerCase() === "wall_lamp") {
+        if (name === "wall_lamp") {
           fail("Use MOUNT east 2 wall_lamp for wall fixtures", line);
         }
-        const x = Number(match[2]),
-          z = Number(match[3]),
-          power = match[4] === undefined ? undefined : Number(match[4]);
+        const [x, z] = statement.point,
+          power = statement.numbers[0];
         if (
           x > currentRoom.cols - 1 ||
           z > currentRoom.rows - 1 ||
@@ -3724,27 +3661,23 @@
         ) {
           fail("LIGHT must fit the room, with POWER 0–200 and at most 64 fixtures per room", line);
         }
-        currentRoom.lights.push({ line, name: match[1].toLowerCase(), power, x, z });
-      } else if (/^FLOOR\s+/iu.test(text)) {
-        const match = text.match(/^FLOOR\s+(-?\d+)$/iu);
-        if (!match || Number(match[1]) > 31 || Number(match[1]) < -8 || active) {
+        currentRoom.lights.push({ line, name, power, x, z });
+      } else if (kind === "Floor") {
+        const value = statement.number;
+        if (!Number.isInteger(value) || value > 31 || value < -8 || active) {
           fail("Use FLOOR −8–31 outside a layout (0 = ground, −1 = basement)", line);
         }
-        floor = Number(match[1]);
+        floor = value;
         currentRoom = undefined;
-      } else if (/^(ROOM|BALCONY|GARDEN)\s+/iu.test(text)) {
+      } else if (kind === "Room") {
         if (active) {
           fail("Finish the current layout with END before another area", line);
         }
-        const m = text.match(
-          /^(ROOM|BALCONY|GARDEN)\s+(?:([a-z][a-z0-9_]*)\s+)?(\d+)x(\d+)(?:\s+AT\s+(\d+),(\d+))?$/iu,
-        );
-        if (!m) {
-          fail("Use ROOM 9x7, ROOM kitchen 8x6 AT 9,0, or BALCONY terrace 8x3 AT 0,7", line);
-        }
-        const kind = m[1].toLowerCase() === "garden" ? "balcony" : m[1].toLowerCase(),
+        const [cols, rows] = statement.dimensions,
+          [x, z] = statement.point,
+          kind = statement.areaKind === "garden" ? "balcony" : statement.areaKind,
           room = {
-            cols: Number(m[3]),
+            cols,
             doors: [],
             elevation: floor * 3,
             floor,
@@ -3753,15 +3686,18 @@
             lights: [],
             line,
             mounts: [],
-            name: (m[2] || "main").toLowerCase(),
-            rails: m[1].toLowerCase() === "balcony" ? ["west", "south", "east"] : [],
-            rows: Number(m[4]),
+            name: (statement.names[0] || "main").toLowerCase(),
+            rails: statement.areaKind === "balcony" ? ["west", "south", "east"] : [],
+            rows,
             style: "warm",
-            surface: m[1].toLowerCase() === "garden" ? "grass" : "auto",
+            surface: statement.areaKind === "garden" ? "grass" : "auto",
             walls: kind === "balcony" ? [] : ["north", "east", "west"],
-            x: Number(m[5] || 0),
-            z: Number(m[6] || 0),
+            x,
+            z,
           };
+        if (!Number.isInteger(room.x) || !Number.isInteger(room.z)) {
+          fail("Room coordinates must be whole cells", line);
+        }
         if (room.cols > 40 || room.rows > 40 || room.cols < 2 || room.rows < 2) {
           fail("Room dimensions must be 2–40 cells", line);
         }
@@ -3773,51 +3709,35 @@
         }
         program.rooms.push(room);
         currentRoom = room;
-      } else if (/^GRID\s+/iu.test(text)) {
-        const m = text.match(/^GRID\s+(\d+(?:\.\d+)?)$/iu);
-        if (!m) {
-          fail("Use GRID metres, such as GRID 0.85", line);
-        }
-        program.grid = Number(m[1]);
+      } else if (kind === "Grid") {
+        program.grid = statement.number;
         if (program.grid < 0.2 || program.grid > 3) {
           fail("Grid size must be 0.2–3 metres", line);
         }
-      } else if (/^WALLS\s+/iu.test(text)) {
+      } else if (kind === "Walls") {
         if (!currentRoom) {
           fail("Define a ROOM before its WALLS", line);
         }
-        const directions = text
-          .slice(6)
-          .trim()
-          .toLowerCase()
-          .split(/[\s,]+/u);
+        const directions = statement.directions;
         if (directions.some((d) => !["north", "south", "east", "west", "none"].includes(d))) {
           fail("Walls must use north, south, east, west or none", line);
         }
         currentRoom.walls = directions.includes("none") ? [] : [...new Set(directions)];
         currentRoom.wallsLine = line;
-      } else if (/^RAILS\s+/iu.test(text)) {
+      } else if (kind === "Rails") {
         if (!currentRoom || currentRoom.kind !== "balcony") {
           fail("RAILS applies to the most recent BALCONY", line);
         }
-        const directions = text
-          .slice(6)
-          .trim()
-          .toLowerCase()
-          .split(/[\s,]+/u);
+        const directions = statement.directions;
         if (directions.some((d) => !["north", "south", "east", "west", "none"].includes(d))) {
           fail("Rails must use north, south, east, west or none", line);
         }
         currentRoom.rails = directions.includes("none") ? [] : [...new Set(directions)];
-      } else if (/^WINDOWS\s+/iu.test(text)) {
+      } else if (kind === "Windows") {
         if (!currentRoom || currentRoom.kind === "balcony") {
           fail("WINDOWS needs an indoor ROOM", line);
         }
-        const directions = text
-          .slice(8)
-          .trim()
-          .toLowerCase()
-          .split(/[\s,]+/u);
+        const directions = statement.directions;
         if (
           directions.some((dir) => !["north", "south", "east", "west", "none"].includes(dir)) ||
           (directions.includes("none") && directions.length > 1)
@@ -3826,36 +3746,30 @@
         }
         currentRoom.windows = directions.includes("none") ? [] : [...new Set(directions)];
         currentRoom.windowsLine = line;
-      } else if (/^DOORS\s+/iu.test(text)) {
+      } else if (kind === "Doors") {
         if (!currentRoom) {
           fail("Define a ROOM before its DOORS", line);
         }
-        const directions = text
-          .slice(6)
-          .trim()
-          .toLowerCase()
-          .split(/[\s,]+/u);
+        const directions = statement.directions;
         if (directions.some((d) => !["north", "south", "east", "west"].includes(d))) {
           fail("Doors must use north, south, east or west", line);
         }
         currentRoom.doors = [...new Set(directions)];
         currentRoom.doorsLine = line;
-      } else if (/^HEIGHT\s+/iu.test(text)) {
-        const match = text.match(/^HEIGHT\s+(\d+(?:\.\d+)?)$/iu),
-          height = Number(match?.[1]);
+      } else if (kind === "Height") {
+        const height = statement.number;
         if (
           active ||
           !currentRoom ||
           currentRoom.kind !== "room" ||
-          !match ||
           height < 2.4 ||
           height > 6
         ) {
           fail("Use HEIGHT 2.4–6 metres inside an indoor room definition", line);
         }
         currentRoom.height = height;
-      } else if (/^SURFACE\s+/iu.test(text)) {
-        const surface = text.slice(8).trim().toLowerCase();
+      } else if (kind === "Surface") {
+        const surface = statement.names[0].toLowerCase();
         if (
           active ||
           !currentRoom ||
@@ -3867,11 +3781,11 @@
           );
         }
         currentRoom.surface = surface;
-      } else if (/^STYLE\s+/iu.test(text)) {
+      } else if (kind === "Style") {
         if (!currentRoom) {
           fail("Define a ROOM before its STYLE", line);
         }
-        const style = text.slice(6).trim().toLowerCase();
+        const style = statement.names[0].toLowerCase();
         if (
           ![
             "warm",
@@ -3889,35 +3803,31 @@
           );
         }
         currentRoom.style = style;
-      } else if (/^MOUNT\s+/iu.test(text)) {
+      } else if (kind === "Mount") {
         if (!currentRoom || currentRoom.kind === "balcony") {
           fail("MOUNT needs an indoor ROOM", line);
         }
-        const m = text.match(/^MOUNT\s+(north|south|east|west)\s+(\d+)\s+(\w+)(?:<([^<>]*)>)?$/iu);
-        if (!m) {
-          fail("Use MOUNT north 3 poster, MOUNT east 2 wall_lamp, or another wall asset", line);
+        const [side, asset] = statement.names;
+        if (!["north", "south", "east", "west"].includes(side.toLowerCase()) || !Number.isInteger(statement.number)) {
+          fail("MOUNT requires a wall direction and a whole cell number", line);
         }
-        if (!["air_conditioner", "wall_lamp", ...wallDecor].includes(m[3].toLowerCase())) {
+        if (!["air_conditioner", "wall_lamp", ...wallDecor].includes(asset.toLowerCase())) {
           fail("MOUNT requires a wall decoration, wall_lamp, or air_conditioner", line);
         }
         currentRoom.mounts.push({
-          cell: Number(m[2]),
+          cell: statement.number,
           line,
-          name: m[3].toLowerCase(),
-          side: m[1].toLowerCase(),
-          url: productUrl(m[4], line),
+          name: asset.toLowerCase(),
+          side: side.toLowerCase(),
+          url: productUrl(statement.url, line),
         });
-      } else if (/^LAYOUT\s+/iu.test(text)) {
-        const m = text.match(/^LAYOUT\s+([a-z][a-z0-9_]*)$/iu);
-        if (!m) {
-          fail("Use LAYOUT followed by a name", line);
-        }
-        active = m[1].toLowerCase();
+      } else if (kind === "Layout") {
+        active = statement.names[0].toLowerCase();
         if (program.layouts[active]) {
           fail(`Layout "${active}" is already defined`, line);
         }
         program.layouts[active] = [];
-      } else if (/^END$/iu.test(text)) {
+      } else if (kind === "End") {
         if (!active) {
           fail("END without a layout", line);
         }
@@ -3926,25 +3836,17 @@
         if (!active) {
           fail(`Unexpected text "${text}"`, line);
         }
-        const tokens = text.replaceAll(/<[^>]*>/gu, "").includes("|")
-          ? text.split(/\|(?![^<]*>)/u).map((x) => x.trim())
-          : text.split(/\s+(?![^<]*>)/u);
-        if (tokens.some((x) => !x)) {
-          fail("Empty grid cell; use . for an empty cell", line);
+        // A row uses either pipes or whitespace, never a mixture. Links may contain pipes.
+        const tokens = statement.tokens;
+        const separators = tokens.slice(1).map((token, index) => {
+          const previous = tokens[index];
+          const original = raw[line - 1];
+          return original.slice(previous.end, token.start);
+        });
+        if (separators.some((gap) => gap.includes("|")) && separators.some((gap) => !gap.includes("|"))) {
+          fail("Separate every grid cell with |, or use whitespace throughout the row", line);
         }
-        let searchFrom = 0;
-        program.layouts[active].push(
-          tokens.map((t) => {
-            const start = original.indexOf(t, searchFrom);
-            searchFrom = start + t.length;
-            const token = parseToken(t, line);
-            if (token) {
-              token.start = start;
-              token.end = searchFrom;
-            }
-            return token;
-          }),
-        );
+        program.layouts[active].push(tokens.map((token) => parseToken(token, line)));
       }
     });
     if (active) {
@@ -4152,7 +4054,13 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   viewport.prepend(renderer.domElement);
-  const controls = new OrbitControls(camera, renderer.domElement);
+  const controls = new OrbitControls(camera, renderer.domElement),
+    lookControls = new PointerLockControls(camera, renderer.domElement);
+  lookControls.enabled = false;
+  lookControls.pointerSpeed = 1.5;
+  lookControls.minPolarAngle = Math.PI * 0.02;
+  lookControls.maxPolarAngle = Math.PI * 0.98;
+  lookControls.addEventListener("change", requestRender);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI / 2.06;
@@ -4267,71 +4175,6 @@
         input.value = fallback;
       }
     }
-  }
-  function solarPosition(date, time, latitude, longitude, offset) {
-    const radians = Math.PI / 180,
-      [year, month, day] = date.split("-").map(Number),
-      [hour, minute] = time.split(":").map(Number),
-      start = Date.UTC(year, 0, 1),
-      days = (Date.UTC(year + 1, 0, 1) - start) / 86_400_000,
-      dayOfYear = (Date.UTC(year, month - 1, day) - start) / 86_400_000 + 1,
-      gamma = ((2 * Math.PI) / days) * (dayOfYear - 1 + (hour + minute / 60 - 12) / 24),
-      equation =
-        229.18 *
-        (0.000075 +
-          0.001868 * Math.cos(gamma) -
-          0.032077 * Math.sin(gamma) -
-          0.014615 * Math.cos(2 * gamma) -
-          0.040849 * Math.sin(2 * gamma)),
-      declination =
-        0.006918 -
-        0.399912 * Math.cos(gamma) +
-        0.070257 * Math.sin(gamma) -
-        0.006758 * Math.cos(2 * gamma) +
-        0.000907 * Math.sin(2 * gamma) -
-        0.002697 * Math.cos(3 * gamma) +
-        0.00148 * Math.sin(3 * gamma),
-      hourAngle =
-        ((hour * 60 + minute + equation + 4 * longitude - 60 * offset) / 4 - 180) * radians,
-      lat = latitude * radians,
-      east = -Math.cos(declination) * Math.sin(hourAngle),
-      north =
-        Math.cos(lat) * Math.sin(declination) -
-        Math.sin(lat) * Math.cos(declination) * Math.cos(hourAngle),
-      up =
-        Math.sin(lat) * Math.sin(declination) +
-        Math.cos(lat) * Math.cos(declination) * Math.cos(hourAngle);
-    return {
-      altitude: Math.asin(Math.max(-1, Math.min(1, up))) / radians,
-      azimuth: (Math.atan2(east, north) / radians + 360) % 360,
-    };
-  }
-  function lunarDirection(date, time, latitude, longitude, offset, orientation) {
-    const rad = Math.PI / 180,
-      days = (Date.parse(`${date}T${time}:00Z`) - offset * 3_600_000) / 86_400_000 - 10_957.5,
-      mean = rad * (134.963 + 13.064993 * days),
-      lon = rad * (218.316 + 13.176396 * days + 6.289 * Math.sin(mean)),
-      lat = rad * 5.128 * Math.sin(rad * (93.272 + 13.22935 * days)),
-      obliquity = rad * 23.4397,
-      declination = Math.asin(
-        Math.sin(lat) * Math.cos(obliquity) + Math.cos(lat) * Math.sin(obliquity) * Math.sin(lon),
-      ),
-      ascension = Math.atan2(
-        Math.sin(lon) * Math.cos(obliquity) - Math.tan(lat) * Math.sin(obliquity),
-        Math.cos(lon),
-      ),
-      hour = rad * (280.16 + 360.9856235 * days + longitude) - ascension,
-      phi = latitude * rad,
-      direction = new THREE.Vector3(
-        -Math.cos(declination) * Math.sin(hour),
-        Math.sin(phi) * Math.sin(declination) +
-          Math.cos(phi) * Math.cos(declination) * Math.cos(hour),
-        -(
-          Math.cos(phi) * Math.sin(declination) -
-          Math.sin(phi) * Math.cos(declination) * Math.cos(hour)
-        ),
-      );
-    return direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), orientation * rad);
   }
   const skyUniforms = {
       day: { value: 1 },
@@ -6547,67 +6390,8 @@
     );
     return entries;
   }
-  function findCollisions(entries) {
-    const warnings = [],
-      broad = (e) => {
-        const tree = ["olive_tree", "citrus_tree", "topiary_tree", "palm"].includes(e.token.name),
-          [width, depth] = e.token.dimensions,
-          w = tree ? Math.max(0.3, width * 0.16) : width,
-          d = tree ? w : depth,
-          a = THREE.MathUtils.degToRad(e.token.yaw);
-        return {
-          d: Math.abs(w * Math.sin(a)) + Math.abs(d * Math.cos(a)),
-          w: Math.abs(w * Math.cos(a)) + Math.abs(d * Math.sin(a)),
-          x: e.x,
-          z: e.z,
-        };
-      };
-    for (let i = 0; i < entries.length; i += 1) {
-      for (let j = i + 1; j < entries.length; j += 1) {
-        const a = entries[i],
-          b = entries[j];
-        if (
-          a.token.floor !== b.token.floor ||
-          [
-            "rug",
-            "kilim_rug",
-            "ceiling_fan",
-            "floor_drain",
-            "curtain_pair",
-            "gym_mat",
-            "stone_path",
-            "archway",
-            "timber_pergola",
-            "awning",
-            ...overheadLights,
-          ].includes(a.token.name) ||
-          [
-            "rug",
-            "kilim_rug",
-            "ceiling_fan",
-            "floor_drain",
-            "curtain_pair",
-            "gym_mat",
-            "stone_path",
-            "archway",
-            "timber_pergola",
-            "awning",
-            ...overheadLights,
-          ].includes(b.token.name)
-        ) {
-          continue;
-        }
-        const A = broad(a),
-          B = broad(b);
-        if (
-          Math.abs(A.x - B.x) < (A.w + B.w) / 2 - 0.08 &&
-          Math.abs(A.z - B.z) < (A.d + B.d) / 2 - 0.08
-        ) {
-          warnings.push(`${a.token.name} overlaps ${b.token.name}`);
-        }
-      }
-    }
-    return warnings;
+  function findCollisions() {
+    return overlapWarnings(collisionIndex, overheadLights);
   }
   function resetCamera(top = false) {
     stopWalkthrough();
@@ -6664,6 +6448,7 @@
       return;
     }
     firstPerson = enabled;
+    lookControls.enabled = enabled;
     looking = false;
     if (!enabled && document.pointerLockElement === renderer.domElement) {
       document.exitPointerLock();
@@ -6823,7 +6608,7 @@
       currentProgram.floors.join(",") !== program.floors.join(",");
     clearScene();
     selectableGroups = [];
-    collisionEntries = [];
+    collisionIndex = createCollisionIndex([]);
     currentProgram = program;
     compiledSource = editor.state.doc.toString();
     const sceneExtent = Math.max(
@@ -6908,11 +6693,11 @@
       showStatus(error.message, "error");
       return;
     }
-    collisionEntries = entries;
+    collisionIndex = createCollisionIndex(entries);
     addDaylightFill(program, sceneRoot);
     updateIndoorLights();
     updateFloorVisibility();
-    const warnings = findCollisions(entries);
+    const warnings = findCollisions();
     showStatus(
       warnings.length > 0
         ? `${warnings.length} overlap warning${warnings.length === 1 ? "" : "s"} · ${warnings[0]}`
@@ -6941,6 +6726,7 @@
     renderer.setSize(w, h, false);
   }
   new ResizeObserver(resize).observe(viewport);
+  const standingPoint = new THREE.Vector3();
   function canStandAt(x, z, floor) {
     const radius = 0.2,
       { grid } = currentProgram,
@@ -7003,7 +6789,10 @@
         return false;
       }
     }
-    for (const entry of collisionEntries) {
+    for (const { entry, walkingBox } of collisionIndex.search(floor, {
+      minX: x - radius * Math.SQRT2, minY: z - radius * Math.SQRT2,
+      maxX: x + radius * Math.SQRT2, maxY: z + radius * Math.SQRT2,
+    })) {
       const { token } = entry;
       if (
         token.floor !== floor ||
@@ -7050,7 +6839,7 @@
         ) {
           return false;
         }
-      } else if (Math.abs(localX) < width / 2 + radius && Math.abs(localZ) < depth / 2 + radius) {
+      } else if (walkingBox.containsPoint(standingPoint.set(x, 0, z))) {
         return false;
       }
     }
@@ -7306,45 +7095,12 @@
         const distance = new Float64Array(nodes.length).fill(Infinity),
           previous = new Int32Array(nodes.length).fill(-1),
           edges = Array.from({ length: nodes.length }),
-          heap = [],
-          push = (id, cost) => {
-            let i = heap.length;
-            heap.push({ cost, id });
-            while (i > 0) {
-              const parent = Math.floor((i - 1) / 2);
-              if (heap[parent].cost <= cost) {
-                break;
-              }
-              heap[i] = heap[parent];
-              i = parent;
-            }
-            heap[i] = { cost, id };
-          },
-          pop = () => {
-            const [first] = heap,
-              last = heap.pop();
-            if (heap.length > 0) {
-              let i = 0;
-              while (i * 2 + 1 < heap.length) {
-                let child = i * 2 + 1;
-                if (child + 1 < heap.length && heap[child + 1].cost < heap[child].cost) {
-                  child += 1;
-                }
-                if (heap[child].cost >= last.cost) {
-                  break;
-                }
-                heap[i] = heap[child];
-                i = child;
-              }
-              heap[i] = last;
-            }
-            return first;
-          };
+          heap = new TinyQueue([], (a, b) => a.cost - b.cost);
         distance[origin.id] = 0;
-        push(origin.id, 0);
+        heap.push({ id: origin.id, cost: 0 });
         let visited = 0;
         while (heap.length > 0) {
-          const next = pop();
+          const next = heap.pop();
           if (next.cost !== distance[next.id]) {
             continue;
           }
@@ -7354,7 +7110,7 @@
               distance[edge.to] = cost;
               previous[edge.to] = next.id;
               edges[edge.to] = edge;
-              push(edge.to, cost);
+              heap.push({ id: edge.to, cost });
             }
           }
           visited += 1;
@@ -7986,17 +7742,6 @@
     if (!firstPerson) {
       hoverObject(event);
     }
-  });
-  document.addEventListener("mousemove", (event) => {
-    if (!firstPerson || document.pointerLockElement !== renderer.domElement) {
-      return;
-    }
-    camera.rotation.y -= event.movementX * 0.003;
-    camera.rotation.x = THREE.MathUtils.clamp(
-      camera.rotation.x - event.movementY * 0.003,
-      -Math.PI * 0.48,
-      Math.PI * 0.48,
-    );
   });
   renderer.domElement.addEventListener("click", (event) => {
     if (firstPerson) {
