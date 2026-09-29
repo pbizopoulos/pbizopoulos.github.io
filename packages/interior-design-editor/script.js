@@ -3,12 +3,16 @@
       lightAssets,
       overheadLights,
       sharedWall,
+      wallThickness,
       enrichExample,
       facadeMaterial,
       applyFacade,
       addExterior,
       mergedEnclosure,
     } = await import("./prm/scene-design.js"),
+    { decorCatalog, wallDecor, addDecoration, decorationExample } =
+      await import("./prm/decor-assets.js"),
+    { createFixtureRenderer } = await import("./prm/fixture-renderer.js"),
     THREE = await import("three"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
@@ -1514,6 +1518,7 @@
     viewport = $("viewport"),
     status = $("message"),
     selectionCard = $("selectionCard");
+  Object.assign(catalog, decorCatalog);
   let boxMode = false,
     compileTimer,
     currentProgram,
@@ -1872,7 +1877,7 @@
           fail(`Wall placement of ${token.name} blocks a door`, token.line);
         }
       }
-      const inset = depth / 2 + 0.06;
+      const inset = depth / 2 + wallThickness(program, room, token.wall) / 2;
       if (vertical) {
         x = positive ? across - inset : inset;
       } else {
@@ -1887,8 +1892,10 @@
   function parseProgram(source) {
     const program = {
         cols: 0,
+        exteriorWallThickness: 0.24,
         facade: "none",
         grid: 0.82,
+        interiorWallThickness: 0.12,
         layouts: {},
         margin: 5,
         roof: "none",
@@ -1909,7 +1916,18 @@
       if (!text) {
         return;
       }
-      if (/^(SITE|FACADE|ROOF)\b/iu.test(text)) {
+      if (/^WALL_THICKNESS\b/iu.test(text)) {
+        const fields = text.split(/\s+/u),
+          values = fields.slice(1).map(Number);
+        if (
+          active ||
+          values.length !== 2 ||
+          values.some((value) => !Number.isFinite(value) || value < 0.06 || value > 0.6)
+        ) {
+          fail("Use WALL_THICKNESS exterior interior outside layouts, each 0.06–0.6 metres", line);
+        }
+        [program.exteriorWallThickness, program.interiorWallThickness] = values;
+      } else if (/^(SITE|FACADE|ROOF)\b/iu.test(text)) {
         if (active) {
           fail("Exterior settings belong outside layouts", line);
         }
@@ -2082,11 +2100,12 @@
         if (!currentRoom || currentRoom.kind === "balcony") {
           fail("MOUNT needs an indoor ROOM", line);
         }
-        const m = text.match(
-          /^MOUNT\s+(north|south|east|west)\s+(\d+)\s+(air_conditioner|wall_lamp)(?:<([^<>]*)>)?$/iu,
-        );
+        const m = text.match(/^MOUNT\s+(north|south|east|west)\s+(\d+)\s+(\w+)(?:<([^<>]*)>)?$/iu);
         if (!m) {
-          fail("Use MOUNT north 3 air_conditioner or MOUNT east 2 wall_lamp", line);
+          fail("Use MOUNT north 3 poster, MOUNT east 2 wall_lamp, or another wall asset", line);
+        }
+        if (!["air_conditioner", "wall_lamp", ...wallDecor].includes(m[3].toLowerCase())) {
+          fail("MOUNT requires a wall decoration, wall_lamp, or air_conditioner", line);
         }
         currentRoom.mounts.push({
           cell: Number(m[2]),
@@ -2350,11 +2369,11 @@
   scene.add(sceneRoot);
   const shadowRoot = new THREE.Group(),
     shadowMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  let fixtureLights = [],
-    renderDirty = true,
-    lightLimit = 6;
-  const lastLightPosition = new THREE.Vector3(Infinity, Infinity, Infinity),
-    lastView = new THREE.Matrix4();
+  let renderDirty = true,
+    fixtureOverride,
+    previousDaylight;
+  const lastView = new THREE.Matrix4(),
+    renderFixtures = createFixtureRenderer(renderer, scene, camera, sunlight);
   function requestRender() {
     renderDirty = true;
   }
@@ -2377,32 +2396,11 @@
     }
     renderer.shadowMap.needsUpdate = true;
   }
-  function updateVisibleLights() {
-    if (lastLightPosition.distanceToSquared(camera.position) < 0.25) {
-      return;
-    }
-    lastLightPosition.copy(camera.position);
-    const position = new THREE.Vector3();
-    for (const light of fixtureLights) {
-      light.userData.cameraDistance = light
-        .getWorldPosition(position)
-        .distanceToSquared(camera.position);
-    }
-    fixtureLights.sort((a, b) => a.userData.cameraDistance - b.userData.cameraDistance);
-    fixtureLights.forEach((light, index) => {
-      const visible = index < lightLimit;
-      if (light.visible !== visible) {
-        renderer.shadowMap.needsUpdate = true;
-        renderDirty = true;
-      }
-      light.visible = visible;
-    });
-  }
   function fixtureLight(parent, intensity, x, y, z) {
     const light = new THREE.PointLight("#ffe4ba", intensity, 0, 2);
     light.position.set(x, y, z);
     light.castShadow = true;
-    light.shadow.mapSize.set(512, 512);
+    light.shadow.mapSize.set(256, 256);
     light.shadow.camera.near = 0.01;
     light.shadow.normalBias = 0.005;
     parent.add(light);
@@ -2442,7 +2440,7 @@
       if (request === lightingRequest) {
         if (!lightingPreviewCache) {
           lightingPreviewCache = createLightingPreview(renderer, camera, $("lightingStatus"), () =>
-            renderer.render(scene, camera),
+            renderFixtures(),
           );
         }
         lightingPreviewCache.setQuality($("renderQuality").value);
@@ -2458,13 +2456,22 @@
   function updateIndoorLights() {
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
-    const enabled = $("indoorLights").value === "on";
+    const enabled = fixtureOverride ?? sunlight.intensity === 0,
+      button = $("lightsButton"),
+      label = enabled ? "Turn all fixture lights off" : "Turn all fixture lights on";
+    button.classList.toggle("active", enabled);
+    button.setAttribute("aria-pressed", String(enabled));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    $("indoorLights").textContent =
+      `All fixtures ${enabled ? "on" : "off"} · ${fixtureOverride === undefined ? "automatic" : "manual until sunrise/sunset"}`;
     sceneRoot.traverse((node) => {
       if (node.isLight) {
         if (node.userData.litIntensity === undefined) {
           node.userData.litIntensity = node.intensity;
         }
         node.intensity = enabled ? node.userData.litIntensity : 0;
+        node.visible = enabled;
       }
       for (const item of [node.material].flat().filter(Boolean)) {
         if (item.emissive && item.emissive.getHex() !== 0) {
@@ -2477,14 +2484,15 @@
     });
     lightingPreview?.invalidate();
   }
-  $("indoorLights").addEventListener("change", updateIndoorLights);
+  $("lightsButton").addEventListener("click", () => {
+    fixtureOverride = $("lightsButton").getAttribute("aria-pressed") !== "true";
+    updateIndoorLights();
+  });
   $("renderQuality").addEventListener("change", () => {
     const quality = $("renderQuality").value;
-    lightLimit = quality === "fast" ? 4 : quality === "high" ? 8 : 6;
     renderer.setPixelRatio(
       Math.min(devicePixelRatio, quality === "fast" ? 1 : quality === "high" ? 2 : 1.5),
     );
-    lastLightPosition.set(Infinity, Infinity, Infinity);
     lightingPreviewCache?.setQuality(quality);
     resize();
   });
@@ -2581,6 +2589,11 @@
     renderer.toneMappingExposure = 1.05 * 2 ** $("sunExposure").valueAsNumber;
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
     sunlight.castShadow = altitude > 0;
+    if (previousDaylight !== altitude > 0) {
+      fixtureOverride = undefined;
+    }
+    previousDaylight = altitude > 0;
+    updateIndoorLights();
     sunlight.color.setHSL(0.1, 0.15 + 0.55 * (1 - Math.min(1, daylight * 3)), 0.9);
     scene.background.set("#000000").lerp(new THREE.Color("#eff2ee"), Math.min(1, daylight * 4));
     Object.assign(sunlight.shadow.camera, {
@@ -3720,6 +3733,7 @@
           break;
         }
       }
+      addDecoration(group, name, box);
       group.scale.set(w / cw, h / ch, d / cd);
     }
     group.userData.token = token;
@@ -3941,6 +3955,7 @@
             ? centerX + (dir === "east" ? width / 2 : -width / 2)
             : centerZ + (dir === "south" ? depth / 2 : -depth / 2),
           middle = vertical ? centerZ : centerX,
+          thickness = wallThickness(program, room, dir),
           hasDoor = room.doors.includes(dir),
           sharedEdge = program.rooms.some((other) => sharedWall(room, other, dir)),
           hasWindow =
@@ -3953,9 +3968,9 @@
             const spanCenter = middle + offset,
               wall = box(
                 wallParent,
-                vertical ? 0.12 : spanLength,
+                vertical ? thickness : spanLength,
                 height,
-                vertical ? spanLength : 0.12,
+                vertical ? spanLength : thickness,
                 vertical ? fixed : spanCenter,
                 y,
                 vertical ? spanCenter : fixed,
@@ -3974,7 +3989,7 @@
           opening.userData.token = {
             dimensions: [
               hasDoor ? Math.min(1.15, length * 0.4) : Math.min(2.1, length * 0.48),
-              0.18,
+              thickness + 0.04,
               hasDoor ? 2.29 : 1.05,
             ],
             end: start === -1 ? source.length : start + dir.length,
@@ -3994,9 +4009,9 @@
             addWallPart(offset, segmentLength);
             box(
               wallRoot,
-              vertical ? 0.13 : segmentLength,
+              vertical ? thickness + 0.02 : segmentLength,
               0.085,
-              vertical ? segmentLength : 0.13,
+              vertical ? segmentLength : thickness + 0.02,
               vertical ? fixed : middle + offset,
               0.09,
               vertical ? middle + offset : fixed,
@@ -4023,9 +4038,9 @@
           for (const offset of [-gap / 2, gap / 2]) {
             box(
               opening,
-              vertical ? 0.055 : 0.055,
+              vertical ? thickness + 0.02 : 0.055,
               2.28,
-              vertical ? 0.055 : 0.055,
+              vertical ? 0.055 : thickness + 0.02,
               vertical ? fixed : middle + offset,
               1.14,
               vertical ? middle + offset : fixed,
@@ -4047,9 +4062,9 @@
           addWallPart(offset, span, wallHeight - 2.2, (wallHeight + 2.2) / 2);
           box(
             wallRoot,
-            vertical ? 0.13 : length,
+            vertical ? thickness + 0.02 : length,
             0.085,
-            vertical ? length : 0.13,
+            vertical ? length : thickness + 0.02,
             vertical ? fixed : middle,
             0.09,
             vertical ? middle : fixed,
@@ -4067,28 +4082,28 @@
             box(opening, 0.025, 0.98, span - 0.09, fixed, windowY, center, glass).castShadow =
               false;
             for (const y of [1.15, 2.2]) {
-              box(opening, 0.18, 0.055, span, fixed, y, center, material.white);
+              box(opening, thickness + 0.04, 0.055, span, fixed, y, center, material.white);
             }
             for (const z of [center - span / 2, center, center + span / 2]) {
-              box(opening, 0.18, 1.05, 0.055, fixed, windowY, z, material.white);
+              box(opening, thickness + 0.04, 1.05, 0.055, fixed, windowY, z, material.white);
             }
           } else {
             box(opening, span - 0.09, 0.98, 0.025, center, windowY, fixed, glass).castShadow =
               false;
             for (const y of [1.15, 2.2]) {
-              box(opening, span, 0.055, 0.18, center, y, fixed, material.white);
+              box(opening, span, 0.055, thickness + 0.04, center, y, fixed, material.white);
             }
             for (const x of [center - span / 2, center, center + span / 2]) {
-              box(opening, 0.055, 1.05, 0.18, x, windowY, fixed, material.white);
+              box(opening, 0.055, 1.05, thickness + 0.04, x, windowY, fixed, material.white);
             }
           }
         } else {
           addWallPart(0, length);
           box(
             wallRoot,
-            vertical ? 0.13 : length,
+            vertical ? thickness + 0.02 : length,
             0.085,
-            vertical ? length : 0.13,
+            vertical ? length : thickness + 0.02,
             vertical ? fixed : middle,
             0.09,
             vertical ? middle : fixed,
@@ -4109,12 +4124,16 @@
           fixture = makeFurniture(token, boxMode),
           horizontal = mount.side === "north" || mount.side === "south",
           along = (mount.cell - ((horizontal ? room.cols : room.rows) - 1) / 2) * program.grid,
-          inset = 0.16;
+          inset = wallThickness(program, room, mount.side) / 2 + catalog[mount.name][1] / 2 + 0.01;
         fixture.position.set(
           horizontal
             ? centerX + along
             : centerX + (mount.side === "east" ? width / 2 - inset : -width / 2 + inset),
-          mount.name === "air_conditioner" ? 2.13 : 1.85,
+          wallDecor.includes(mount.name)
+            ? 1.65 - catalog[mount.name][2] / 2
+            : mount.name === "air_conditioner"
+              ? 2.13
+              : 1.85,
           horizontal
             ? centerZ + (mount.side === "south" ? depth / 2 - inset : -depth / 2 + inset)
             : centerZ + along,
@@ -4286,7 +4305,6 @@
   function updateFloorVisibility() {
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
-    lastLightPosition.set(Infinity, Infinity, Infinity);
     clearHover();
     for (const group of sceneRoot.children) {
       if (group.userData.floor === undefined) {
@@ -4341,7 +4359,6 @@
       child.geometry?.dispose();
     }
     shadowRoot.clear();
-    fixtureLights = [];
     sceneRoot.traverse((node) => {
       if (node.isLight) {
         node.shadow?.dispose();
@@ -4463,12 +4480,6 @@
       return;
     }
     collisionEntries = entries;
-    sceneRoot.traverse((node) => {
-      if (node.isPointLight) {
-        fixtureLights.push(node);
-      }
-    });
-    lastLightPosition.set(Infinity, Infinity, Infinity);
     updateIndoorLights();
     updateFloorVisibility();
     const warnings = findCollisions(entries);
@@ -4538,7 +4549,12 @@
             grid,
           along = (vertical ? z : x) - center,
           across = Math.abs((vertical ? x : z) - fixed);
-        if (across < radius + 0.06 && Math.abs(along) < length / 2 + radius) {
+        if (
+          across <
+            radius +
+              (room.walls.includes(side) ? wallThickness(currentProgram, room, side) / 2 : 0.06) &&
+          Math.abs(along) < length / 2 + radius
+        ) {
           const gap = room.doors.includes(side) ? Math.min(1.15, length * 0.4) : 0;
           if (Math.abs(along) + radius >= gap / 2) {
             return false;
@@ -4670,18 +4686,18 @@
       renderDirty = true;
       lastView.copy(camera.matrixWorld);
     }
-    updateVisibleLights();
     try {
       if (!lightingPreview?.render(sceneRoot, sunlight, scene.background) && renderDirty) {
-        renderer.render(scene, camera);
+        renderFixtures();
       }
       renderDirty = false;
     } catch (error) {
       lightingFailed(error);
-      renderer.render(scene, camera);
+      renderFixtures();
     }
   }
   animate();
+  examples["Decor gallery"] = decorationExample;
   for (const name of Object.keys(examples)) {
     examples[name] = enrichExample(examples[name], parseProgram, name);
   }
@@ -4709,6 +4725,7 @@
     ],
     "Outdoor areas": ["Balcony garden", "Rooftop Riviera"],
     "Single rooms": [
+      "Decor gallery",
       "Living room",
       "Bedroom",
       "Creative studio",

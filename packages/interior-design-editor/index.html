@@ -149,13 +149,7 @@
                       <option value="realistic">Realistic preview</option>
                     </select>
                   </label>
-                  <label
-                    >Indoor lights
-                    <select id="indoorLights">
-                      <option value="on">On</option>
-                      <option value="off">Off</option>
-                    </select>
-                  </label>
+                  <output id="indoorLights" aria-live="polite">Automatic fixture lighting</output>
                   <label
                     >Quality
                     <select id="renderQuality">
@@ -168,12 +162,12 @@
                   <p>
                     Default location: Athens. Only the sun and placed lights illuminate rooms.
                     Walls, ceilings, and floors block light even when hidden for editing. Editing
-                    shows direct light from the nearest 4–8 fixtures, depending on quality;
-                    realistic preview includes all fixtures and up to six light bounces through the
-                    room. Exposure brightens the image without adding light. Use Walk to view
-                    interiors. Stop moving to let the preview sharpen; it pauses when sufficiently
-                    refined. Fast quality reduces resolution and lighting cost. Large scenes take
-                    longer.
+                    shows direct light from all fixtures; realistic preview includes all fixtures
+                    and up to six light bounces through the room. Exposure brightens the image
+                    without adding light. Use Walk to view interiors. Stop moving to let the preview
+                    sharpen; it pauses when sufficiently refined. All fixtures switch on when the
+                    sun is below the horizon and off during daylight, regardless of camera position.
+                    Fast quality reduces rendering resolution. Large scenes take longer.
                   </p>
                 </form>
               </details>
@@ -209,6 +203,16 @@
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="m2 9 10-6 10 6-10 6L2 9Zm3 5v5m14-5v5m-7-4v6" />
+                </svg></button
+              ><button
+                id="lightsButton"
+                class="tool-button"
+                aria-pressed="false"
+                title="Turn all fixture lights on"
+                aria-label="Turn all fixture lights on"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 18h6m-5 3h4M8 12a6 6 0 1 1 8 0c-1 1-1 2-1 3H9c0-1 0-2-1-3Z" />
                 </svg></button
               ><button
                 id="modeButton"
@@ -285,6 +289,15 @@ SITE grass 5&#10;FACADE brick&#10;ROOF pitched&#10;GRID 1&#10;ROOM living 4x4 AT
         when copying or sharing the scene.
       </p>
       <p>
+        <code>WALL_THICKNESS 0.24 0.12</code> sets exterior and interior wall thickness in metres
+        (each 0.06–0.6). These are the model defaults. Walls are centred on room boundaries;
+        openings, mounted objects, and walking clearance use this thickness.
+      </p>
+      <p>
+        The lightbulb button toggles every fixture together. A manual choice lasts until the next
+        sunrise or sunset in the scene's sun settings.
+      </p>
+      <p>
         <code>LIGHT asset AT column,row [POWER number]</code> places a fixture independently of
         occupied furniture cells. Coordinates refer to cell centres and can be fractional; power is
         a relative intensity from 0–200. Assets include <code>pendant_light</code>,
@@ -293,6 +306,13 @@ SITE grass 5&#10;FACADE brick&#10;ROOF pitched&#10;GRID 1&#10;ROOM living 4x4 AT
         <code>lamp</code>, and <code>table_lamp</code>. Use <code>MOUNT east 2 wall_lamp</code> for
         wall fixtures. Overhead fixtures leave the floor walkable. Interior rooms with no exterior
         wall use fixtures rather than windows into neighbouring rooms.
+      </p>
+      <p>
+        Decorations: <code>poster</code>, <code>painting</code>, <code>mirror</code>,
+        <code>wall_clock</code>, <code>wall_shelf</code>, and <code>vase</code>. Use
+        <code>MOUNT south 1 poster</code> for wall decorations or place them in a layout. Try “Decor
+        gallery”. The mirror uses a reflective material; editing mode does not show a live mirror
+        reflection.
       </p>
       <ul>
         <li><code>ROOM living 8x6 AT 0,0</code> — size and position in grid cells.</li>

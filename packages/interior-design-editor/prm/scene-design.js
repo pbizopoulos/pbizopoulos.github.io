@@ -14,6 +14,11 @@ export function sharedWall(room, other, dir) {
         : other.x + other.cols === room.x && verticalOverlap;
 }
 
+export function wallThickness(program, room, side) {
+  return program.rooms.some(other => sharedWall(room, other, side))
+    ? program.interiorWallThickness : program.exteriorWallThickness;
+}
+
 // Example additions are written into the language, never hidden renderer defaults.
 export function enrichExample(source, parse, name = "") {
   const program = parse(source), lines = source.split("\n");
@@ -74,7 +79,7 @@ export function enrichExample(source, parse, name = "") {
   }
   const site = /lunar/iu.test(name) ? "sand" : /cloud city/iu.test(name) ? "none" : /rooftop|drowned/iu.test(name) ? "paving" : "grass";
   const facade = /lunar|museum/iu.test(name) ? "concrete" : /loft|library/iu.test(name) ? "brick" : "plaster";
-  return `SITE ${site} 5\nFACADE ${facade}\nROOF flat\n${lines.join("\n")}`;
+  return `WALL_THICKNESS 0.24 0.12\nSITE ${site} 5\nFACADE ${facade}\nROOF flat\n${lines.join("\n")}`;
 }
 
 export function facadeMaterial(kind) {
