@@ -6004,8 +6004,6 @@
     camera.position.set(standing.x, destination.elevation + 1.65, standing.z);
     focusRoom = destination.name;
     focusFloor = destination.floor;
-    $("designRoom").value = destination.name;
-    syncDesignRoom();
     $("roomFocus").value = focusRoom;
     updateFloorVisibility();
     showStatus(`Floor ${focusFloor} · ${link.token.name}`);
@@ -6100,7 +6098,6 @@
     );
     roomSelect.hidden = program.rooms.length < 2;
     roomSelect.value = focusRoom || "";
-    syncDesignTools();
     const entries = [];
     try {
       for (const room of program.rooms) {
@@ -6438,258 +6435,6 @@
   function floorLabel(floor) {
     return `${floor < 0 ? `Basement ${-floor}` : floor === 0 ? "Ground floor" : `Upper floor ${floor}`} · ${floor * 3} m`;
   }
-  function editableProgram() {
-    try {
-      return parseProgram(editor.state.doc.toString());
-    } catch (error) {
-      showStatus(`Fix the layout first: ${error.message}`, "error");
-    }
-  }
-  function applyDesignSource(source) {
-    try {
-      parseProgram(source);
-    } catch (error) {
-      showStatus(error.message, "error");
-      return false;
-    }
-    editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } });
-    clearTimeout(compileTimer);
-    compile();
-    return true;
-  }
-  function syncDesignTools() {
-    const previous = $("designRoom").value;
-    $("designRoom").replaceChildren(
-      ...currentProgram.rooms.map(
-        (room) =>
-          new Option(`${room.name.replaceAll("_", " ")} · ${floorLabel(room.floor)}`, room.name),
-      ),
-    );
-    if (currentProgram.rooms.some((room) => room.name === previous)) {
-      $("designRoom").value = previous;
-    }
-    $("siteSelect").value = currentProgram.site;
-    $("roofSelect").value = currentProgram.roof;
-    $("buildingSummary").textContent =
-      `${currentProgram.floors.length} levels · ${currentProgram.rooms.length} areas`;
-    syncDesignRoom();
-  }
-  function syncDesignRoom() {
-    const room = currentProgram.rooms.find((area) => area.name === $("designRoom").value);
-    if (!room) {
-      return;
-    }
-    $("surfaceSelect").value = room.surface;
-    $("assetCol").max = room.cols - 1;
-    $("assetRow").max = room.rows - 1;
-    const rows = currentProgram.layouts[room.name];
-    for (let row = 0; row < room.rows; row += 1) {
-      for (let col = 0; col < room.cols; col += 1) {
-        if (!rows[row]?.[col]) {
-          $("assetCol").value = col;
-          $("assetRow").value = row;
-          return;
-        }
-      }
-    }
-  }
-  function syncAssetDimensions() {
-    const dimensions = catalog[$("assetSelect").value];
-    ["Width", "Depth", "Height"].forEach((dimension, index) => {
-      $(`asset${dimension}`).value = dimensions?.[index] ?? "";
-    });
-  }
-  $("assetSelect").addEventListener("change", syncAssetDimensions);
-  function updateAssetLibrary() {
-    const category = $("assetCategory").value,
-      query = $("assetSearch").value.trim().toLowerCase(),
-      outdoor = [
-        "archway",
-        "awning",
-        "bbq",
-        "cypress",
-        "citrus_tree",
-        "olive_tree",
-        "terracotta_pot",
-        "stone_path",
-        "retaining_wall",
-        "garden_steps",
-        "timber_pergola",
-        "trellis",
-        "outdoor_kitchen",
-        "garden_lamp",
-        "hedge",
-        "planter",
-        "slatted_table",
-        "folding_chair",
-        "sun_lounger",
-        "parasol",
-        "outdoor_chair",
-      ],
-      names =
-        category === "outdoor"
-          ? outdoor
-          : category === "reference"
-            ? Object.keys(referenceCatalog)
-            : Object.keys(catalog);
-    $("assetSelect").replaceChildren(
-      ...names
-        .filter((name) => name.replaceAll("_", " ").includes(query.replaceAll("_", " ")))
-        .toSorted()
-        .map(
-          (name) =>
-            new Option(`${name.replaceAll("_", " ")}  ·  ${catalog[name].join(" × ")} m`, name),
-        ),
-    );
-    if ($("assetSelect").options.length > 0) {
-      $("assetSelect").selectedIndex = 0;
-    }
-    syncAssetDimensions();
-  }
-  $("assetCategory").addEventListener("change", updateAssetLibrary);
-  $("assetSearch").addEventListener("input", updateAssetLibrary);
-  updateAssetLibrary();
-  $("designRoom").addEventListener("change", () => {
-    syncDesignRoom();
-    focusRoom = $("designRoom").value;
-    focusFloor = currentProgram.rooms.find((room) => room.name === focusRoom).floor;
-    $("roomFocus").value = focusRoom;
-    updateFloorVisibility();
-    resetCamera();
-  });
-  for (const [id, command] of [
-    ["siteSelect", "SITE"],
-    ["roofSelect", "ROOF"],
-    ["surfaceSelect", "SURFACE"],
-  ]) {
-    $(id).addEventListener("change", () => {
-      const program = editableProgram();
-      if (!program) {
-        return;
-      }
-      const lines = editor.state.doc.toString().split("\n"),
-        { value } = $(id);
-      if (command === "SURFACE") {
-        const room = program.rooms.find((area) => area.name === $("designRoom").value);
-        if (!room) {
-          return;
-        }
-        let end = room.line;
-        while (
-          end < lines.length &&
-          !/^(ROOM|BALCONY|GARDEN|FLOOR|LAYOUT)\b/iu.test(lines[end].trim())
-        ) {
-          end += 1;
-        }
-        const index = lines.findIndex(
-          (line, i) => i >= room.line && i < end && /^SURFACE\s/iu.test(line.trim()),
-        );
-        if (index === -1) {
-          lines.splice(room.line, 0, `SURFACE ${value}`);
-        } else {
-          lines[index] = `SURFACE ${value}`;
-        }
-      } else {
-        const pattern = new RegExp(`^${command}\\s`, "iu"),
-          indices = lines.flatMap((line, i) => (pattern.test(line.trim()) ? [i] : [])),
-          replacement = `${command} ${value}${command === "SITE" ? ` ${program.margin}` : ""}`;
-        if (indices.length > 0) {
-          indices.forEach((i) => {
-            lines[i] = replacement;
-          });
-        } else {
-          lines.unshift(replacement);
-        }
-      }
-      applyDesignSource(lines.join("\n"));
-    });
-  }
-  $("assetForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const program = editableProgram();
-    if (!program) {
-      return;
-    }
-    const room = program.rooms.find((area) => area.name === $("designRoom").value),
-      col = $("assetCol").valueAsNumber,
-      row = $("assetRow").valueAsNumber,
-      asset = $("assetSelect").value;
-    if (
-      !room ||
-      !catalog[asset] ||
-      !Number.isInteger(col) ||
-      !Number.isInteger(row) ||
-      col < 0 ||
-      row < 0 ||
-      col >= room.cols ||
-      row >= room.rows
-    ) {
-      return;
-    }
-    if (program.layouts[room.name][row]?.[col]) {
-      showStatus("That cell is occupied. Choose an empty column and row.", "warn");
-      return;
-    }
-    const lines = editor.state.doc.toString().split("\n"),
-      start = lines.findIndex((line) =>
-        new RegExp(`^LAYOUT\\s+${room.name}\\s*(?:#.*)?$`, "iu").test(line.trim()),
-      ),
-      end = lines.findIndex((line, i) => i > start && /^END\b/iu.test(line.trim())),
-      cells = Array.from({ length: room.rows }, (_, r) =>
-        Array.from({ length: room.cols }, (_cell, c) => {
-          const token = program.layouts[room.name][r]?.[c];
-          return token ? lines[token.line - 1].slice(token.start, token.end) : ".";
-        }),
-      );
-    cells[row][col] =
-      `${asset}@${$("assetRotation").value}[${["Width", "Depth", "Height"].map((dimension) => $(`asset${dimension}`).valueAsNumber).join("x")}]`;
-    lines.splice(start + 1, end - start - 1, ...cells.map((items) => items.join(" | ")));
-    if (applyDesignSource(lines.join("\n"))) {
-      focusFloor = room.floor;
-      updateFloorVisibility();
-    }
-  });
-  function appendArea(garden) {
-    const program = editableProgram();
-    if (!program) {
-      return;
-    }
-    const floor = garden ? 0 : Math.min(0, program.floors[0]) - 1,
-      name = `${garden ? "garden" : "basement"}_${program.rooms.length + 1}`,
-      groundRoom =
-        program.rooms.find((room) => room.floor === 0 && room.kind === "room") || program.rooms[0],
-      area = {
-        cols: garden ? Math.min(13, program.cols) : groundRoom.cols,
-        floor,
-        items: [],
-        kind: garden ? "garden" : "room",
-        name,
-        rows: garden ? 6 : groundRoom.rows,
-        style: "mediterranean",
-        surface: garden ? "grass" : "tile",
-        walls: garden ? [] : ["north", "east", "south", "west"],
-        windows: garden ? undefined : [],
-        x: garden ? 0 : groundRoom.x,
-        z: garden ? program.rows : groundRoom.z,
-      };
-    const snippet = buildExample("", program.grid, [area]).split("\n").slice(1).join("\n");
-    if (applyDesignSource(`${editor.state.doc.toString()}\n\n${snippet}\n`)) {
-      $("designRoom").value = name;
-      syncDesignRoom();
-      focusFloor = floor;
-      focusRoom = name;
-      $("roomFocus").value = name;
-      updateFloorVisibility();
-      resetCamera();
-      showStatus(
-        garden
-          ? "Garden added. Choose Garden & BBQ in the asset library."
-          : "Basement added below ground. Place stairs beneath a room on the next floor to connect it.",
-      );
-    }
-  }
-  $("addBasement").addEventListener("click", () => appendArea(false));
-  $("addGarden").addEventListener("click", () => appendArea(true));
   $("cutawayButton").addEventListener("click", (event) => {
     terrainCutaway = !terrainCutaway;
     event.currentTarget.classList.toggle("active", terrainCutaway);
@@ -6757,7 +6502,7 @@
     }
   });
   document.addEventListener("keydown", (event) => {
-    if (event.target.closest(".sun-settings, .design-tools, input, select, button")) {
+    if (event.target.closest(".sun-settings, input, select, button")) {
       return;
     }
     if (event.key === "Escape" && selectionPinned) {
@@ -6814,20 +6559,11 @@
   $("roomFocus").addEventListener("change", (event) => {
     focusRoom = event.target.value || undefined;
     focusFloor = currentProgram.rooms.find((room) => room.name === focusRoom)?.floor;
-    if (focusRoom) {
-      $("designRoom").value = focusRoom;
-      syncDesignRoom();
-    }
     updateFloorVisibility();
     resetCamera();
   });
   $("floorFocus").addEventListener("change", (event) => {
     focusFloor = event.target.value === "" ? undefined : Number(event.target.value);
-    const area = currentProgram.rooms.find((room) => room.floor === focusFloor);
-    if (area) {
-      $("designRoom").value = area.name;
-      syncDesignRoom();
-    }
     focusRoom = undefined;
     $("roomFocus").value = "";
     updateFloorVisibility();

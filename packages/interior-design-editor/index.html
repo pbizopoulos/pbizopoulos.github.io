@@ -25,8 +25,7 @@
       <main class="workspace">
         <section class="editor-panel" aria-label="Interior design editor">
           <div class="editor-toolbar">
-            <span class="file-tab">Design</span
-            ><select id="exampleSelect" aria-label="Example scene"></select
+            <select id="exampleSelect" aria-label="Example scene"></select
             ><button
               id="copyButton"
               class="text-button"
@@ -59,117 +58,6 @@
                 <path d="m8 3 4 4 4-4M4 12h16m-12 9 4-4 4 4" />
               </svg></button
             ><span id="editorState">READY TO EDIT</span>
-          </div>
-          <div class="design-tools">
-            <details open>
-              <summary>Building &amp; landscape <span id="buildingSummary"></span></summary>
-              <div class="design-fields">
-                <label>Area<select id="designRoom" aria-label="Area to edit"></select></label>
-                <label
-                  >Floor finish<select id="surfaceSelect">
-                    <option value="auto">From style</option>
-                    <option value="tile">Pale tile</option>
-                    <option value="stone">Flagstone</option>
-                    <option value="grass">Lawn</option>
-                    <option value="terracotta">Terracotta</option>
-                    <option value="wood">Timber</option>
-                    <option value="concrete">Concrete</option>
-                  </select></label
-                >
-                <label
-                  >Site<select id="siteSelect">
-                    <option value="none">None</option>
-                    <option value="grass">Grass</option>
-                    <option value="paving">Paving</option>
-                    <option value="sand">Sand</option>
-                  </select></label
-                >
-                <label
-                  >Roof<select id="roofSelect">
-                    <option value="none">None</option>
-                    <option value="flat">Flat</option>
-                    <option value="pitched">Pitched</option>
-                    <option value="terracotta">Terracotta tiles</option>
-                  </select></label
-                >
-              </div>
-              <div class="design-actions">
-                <button id="addBasement" type="button">+ Basement</button
-                ><button id="addGarden" type="button">+ Garden</button>
-              </div>
-              <p>
-                Basements sit below ground at −3 m per level. Select a basement to see inside; use
-                Cutaway to hide the site. New areas can be edited in the layout below.
-              </p>
-            </details>
-            <details>
-              <summary>Asset library <span>Place furniture &amp; planting</span></summary>
-              <form id="assetForm">
-                <div class="design-fields">
-                  <label
-                    >Collection<select id="assetCategory">
-                      <option value="reference">Mediterranean</option>
-                      <option value="outdoor">Garden &amp; BBQ</option>
-                      <option value="all">All assets</option>
-                    </select></label
-                  >
-                  <label
-                    >Search<input id="assetSearch" type="search" placeholder="Tree, chair, awning…"
-                  /></label>
-                </div>
-                <label class="asset-picker"
-                  >Asset<select id="assetSelect" size="4" required></select
-                ></label>
-                <div class="design-fields placement-fields">
-                  <label
-                    >Column<input id="assetCol" type="number" min="0" value="0" required
-                  /></label>
-                  <label>Row<input id="assetRow" type="number" min="0" value="0" required /></label>
-                  <label
-                    >Rotation<select id="assetRotation">
-                      <option>0</option>
-                      <option>90</option>
-                      <option>180</option>
-                      <option>270</option>
-                    </select></label
-                  >
-                </div>
-                <div class="design-fields placement-fields">
-                  <label
-                    >Width (m)<input
-                      id="assetWidth"
-                      type="number"
-                      min="0.01"
-                      max="10"
-                      step="0.01"
-                      required
-                  /></label>
-                  <label
-                    >Depth (m)<input
-                      id="assetDepth"
-                      type="number"
-                      min="0.01"
-                      max="10"
-                      step="0.01"
-                      required
-                  /></label>
-                  <label
-                    >Height (m)<input
-                      id="assetHeight"
-                      type="number"
-                      min="0.001"
-                      max="10"
-                      step="0.001"
-                      required
-                  /></label>
-                </div>
-                <button class="primary-action" type="submit">Place in selected area</button>
-                <p>
-                  Coordinates start at 0. Occupied cells are preserved. Dimensions are width × depth
-                  × height in metres. Ctrl/⌘ Z in the layout undoes changes.
-                </p>
-              </form>
-            </details>
           </div>
           <div class="editor-wrap"><div id="editor"></div></div>
           <div id="message" class="message" role="status" aria-live="polite" hidden>
