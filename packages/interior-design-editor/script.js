@@ -1,16 +1,29 @@
 /* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const referenceCatalog = {
+    archway: [3.6, 0.3, 2.7],
     awning: [3.6, 1.8, 2.65],
+    bbq: [0.85, 0.55, 0.95],
     canopy_bed: [1.55, 2.05, 1.95],
+    citrus_tree: [2.2, 2.2, 2.8],
+    cypress: [1.2, 1.2, 3.5],
     fireplace: [1.35, 0.65, 2.7],
     folding_chair: [0.5, 0.58, 0.88],
+    garden_steps: [1.5, 1.5, 0.6],
     garment_rack: [1.05, 0.5, 1.7],
     gym_bench: [0.65, 1.45, 1.1],
+    gym_mat: [1.8, 1.2, 0.025],
     kitchenette: [2.4, 0.65, 2.25],
+    olive_tree: [2.5, 2.5, 2.8],
+    outdoor_kitchen: [2.4, 0.7, 0.95],
+    retaining_wall: [2.4, 0.3, 0.65],
     slatted_table: [0.85, 0.85, 0.75],
     sofa_bed: [1.9, 0.85, 0.85],
+    stone_path: [1.2, 3, 0.04],
+    terracotta_pot: [0.5, 0.5, 0.7],
+    timber_pergola: [3.6, 2.8, 2.7],
     timber_rail: [2.4, 0.1, 1.05],
     towel_stack: [0.48, 0.32, 0.24],
+    trellis: [1.8, 0.12, 1.8],
     woven_chair: [0.68, 0.75, 0.85],
   };
   function addReferenceAsset(name, group) {
@@ -29,7 +42,140 @@
         part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
         return part;
       };
-    if (name === "awning") {
+    if (["cypress", "citrus_tree", "olive_tree"].includes(name)) {
+      cylinder(group, 0.07, 0.13, h * 0.62, 0, h * 0.31, 0, m.woodDark);
+      const leaf = (x, y, z, sx, sy, sz, finish) => {
+        const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), finish);
+        mesh.position.set(x, y, z);
+        mesh.scale.set(sx, sy, sz);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+      };
+      if (name === "cypress") {
+        for (let i = 0; i < 5; i += 1) {
+          leaf(0, 1 + i * 0.48, 0, 0.55 - i * 0.08, 0.7 - i * 0.065, 0.55 - i * 0.08, m.foliage);
+        }
+      } else {
+        for (let i = 0; i < 9; i += 1) {
+          const angle = i * 2.4,
+            x = Math.cos(angle) * 0.63,
+            z = Math.sin(angle) * 0.63,
+            y = 1.65 + (i % 3) * 0.25;
+          rod([0, 0.8, 0], [x, y, z], 0.04, m.woodDark);
+          leaf(x, y, z, w * 0.23, 0.58, d * 0.23, name === "olive_tree" ? m.olive : m.foliage);
+          if (name === "citrus_tree") {
+            leaf(x * 1.45, y - 0.22, z * 1.45, 0.065, 0.08, 0.065, m.amber);
+          }
+        }
+      }
+    } else if (name === "bbq") {
+      for (const x of [-0.32, 0.32]) {
+        for (const z of [-0.19, 0.19]) {
+          rod([x, 0, z], [x, 0.77, z], 0.025, m.screen);
+        }
+      }
+      b(w, 0.22, d, 0, 0.8, 0, m.screen);
+      b(w * 0.82, 0.025, d * 0.8, 0, 0.92, 0, m.slate);
+      for (let i = 0; i < 12; i += 1) {
+        b(0.015, 0.015, d * 0.84, (i - 5.5) * 0.058, 0.94, 0, m.metal);
+      }
+      b(w * 0.85, 0.04, d * 0.8, 0, 0.28, 0, m.screen);
+      rod([-0.46, 0.82, -0.14], [-0.46, 0.82, 0.14], 0.025, m.wood);
+    } else if (name === "terracotta_pot") {
+      cylinder(group, 0.25, 0.16, 0.4, 0, 0.2, 0, m.terracotta);
+      cylinder(group, 0.26, 0.26, 0.055, 0, 0.39, 0, m.clay);
+      cylinder(group, 0.22, 0.22, 0.012, 0, 0.42, 0, m.soil);
+      for (let i = 0; i < 8; i += 1) {
+        const a = (i * Math.PI) / 4;
+        rod(
+          [0, 0.42, 0],
+          [Math.cos(a) * 0.18, 0.57 + (i % 2) * 0.13, Math.sin(a) * 0.18],
+          0.045,
+          m.foliage,
+        );
+      }
+    } else if (name === "stone_path" || name === "gym_mat") {
+      b(w, h, d, 0, h / 2, 0, name === "stone_path" ? m.flagstone : m.screen);
+    } else if (name === "retaining_wall") {
+      b(w, h - 0.05, d, 0, (h - 0.05) / 2, 0, m.flagstone);
+      b(w + 0.06, 0.05, d + 0.06, 0, h - 0.025, 0, m.stone);
+    } else if (name === "garden_steps") {
+      for (let i = 0; i < 4; i += 1) {
+        b(
+          w,
+          (h * (i + 1)) / 4,
+          d / 4,
+          0,
+          (h * (i + 1)) / 8,
+          d / 2 - (d * (i + 0.5)) / 4,
+          m.flagstone,
+        );
+      }
+    } else if (name === "timber_pergola") {
+      for (const x of [-1, 1]) {
+        for (const z of [-1, 1]) {
+          b(0.12, h, 0.12, x * (w / 2 - 0.08), h / 2, z * (d / 2 - 0.08), m.woodDark);
+        }
+      }
+      for (const z of [-1, 1]) {
+        b(w, 0.15, 0.14, 0, h - 0.08, z * (d / 2 - 0.08), m.woodDark);
+      }
+      for (let i = 0; i < 12; i += 1) {
+        b(0.075, 0.12, d, ((i - 5.5) * w) / 12, h - 0.06, 0, m.wood);
+      }
+    } else if (name === "trellis") {
+      for (let i = 0; i < 10; i += 1) {
+        const x = -w / 2 + (i * w) / 9;
+        rod([x, 0, 0], [Math.min(w / 2, x + h), Math.min(h, w / 2 - x), 0], 0.018, m.woodDark);
+        rod(
+          [x, h, 0.025],
+          [Math.min(w / 2, x + h), h - Math.min(h, w / 2 - x), 0.025],
+          0.018,
+          m.woodDark,
+        );
+        if (i > 0) {
+          rod([-w / 2, (i * h) / 9, 0], [w / 2 - (i * w) / 9, h, 0], 0.018, m.woodDark);
+          rod([-w / 2, h - (i * h) / 9, 0.025], [w / 2 - (i * w) / 9, 0, 0.025], 0.018, m.woodDark);
+        }
+      }
+      for (const x of [-w / 2, w / 2]) {
+        b(0.07, h, d, x, h / 2, 0, m.woodDark);
+      }
+    } else if (name === "outdoor_kitchen") {
+      b(w, h - 0.08, d, 0, (h - 0.08) / 2, 0, m.plaster);
+      b(w + 0.06, 0.08, d + 0.04, 0, h - 0.04, 0, m.stone);
+      b(0.55, 0.012, 0.42, -0.7, h + 0.006, 0, m.metal);
+      b(0.43, 0.014, 0.31, -0.7, h + 0.014, 0, m.slate);
+      rod([-0.7, h, -0.24], [-0.7, h + 0.27, -0.24], 0.018, m.metal);
+      rod([-0.7, h + 0.27, -0.24], [-0.7, h + 0.27, -0.04], 0.018, m.metal);
+      for (const x of [-0.65, 0.65]) {
+        b(0.95, 0.65, 0.035, x, 0.45, d / 2 + 0.01, m.woodDark);
+      }
+    } else if (name === "archway") {
+      const shape = new THREE.Shape(),
+        inner = w / 2 - 0.2,
+        spring = h - 0.65;
+      shape.moveTo(-w / 2, 0);
+      shape.lineTo(-w / 2, h);
+      shape.lineTo(w / 2, h);
+      shape.lineTo(w / 2, 0);
+      shape.lineTo(inner, 0);
+      shape.lineTo(inner, spring);
+      shape.quadraticCurveTo(inner, h - 0.18, inner - 0.5, h - 0.18);
+      shape.lineTo(-inner + 0.5, h - 0.18);
+      shape.quadraticCurveTo(-inner, h - 0.18, -inner, spring);
+      shape.lineTo(-inner, 0);
+      shape.closePath();
+      const mesh = new THREE.Mesh(
+        new THREE.ExtrudeGeometry(shape, { bevelEnabled: false, curveSegments: 12, depth: d }),
+        m.plaster,
+      );
+      mesh.position.z = -d / 2;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    } else if (name === "awning") {
       b(w, 0.12, 0.13, 0, h - 0.06, -d / 2, m.white);
       const canopy = b(w, 0.025, d, 0, h - 0.22, 0, m.ochre);
       canopy.rotation.x = 0.2;
@@ -208,11 +354,12 @@
     const room = (name, floor, cols, rows, x, z, items, extra = {}) => {
       const area = {
         cols,
-        floor,
+        floor: floor - 1,
         items,
         name,
         rows,
         style: "mediterranean",
+        surface: "tile",
         walls: ["north", "east", "south", "west"],
         x,
         z,
@@ -220,7 +367,7 @@
       return Object.assign(area, extra);
     };
     return buildExample(
-      "",
+      "Photo study: basement −3 m, ground 0 m, upper +3 m. Room sizes and unseen connections are approximate.",
       0.75,
       [
         room(
@@ -238,7 +385,7 @@
             [1, 7, "sofa_bed@90"],
             [4, 5, "rug"],
           ],
-          { doors: ["east", "south"], mounts: [["north", 2, "painting"]] },
+          { doors: ["east"], mounts: [["north", 2, "painting"]], windows: ["west"] },
         ),
         room(
           "lower_stair_hall",
@@ -263,6 +410,7 @@
           10,
           [
             [2, 1, "gym_bench"],
+            [4, 2, "gym_mat"],
             [5, 1, "desk"],
             [5, 2, "chair@180"],
           ],
@@ -290,13 +438,13 @@
           0,
           0,
           [
-            [5, 1, "kitchenette~north"],
-            [7, 2, "fridge~east"],
-            [1, 1, "fireplace~north"],
+            [7, 2, "kitchenette~east"],
+            [5, 0, "fridge~north"],
+            [6, 8, "fireplace~east"],
             [1, 5, "sofa_bed@90"],
             [3, 7, "woven_chair@30"],
-            [5, 6, "coffee_table"],
-            [5, 3, "rug"],
+            [2, 8, "coffee_table"],
+            [5, 5, "rug"],
             [0, 8, "plant"],
           ],
           {
@@ -332,9 +480,10 @@
             [4, 2, "dining_table"],
             [2, 2, "folding_chair@90"],
             [6, 2, "folding_chair@270"],
-            [0, 2, "planter@90"],
+            [0, 2, "bbq"],
+            [4, 3, "archway[5.7x0.25x2.7]"],
           ],
-          { kind: "balcony", rails: ["east", "west"] },
+          { kind: "balcony", rails: ["east", "west"], surface: "stone" },
         ),
         room(
           "upper_bedroom",
@@ -375,7 +524,46 @@
             [3, 1, "folding_chair@270"],
             [6, 1, "planter"],
           ],
-          { kind: "balcony", rails: ["south", "east", "west"] },
+          { kind: "balcony", rails: ["south", "east", "west"], surface: "terracotta" },
+        ),
+        room(
+          "mediterranean_garden",
+          1,
+          13,
+          12,
+          0,
+          14,
+          [
+            [2, 3, "cypress"],
+            [2, 9, "olive_tree"],
+            [10, 4, "citrus_tree"],
+            [10, 9, "cypress"],
+            [6, 5, "stone_path[1.2x7.5x0.04]"],
+            [5, 10, "stone_path[8x1x0.04]"],
+            [2, 0, "terracotta_pot"],
+            [10, 0, "terracotta_pot"],
+            [0, 6, "hedge[0.6x7.5x1.6]"],
+            [12, 6, "hedge[0.6x7.5x1.6]"],
+            [3, 11, "retaining_wall"],
+            [9, 11, "retaining_wall"],
+            [4, 3, "garden_lamp"],
+            [8, 8, "garden_lamp"],
+          ],
+          { kind: "garden", rails: [], surface: "grass" },
+        ),
+        room(
+          "bbq_courtyard",
+          1,
+          5,
+          4,
+          8,
+          10,
+          [
+            [2, 0, "outdoor_kitchen~north"],
+            [3, 2, "bbq"],
+            [0, 2, "terracotta_pot"],
+          ],
+          { kind: "balcony", rails: ["east"], surface: "stone" },
         ),
       ],
       { pillows: ["pillow | pillow"], towels: ["towel_stack"] },
@@ -560,7 +748,7 @@
         : /loft|library/iu.test(name)
           ? "brick"
           : "plaster";
-    return `WALL_THICKNESS 0.24 0.12\nSITE ${site} 5\nFACADE ${facade}\nROOF flat\n${lines.join("\n")}`;
+    return `WALL_THICKNESS 0.24 0.12\nSITE ${site} 5\nFACADE ${facade}\nROOF ${/mediterranean/iu.test(name) ? "terracotta" : "flat"}\n${lines.join("\n")}`;
   }
   function facadeMaterial(kind) {
     if (kind === "none") {
@@ -628,12 +816,19 @@
   function addExterior(program, root, ceilings, addBox) {
     const finish = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 }),
       trim = finish("#aaa497"),
-      roof = finish(program.roof === "pitched" ? "#655149" : "#69716e"),
+      roof = finish(
+        program.roof === "terracotta"
+          ? "#b96f48"
+          : program.roof === "pitched"
+            ? "#655149"
+            : "#69716e",
+      ),
       width = program.cols * program.grid,
       depth = program.rows * program.grid;
     if (program.site !== "none") {
       const group = new THREE.Group();
       root.add(group);
+      group.userData.terrain = true;
       const ground = finish({ grass: "#748961", paving: "#a5aaa5", sand: "#bcad88" }[program.site]);
       addBox(
         group,
@@ -678,10 +873,13 @@
       root.add(cap);
       ceilings.push(cap);
       cap.position.set(room.centerX, room.elevation + 2.82, room.centerZ);
-      if (program.roof === "pitched") {
+      if (["pitched", "terracotta"].includes(program.roof)) {
         const shape = new THREE.Shape();
         shape.moveTo(-w / 2 - 0.2, 0);
-        shape.lineTo(0, Math.min(w * 0.3, 2));
+        shape.lineTo(
+          0,
+          program.roof === "terracotta" ? Math.min(w * 0.15, 0.8) : Math.min(w * 0.3, 2),
+        );
         shape.lineTo(w / 2 + 0.2, 0);
         shape.closePath();
         const geometry = new THREE.ExtrudeGeometry(shape, {
@@ -694,6 +892,22 @@
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         cap.add(mesh);
+        if (program.roof === "terracotta") {
+          const rise = Math.min(w * 0.15, 0.8),
+            run = w / 2 + 0.2;
+          for (let z = -d / 2 - 0.18; z <= d / 2 + 0.2; z += 0.22) {
+            for (const side of [-1, 1]) {
+              const start = new THREE.Vector3(0, rise + 0.035, z),
+                end = new THREE.Vector3(side * run, 0.035, z),
+                tile = cylinder(cap, 0.065, 0.065, start.distanceTo(end), 0, 0, 0, roof, 8);
+              tile.position.copy(start).add(end).multiplyScalar(0.5);
+              tile.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                end.sub(start).normalize(),
+              );
+            }
+          }
+        }
       } else {
         addBox(cap, w + 0.24, 0.12, d + 0.24, 0, 0, 0, roof);
         for (const dir of room.walls) {
@@ -1227,9 +1441,9 @@
     for (const room of rooms) {
       lines.push(
         `FLOOR ${room.floor || 0}`,
-        `${room.kind === "balcony" ? "BALCONY" : "ROOM"} ${room.name} ${room.cols}x${room.rows} AT ${room.x},${room.z}`,
+        `${room.kind === "garden" ? "GARDEN" : ["balcony", "garden"].includes(room.kind) ? "BALCONY" : "ROOM"} ${room.name} ${room.cols}x${room.rows} AT ${room.x},${room.z}`,
       );
-      if (room.kind === "balcony") {
+      if (["balcony", "garden"].includes(room.kind)) {
         lines.push(`RAILS ${room.rails?.join(" ") || "none"}`);
       } else {
         lines.push(`WALLS ${room.walls?.join(" ") || "none"}`);
@@ -1239,6 +1453,9 @@
       }
       if (room.windows) {
         lines.push(`WINDOWS ${room.windows.join(" ") || "none"}`);
+      }
+      if (room.surface) {
+        lines.push(`SURFACE ${room.surface}`);
       }
       if (room.style) {
         lines.push(`STYLE ${room.style}`);
@@ -1258,7 +1475,7 @@
         cells[row][col] = token;
       }
       if (
-        room.kind !== "balcony" &&
+        !["balcony", "garden"].includes(room.kind) &&
         room.windows?.length !== 0 &&
         !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
         !room.items.some((item) => ["ceiling_light", "fluorescent_light"].includes(item[2]))
@@ -2583,6 +2800,7 @@
     compiledSource,
     currentProgram,
     firstPerson = false,
+    terrainCutaway = false,
     focusFloor,
     focusRoom,
     wallRoots = [],
@@ -2605,7 +2823,7 @@
     const header = state.doc.lineAt(from),
       kind = header.text
         .trim()
-        .match(/^(LAYOUT|ROOM|BALCONY|FLOOR)\b/iu)?.[1]
+        .match(/^(LAYOUT|ROOM|BALCONY|GARDEN|FLOOR)\b/iu)?.[1]
         .toUpperCase();
     if (!kind) {
       return;
@@ -2615,18 +2833,20 @@
     for (let number = header.number + 1; number <= state.doc.lines; number += 1) {
       const line = state.doc.line(number),
         text = line.text.trim();
-      if (/^(ROOM|BALCONY)\b/iu.test(text)) {
+      if (/^(ROOM|BALCONY|GARDEN)\b/iu.test(text)) {
         roomCount += 1;
       }
       if (kind === "LAYOUT") {
         if (/^END(?:\s*#.*)?$/iu.test(text)) {
           return { from: header.to, to: line.to };
         }
-        if (/^(LAYOUT|ROOM|BALCONY|FLOOR)\b/iu.test(text)) {
+        if (/^(LAYOUT|ROOM|BALCONY|GARDEN|FLOOR)\b/iu.test(text)) {
           return;
         }
       } else if (
-        (kind === "FLOOR" ? /^(FLOOR|LAYOUT)\b/iu : /^(ROOM|BALCONY|FLOOR|LAYOUT)\b/iu).test(text)
+        (kind === "FLOOR" ? /^(FLOOR|LAYOUT)\b/iu : /^(ROOM|BALCONY|GARDEN|FLOOR|LAYOUT)\b/iu).test(
+          text,
+        )
       ) {
         break;
       }
@@ -2994,12 +3214,12 @@
           [setting, value] = fields,
           choices = {
             facade: ["none", "plaster", "brick", "timber", "concrete"],
-            roof: ["none", "flat", "pitched"],
+            roof: ["none", "flat", "pitched", "terracotta"],
             site: ["none", "grass", "paving", "sand"],
           };
         if (!choices[setting].includes(value) || fields.length > (setting === "site" ? 3 : 2)) {
           fail(
-            "Use SITE none/grass/paving/sand [margin], FACADE none/plaster/brick/timber/concrete, or ROOF none/flat/pitched",
+            "Use SITE none/grass/paving/sand [margin], FACADE none/plaster/brick/timber/concrete, or ROOF none/flat/pitched/terracotta",
             line,
           );
         }
@@ -3034,23 +3254,23 @@
         }
         currentRoom.lights.push({ line, name: match[1].toLowerCase(), power, x, z });
       } else if (/^FLOOR\s+/iu.test(text)) {
-        const match = text.match(/^FLOOR\s+(\d+)$/iu);
-        if (!match || Number(match[1]) > 31 || active) {
-          fail("Use FLOOR 0–31 outside a layout", line);
+        const match = text.match(/^FLOOR\s+(-?\d+)$/iu);
+        if (!match || Number(match[1]) > 31 || Number(match[1]) < -8 || active) {
+          fail("Use FLOOR −8–31 outside a layout (0 = ground, −1 = basement)", line);
         }
         floor = Number(match[1]);
         currentRoom = undefined;
-      } else if (/^(ROOM|BALCONY)\s+/iu.test(text)) {
+      } else if (/^(ROOM|BALCONY|GARDEN)\s+/iu.test(text)) {
         if (active) {
           fail("Finish the current layout with END before another area", line);
         }
         const m = text.match(
-          /^(ROOM|BALCONY)\s+(?:([a-z][a-z0-9_]*)\s+)?(\d+)x(\d+)(?:\s+AT\s+(\d+),(\d+))?$/iu,
+          /^(ROOM|BALCONY|GARDEN)\s+(?:([a-z][a-z0-9_]*)\s+)?(\d+)x(\d+)(?:\s+AT\s+(\d+),(\d+))?$/iu,
         );
         if (!m) {
           fail("Use ROOM 9x7, ROOM kitchen 8x6 AT 9,0, or BALCONY terrace 8x3 AT 0,7", line);
         }
-        const kind = m[1].toLowerCase(),
+        const kind = m[1].toLowerCase() === "garden" ? "balcony" : m[1].toLowerCase(),
           room = {
             cols: Number(m[3]),
             doors: [],
@@ -3061,9 +3281,10 @@
             line,
             mounts: [],
             name: (m[2] || "main").toLowerCase(),
-            rails: kind === "balcony" ? ["west", "south", "east"] : [],
+            rails: m[1].toLowerCase() === "balcony" ? ["west", "south", "east"] : [],
             rows: Number(m[4]),
             style: "warm",
+            surface: m[1].toLowerCase() === "garden" ? "grass" : "auto",
             walls: kind === "balcony" ? [] : ["north", "east", "west"],
             x: Number(m[5] || 0),
             z: Number(m[6] || 0),
@@ -3146,6 +3367,19 @@
         }
         currentRoom.doors = [...new Set(directions)];
         currentRoom.doorsLine = line;
+      } else if (/^SURFACE\s+/iu.test(text)) {
+        const surface = text.slice(8).trim().toLowerCase();
+        if (
+          active ||
+          !currentRoom ||
+          !["auto", "tile", "stone", "grass", "terracotta", "wood", "concrete"].includes(surface)
+        ) {
+          fail(
+            "Use SURFACE auto/tile/stone/grass/terracotta/wood/concrete inside an area definition",
+            line,
+          );
+        }
+        currentRoom.surface = surface;
       } else if (/^STYLE\s+/iu.test(text)) {
         if (!currentRoom) {
           fail("Define a ROOM before its STYLE", line);
@@ -3337,7 +3571,18 @@
               z - halfZ >= area.z &&
               z + halfZ <= area.z + area.rows,
             upper = program.rooms.find((area) => area.floor === room.floor + 1 && fits(area));
-          if (token.name === "elevator") {
+          if (token.name === "archway" || token.name === "timber_pergola") {
+            const nearPost =
+                Math.abs(localX) > width / 2 - 0.22 - radius &&
+                Math.abs(localX) < width / 2 + radius,
+              alongPost =
+                token.name === "archway"
+                  ? Math.abs(localZ) < depth / 2 + radius
+                  : Math.abs(Math.abs(localZ) - depth / 2) < 0.15 + radius;
+            if (nearPost && alongPost) {
+              return false;
+            }
+          } else if (token.name === "elevator") {
             if (!fits(room)) {
               fail("Elevator must fit inside its room", token.line);
             }
@@ -3589,7 +3834,9 @@
       ),
       elevation = (altitude * Math.PI) / 180,
       bearing = ((azimuth - $("sunOrientation").valueAsNumber) * Math.PI) / 180,
-      height = currentProgram ? (currentProgram.floors.at(-1) + 1) * 3 : 3,
+      height = currentProgram
+        ? (currentProgram.floors.at(-1) - currentProgram.floors[0] + 1) * 3
+        : 3,
       radius = currentProgram
         ? Math.hypot(
             currentProgram.cols * currentProgram.grid,
@@ -3600,7 +3847,7 @@
           2
         : 12,
       daylight = Math.max(0, Math.sin(elevation));
-    sunlight.target.position.set(0, height / 2, 0);
+    sunlight.target.position.set(0, height / 2 + (currentProgram?.floors[0] || 0) * 3, 0);
     sunlight.position
       .set(
         Math.sin(bearing) * Math.cos(elevation),
@@ -3687,16 +3934,21 @@
       cream: "#e7d5ba",
       fabric: "#8fa7a0",
       fabricDark: "#627f79",
+      flagstone: "#9c9b8b",
       floor: "#9f7656",
+      foliage: "#426b32",
       glow: "#d6fff1",
+      grass: "#77934b",
       green: "#5c956f",
       linen: "#a49d8e",
       metal: "#586873",
       ochre: "#c96a16",
+      olive: "#85936a",
       plaster: "#f1ede3",
       rug: "#aa7055",
       screen: "#16232b",
       slate: "#655f54",
+      soil: "#6b5845",
       stone: "#c9c1b2",
       terracotta: "#ad6442",
       wall: "#d4d0c7",
@@ -3744,6 +3996,38 @@
     material[key].userData.textureScale = key === "stone" ? 0.6 : 0.3;
     material[key].roughness = 0.72;
   }
+  const pavingCanvas = document.createElement("canvas");
+  pavingCanvas.width = 256;
+  pavingCanvas.height = 256;
+  const paving = pavingCanvas.getContext("2d");
+  paving.fillStyle = "#c1bdb0";
+  paving.fillRect(0, 0, 256, 256);
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = -1; col < 4; col += 1) {
+      const x = col * 88 + (row % 2) * 44,
+        y = row * 64;
+      paving.fillStyle = ["#969990", "#b5b2a2", "#a2a697", "#c0b8a6"][(row + col + 4) % 4];
+      paving.beginPath();
+      paving.moveTo(x + 5, y + 4);
+      paving.lineTo(x + 65, y + 2);
+      paving.lineTo(x + 85, y + 27);
+      paving.lineTo(x + 72, y + 60);
+      paving.lineTo(x + 4, y + 61);
+      paving.closePath();
+      paving.fill();
+    }
+  }
+  const pavingTexture = new THREE.CanvasTexture(pavingCanvas);
+  pavingTexture.wrapS = THREE.RepeatWrapping;
+  pavingTexture.wrapT = THREE.RepeatWrapping;
+  pavingTexture.colorSpace = THREE.SRGBColorSpace;
+  material.flagstone.map = pavingTexture;
+  material.flagstone.bumpMap = pavingTexture;
+  material.flagstone.bumpScale = 0.015;
+  material.flagstone.userData.textureScale = 2;
+  material.grass.bumpMap = plasterTexture;
+  material.grass.bumpScale = 0.015;
+  material.grass.userData.textureScale = 0.12;
   material.white.roughness = 0.3;
   material.metal.metalness = 0.85;
   material.metal.roughness = 0.27;
@@ -3995,8 +4279,15 @@
         }
         case "hedge": {
           group.userData.detailed = false;
-          box(group, cw, ch, cd, 0, ch / 2, 0, material.green);
-          box(group, cw * 0.94, 0.08, cd * 0.9, 0, ch - 0.04, 0, material.fabricDark);
+          box(group, cw * 0.94, ch * 0.87, cd * 0.94, 0, ch * 0.45, 0, material.foliage);
+          for (let i = 0; i < 9; i += 1) {
+            const leaves = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), material.foliage);
+            leaves.position.set(((i - 4) * cw) / 9, ch * 0.8 + (i % 2) * 0.05, 0);
+            leaves.scale.set(cw / 7, ch * 0.2, cd / 2);
+            leaves.castShadow = true;
+            leaves.receiveShadow = true;
+            group.add(leaves);
+          }
           break;
         }
         case "partition": {
@@ -4035,8 +4326,14 @@
           if (name === "garden_lamp") {
             cylinder(group, 0.035, 0.05, ch * 0.7, 0, ch * 0.35, 0, material.metal);
           }
-          cylinder(group, cw * 0.35, cw * 0.35, ch * 0.25, 0, ch * 0.78, 0, emitter);
-          cylinder(group, cw * 0.5, cw * 0.5, 0.04, 0, ch * 0.94, 0, material.metal);
+          if (name === "garden_lamp") {
+            const globe = new THREE.Mesh(new THREE.SphereGeometry(cw * 0.5, 16, 12), emitter);
+            globe.position.y = ch - cw * 0.5;
+            group.add(globe);
+          } else {
+            cylinder(group, cw * 0.35, cw * 0.35, ch * 0.25, 0, ch * 0.78, 0, emitter);
+            cylinder(group, cw * 0.5, cw * 0.5, 0.04, 0, ch * 0.94, 0, material.metal);
+          }
           fixtureLight(group, 8, 0, ch * 0.78, cw * 0.45);
           break;
         }
@@ -4922,23 +5219,34 @@
         }
       }
       const floorMaterial =
-          room.style === "mediterranean"
-            ? room.kind === "balcony"
-              ? material.terracotta
-              : material.stone
-            : room.style === "liminal"
-              ? material.yellow
-              : room.style === "industrial"
-                ? material.concrete
-                : room.style === "aquatic"
-                  ? material.white
-                  : room.kind === "balcony"
-                    ? mat("#b9aa95")
-                    : /(bath|wash)/u.test(room.name)
-                      ? mat("#d6e0db")
-                      : /(kitchen)/u.test(room.name)
-                        ? mat("#ccc7b9")
-                        : material.floor,
+          room.surface === "auto"
+            ? room.style === "mediterranean"
+              ? room.kind === "balcony"
+                ? material.terracotta
+                : material.stone
+              : room.style === "liminal"
+                ? material.yellow
+                : room.style === "industrial"
+                  ? material.concrete
+                  : room.style === "aquatic"
+                    ? material.white
+                    : room.kind === "balcony"
+                      ? mat("#b9aa95")
+                      : /(bath|wash)/u.test(room.name)
+                        ? mat("#d6e0db")
+                        : /(kitchen)/u.test(room.name)
+                          ? mat("#ccc7b9")
+                          : material.floor
+            : material[
+                {
+                  concrete: "concrete",
+                  grass: "grass",
+                  stone: "flagstone",
+                  terracotta: "terracotta",
+                  tile: "stone",
+                  wood: "floor",
+                }[room.surface]
+              ],
         openings = program.connectors
           .filter((link) => link.upper === room)
           .map((link) => ({
@@ -5007,6 +5315,7 @@
       }
       if (
         !largeScene &&
+        room.surface === "auto" &&
         !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
         room.kind !== "balcony" &&
         !/(bath|wash|kitchen)/u.test(room.name)
@@ -5049,7 +5358,11 @@
                     : material.wall;
       if (room.kind === "balcony") {
         const seam = mat("#8e8579");
-        for (let z = -depth / 2 + 0.36; z < depth / 2; z += 0.36) {
+        for (
+          let z = -depth / 2 + 0.36;
+          room.surface !== "grass" && room.surface !== "stone" && z < depth / 2;
+          z += 0.36
+        ) {
           floorPart(width - 0.04, 0.006, 0.012, centerX, 0.004, centerZ + z, seam);
         }
         const railMaterial = mat("#718881", 0.55, 0.25);
@@ -5278,7 +5591,10 @@
             leaf.userData.openDoorLeaf = true;
           }
         } else if (hasWindow) {
-          const span = Math.min(2.1, length * 0.48),
+          const span = Math.min(room.floor < 0 ? 1.2 : 2.1, length * 0.48),
+            sill = room.floor < 0 ? 2.05 : 1.15,
+            head = room.floor < 0 ? 2.6 : 2.2,
+            windowHeight = head - sill,
             offset = THREE.MathUtils.clamp(
               (dir === "north" ? 0.16 : -0.13) * length,
               -length / 2 + span / 2 + 0.15,
@@ -5288,8 +5604,8 @@
             rightLength = length / 2 - offset - span / 2;
           addWallPart(-length / 2 + leftLength / 2, leftLength);
           addWallPart(length / 2 - rightLength / 2, rightLength);
-          addWallPart(offset, span, 1.14, 0.57);
-          addWallPart(offset, span, wallHeight - 2.2, (wallHeight + 2.2) / 2);
+          addWallPart(offset, span, sill, sill / 2);
+          addWallPart(offset, span, wallHeight - head, (wallHeight + head) / 2);
           box(
             wallRoot,
             vertical ? thickness + 0.02 : length,
@@ -5301,11 +5617,11 @@
             trim,
           );
           const center = middle + offset,
-            windowY = 1.67,
+            windowY = (sill + head) / 2,
             glass = mat("#b7d6d8", 0.12);
           glass.userData.windowPane = true;
           room.daylightOpenings.push({
-            area: span * 1.05,
+            area: span * windowHeight,
             dir,
             shared: sharedEdge,
             span,
@@ -5317,9 +5633,17 @@
           glass.depthWrite = false;
           glass.side = THREE.DoubleSide;
           if (vertical) {
-            box(opening, 0.025, 0.98, span - 0.09, fixed, windowY, center, glass).castShadow =
-              false;
-            for (const y of [1.15, 2.2]) {
+            box(
+              opening,
+              0.025,
+              windowHeight - 0.07,
+              span - 0.09,
+              fixed,
+              windowY,
+              center,
+              glass,
+            ).castShadow = false;
+            for (const y of [sill, head]) {
               box(
                 opening,
                 thickness + 0.04,
@@ -5335,7 +5659,7 @@
               box(
                 opening,
                 thickness + 0.04,
-                1.05,
+                windowHeight,
                 0.055,
                 fixed,
                 windowY,
@@ -5344,9 +5668,17 @@
               );
             }
           } else {
-            box(opening, span - 0.09, 0.98, 0.025, center, windowY, fixed, glass).castShadow =
-              false;
-            for (const y of [1.15, 2.2]) {
+            box(
+              opening,
+              span - 0.09,
+              windowHeight - 0.07,
+              0.025,
+              center,
+              windowY,
+              fixed,
+              glass,
+            ).castShadow = false;
+            for (const y of [sill, head]) {
               box(
                 opening,
                 span,
@@ -5362,7 +5694,7 @@
               box(
                 opening,
                 0.055,
-                1.05,
+                windowHeight,
                 thickness + 0.04,
                 x,
                 windowY,
@@ -5489,8 +5821,24 @@
           b = entries[j];
         if (
           a.token.floor !== b.token.floor ||
-          ["rug", "awning", ...overheadLights].includes(a.token.name) ||
-          ["rug", "awning", ...overheadLights].includes(b.token.name)
+          [
+            "rug",
+            "gym_mat",
+            "stone_path",
+            "archway",
+            "timber_pergola",
+            "awning",
+            ...overheadLights,
+          ].includes(a.token.name) ||
+          [
+            "rug",
+            "gym_mat",
+            "stone_path",
+            "archway",
+            "timber_pergola",
+            "awning",
+            ...overheadLights,
+          ].includes(b.token.name)
         ) {
           continue;
         }
@@ -5514,18 +5862,32 @@
       setFirstPerson(false);
     }
     const room = currentProgram.rooms.find((item) => item.name === focusRoom),
+      areas = room
+        ? [room]
+        : currentProgram.rooms.filter(
+            (item) => focusFloor === undefined || item.floor === focusFloor,
+          ),
+      minX = Math.min(...areas.map((item) => item.x)),
+      maxX = Math.max(...areas.map((item) => item.x + item.cols)),
+      minZ = Math.min(...areas.map((item) => item.z)),
+      maxZ = Math.max(...areas.map((item) => item.z + item.rows)),
       extent = Math.max(
-        Math.max(room?.cols || currentProgram.cols, room?.rows || currentProgram.rows) *
-          currentProgram.grid +
-          (room || currentProgram.site === "none" ? 0 : Math.min(currentProgram.margin, 5)),
-        focusFloor === undefined && !room ? (currentProgram.floors.at(-1) + 1) * 3 : 3,
+        Math.max(maxX - minX, maxZ - minZ) * currentProgram.grid +
+          (room || focusFloor !== undefined || currentProgram.site === "none"
+            ? 0
+            : Math.min(currentProgram.margin, 5)),
+        focusFloor === undefined && !room
+          ? (currentProgram.floors.at(-1) - currentProgram.floors[0] + 1) * 3
+          : 3,
       ),
       framing = Math.max(1, 1.1 / camera.aspect),
-      cx = room?.centerX || 0,
-      cz = room?.centerZ || 0,
+      cx = ((minX + maxX - currentProgram.cols) / 2) * currentProgram.grid,
+      cz = ((minZ + maxZ - currentProgram.rows) / 2) * currentProgram.grid,
       elevation =
         room?.elevation ??
-        (focusFloor === undefined ? currentProgram.floors.at(-1) * 1.5 : focusFloor * 3);
+        (focusFloor === undefined
+          ? (currentProgram.floors.at(-1) + currentProgram.floors[0]) * 1.5
+          : focusFloor * 3);
     controls.target.set(cx, elevation + 0.3, cz);
     camera.position.set(
       cx + (top ? 0 : extent * 0.18 * framing),
@@ -5596,6 +5958,10 @@
     renderer.shadowMap.needsUpdate = true;
     clearHover();
     for (const group of sceneRoot.children) {
+      if (group.userData.terrain) {
+        group.visible = !terrainCutaway && !(focusFloor < 0);
+        continue;
+      }
       if (group.userData.floor === undefined) {
         continue;
       }
@@ -5638,6 +6004,8 @@
     camera.position.set(standing.x, destination.elevation + 1.65, standing.z);
     focusRoom = destination.name;
     focusFloor = destination.floor;
+    $("designRoom").value = destination.name;
+    syncDesignRoom();
     $("roomFocus").value = focusRoom;
     updateFloorVisibility();
     showStatus(`Floor ${focusFloor} · ${link.token.name}`);
@@ -5703,7 +6071,7 @@
     const sceneExtent = Math.max(
       program.cols * program.grid,
       program.rows * program.grid,
-      (program.floors.at(-1) + 1) * 3,
+      (program.floors.at(-1) - program.floors[0] + 1) * 3,
     );
     controls.maxDistance = Math.max(100, sceneExtent * 4);
     camera.far = Math.max(250, sceneExtent * 8);
@@ -5721,7 +6089,7 @@
     const floorSelect = $("floorFocus");
     floorSelect.replaceChildren(
       new Option("All floors", ""),
-      ...program.floors.map((floor) => new Option(`Floor ${floor}`, String(floor))),
+      ...program.floors.map((floor) => new Option(floorLabel(floor), String(floor))),
     );
     floorSelect.hidden = program.floors.length < 2;
     floorSelect.value = focusFloor === undefined ? "" : String(focusFloor);
@@ -5732,6 +6100,7 @@
     );
     roomSelect.hidden = program.rooms.length < 2;
     roomSelect.value = focusRoom || "";
+    syncDesignTools();
     const entries = [];
     try {
       for (const room of program.rooms) {
@@ -5875,7 +6244,7 @@
       const { token } = entry;
       if (
         token.floor !== floor ||
-        ["rug", "awning", "stairs", ...overheadLights].includes(token.name)
+        ["rug", "gym_mat", "stone_path", "awning", "stairs", ...overheadLights].includes(token.name)
       ) {
         continue;
       }
@@ -5885,7 +6254,17 @@
         localX = dx * Math.cos(angle) - dz * Math.sin(angle),
         localZ = dx * Math.sin(angle) + dz * Math.cos(angle),
         [width, depth] = token.dimensions;
-      if (token.name === "elevator") {
+      if (token.name === "archway" || token.name === "timber_pergola") {
+        const nearPost =
+            Math.abs(localX) > width / 2 - 0.22 - radius && Math.abs(localX) < width / 2 + radius,
+          alongPost =
+            token.name === "archway"
+              ? Math.abs(localZ) < depth / 2 + radius
+              : Math.abs(Math.abs(localZ) - depth / 2) < 0.15 + radius;
+        if (nearPost && alongPost) {
+          return false;
+        }
+      } else if (token.name === "elevator") {
         if (
           Math.abs(localX) < width / 2 + radius &&
           Math.abs(localZ) < depth / 2 + radius &&
@@ -6056,6 +6435,267 @@
     select.append(group);
   }
   select.add(new Option("Custom scene", "custom"));
+  function floorLabel(floor) {
+    return `${floor < 0 ? `Basement ${-floor}` : floor === 0 ? "Ground floor" : `Upper floor ${floor}`} · ${floor * 3} m`;
+  }
+  function editableProgram() {
+    try {
+      return parseProgram(editor.state.doc.toString());
+    } catch (error) {
+      showStatus(`Fix the layout first: ${error.message}`, "error");
+    }
+  }
+  function applyDesignSource(source) {
+    try {
+      parseProgram(source);
+    } catch (error) {
+      showStatus(error.message, "error");
+      return false;
+    }
+    editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } });
+    clearTimeout(compileTimer);
+    compile();
+    return true;
+  }
+  function syncDesignTools() {
+    const previous = $("designRoom").value;
+    $("designRoom").replaceChildren(
+      ...currentProgram.rooms.map(
+        (room) =>
+          new Option(`${room.name.replaceAll("_", " ")} · ${floorLabel(room.floor)}`, room.name),
+      ),
+    );
+    if (currentProgram.rooms.some((room) => room.name === previous)) {
+      $("designRoom").value = previous;
+    }
+    $("siteSelect").value = currentProgram.site;
+    $("roofSelect").value = currentProgram.roof;
+    $("buildingSummary").textContent =
+      `${currentProgram.floors.length} levels · ${currentProgram.rooms.length} areas`;
+    syncDesignRoom();
+  }
+  function syncDesignRoom() {
+    const room = currentProgram.rooms.find((area) => area.name === $("designRoom").value);
+    if (!room) {
+      return;
+    }
+    $("surfaceSelect").value = room.surface;
+    $("assetCol").max = room.cols - 1;
+    $("assetRow").max = room.rows - 1;
+    const rows = currentProgram.layouts[room.name];
+    for (let row = 0; row < room.rows; row += 1) {
+      for (let col = 0; col < room.cols; col += 1) {
+        if (!rows[row]?.[col]) {
+          $("assetCol").value = col;
+          $("assetRow").value = row;
+          return;
+        }
+      }
+    }
+  }
+  function syncAssetDimensions() {
+    const dimensions = catalog[$("assetSelect").value];
+    ["Width", "Depth", "Height"].forEach((dimension, index) => {
+      $(`asset${dimension}`).value = dimensions?.[index] ?? "";
+    });
+  }
+  $("assetSelect").addEventListener("change", syncAssetDimensions);
+  function updateAssetLibrary() {
+    const category = $("assetCategory").value,
+      query = $("assetSearch").value.trim().toLowerCase(),
+      outdoor = [
+        "archway",
+        "awning",
+        "bbq",
+        "cypress",
+        "citrus_tree",
+        "olive_tree",
+        "terracotta_pot",
+        "stone_path",
+        "retaining_wall",
+        "garden_steps",
+        "timber_pergola",
+        "trellis",
+        "outdoor_kitchen",
+        "garden_lamp",
+        "hedge",
+        "planter",
+        "slatted_table",
+        "folding_chair",
+        "sun_lounger",
+        "parasol",
+        "outdoor_chair",
+      ],
+      names =
+        category === "outdoor"
+          ? outdoor
+          : category === "reference"
+            ? Object.keys(referenceCatalog)
+            : Object.keys(catalog);
+    $("assetSelect").replaceChildren(
+      ...names
+        .filter((name) => name.replaceAll("_", " ").includes(query.replaceAll("_", " ")))
+        .toSorted()
+        .map(
+          (name) =>
+            new Option(`${name.replaceAll("_", " ")}  ·  ${catalog[name].join(" × ")} m`, name),
+        ),
+    );
+    if ($("assetSelect").options.length > 0) {
+      $("assetSelect").selectedIndex = 0;
+    }
+    syncAssetDimensions();
+  }
+  $("assetCategory").addEventListener("change", updateAssetLibrary);
+  $("assetSearch").addEventListener("input", updateAssetLibrary);
+  updateAssetLibrary();
+  $("designRoom").addEventListener("change", () => {
+    syncDesignRoom();
+    focusRoom = $("designRoom").value;
+    focusFloor = currentProgram.rooms.find((room) => room.name === focusRoom).floor;
+    $("roomFocus").value = focusRoom;
+    updateFloorVisibility();
+    resetCamera();
+  });
+  for (const [id, command] of [
+    ["siteSelect", "SITE"],
+    ["roofSelect", "ROOF"],
+    ["surfaceSelect", "SURFACE"],
+  ]) {
+    $(id).addEventListener("change", () => {
+      const program = editableProgram();
+      if (!program) {
+        return;
+      }
+      const lines = editor.state.doc.toString().split("\n"),
+        { value } = $(id);
+      if (command === "SURFACE") {
+        const room = program.rooms.find((area) => area.name === $("designRoom").value);
+        if (!room) {
+          return;
+        }
+        let end = room.line;
+        while (
+          end < lines.length &&
+          !/^(ROOM|BALCONY|GARDEN|FLOOR|LAYOUT)\b/iu.test(lines[end].trim())
+        ) {
+          end += 1;
+        }
+        const index = lines.findIndex(
+          (line, i) => i >= room.line && i < end && /^SURFACE\s/iu.test(line.trim()),
+        );
+        if (index === -1) {
+          lines.splice(room.line, 0, `SURFACE ${value}`);
+        } else {
+          lines[index] = `SURFACE ${value}`;
+        }
+      } else {
+        const pattern = new RegExp(`^${command}\\s`, "iu"),
+          indices = lines.flatMap((line, i) => (pattern.test(line.trim()) ? [i] : [])),
+          replacement = `${command} ${value}${command === "SITE" ? ` ${program.margin}` : ""}`;
+        if (indices.length > 0) {
+          indices.forEach((i) => {
+            lines[i] = replacement;
+          });
+        } else {
+          lines.unshift(replacement);
+        }
+      }
+      applyDesignSource(lines.join("\n"));
+    });
+  }
+  $("assetForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const program = editableProgram();
+    if (!program) {
+      return;
+    }
+    const room = program.rooms.find((area) => area.name === $("designRoom").value),
+      col = $("assetCol").valueAsNumber,
+      row = $("assetRow").valueAsNumber,
+      asset = $("assetSelect").value;
+    if (
+      !room ||
+      !catalog[asset] ||
+      !Number.isInteger(col) ||
+      !Number.isInteger(row) ||
+      col < 0 ||
+      row < 0 ||
+      col >= room.cols ||
+      row >= room.rows
+    ) {
+      return;
+    }
+    if (program.layouts[room.name][row]?.[col]) {
+      showStatus("That cell is occupied. Choose an empty column and row.", "warn");
+      return;
+    }
+    const lines = editor.state.doc.toString().split("\n"),
+      start = lines.findIndex((line) =>
+        new RegExp(`^LAYOUT\\s+${room.name}\\s*(?:#.*)?$`, "iu").test(line.trim()),
+      ),
+      end = lines.findIndex((line, i) => i > start && /^END\b/iu.test(line.trim())),
+      cells = Array.from({ length: room.rows }, (_, r) =>
+        Array.from({ length: room.cols }, (_cell, c) => {
+          const token = program.layouts[room.name][r]?.[c];
+          return token ? lines[token.line - 1].slice(token.start, token.end) : ".";
+        }),
+      );
+    cells[row][col] =
+      `${asset}@${$("assetRotation").value}[${["Width", "Depth", "Height"].map((dimension) => $(`asset${dimension}`).valueAsNumber).join("x")}]`;
+    lines.splice(start + 1, end - start - 1, ...cells.map((items) => items.join(" | ")));
+    if (applyDesignSource(lines.join("\n"))) {
+      focusFloor = room.floor;
+      updateFloorVisibility();
+    }
+  });
+  function appendArea(garden) {
+    const program = editableProgram();
+    if (!program) {
+      return;
+    }
+    const floor = garden ? 0 : Math.min(0, program.floors[0]) - 1,
+      name = `${garden ? "garden" : "basement"}_${program.rooms.length + 1}`,
+      groundRoom =
+        program.rooms.find((room) => room.floor === 0 && room.kind === "room") || program.rooms[0],
+      area = {
+        cols: garden ? Math.min(13, program.cols) : groundRoom.cols,
+        floor,
+        items: [],
+        kind: garden ? "garden" : "room",
+        name,
+        rows: garden ? 6 : groundRoom.rows,
+        style: "mediterranean",
+        surface: garden ? "grass" : "tile",
+        walls: garden ? [] : ["north", "east", "south", "west"],
+        windows: garden ? undefined : [],
+        x: garden ? 0 : groundRoom.x,
+        z: garden ? program.rows : groundRoom.z,
+      };
+    const snippet = buildExample("", program.grid, [area]).split("\n").slice(1).join("\n");
+    if (applyDesignSource(`${editor.state.doc.toString()}\n\n${snippet}\n`)) {
+      $("designRoom").value = name;
+      syncDesignRoom();
+      focusFloor = floor;
+      focusRoom = name;
+      $("roomFocus").value = name;
+      updateFloorVisibility();
+      resetCamera();
+      showStatus(
+        garden
+          ? "Garden added. Choose Garden & BBQ in the asset library."
+          : "Basement added below ground. Place stairs beneath a room on the next floor to connect it.",
+      );
+    }
+  }
+  $("addBasement").addEventListener("click", () => appendArea(false));
+  $("addGarden").addEventListener("click", () => appendArea(true));
+  $("cutawayButton").addEventListener("click", (event) => {
+    terrainCutaway = !terrainCutaway;
+    event.currentTarget.classList.toggle("active", terrainCutaway);
+    event.currentTarget.setAttribute("aria-pressed", String(terrainCutaway));
+    updateFloorVisibility();
+  });
   function loadExample(name) {
     clearTimeout(compileTimer);
     editor.setState(editorState(examples[name]));
@@ -6117,7 +6757,7 @@
     }
   });
   document.addEventListener("keydown", (event) => {
-    if (event.target.closest(".sun-settings")) {
+    if (event.target.closest(".sun-settings, .design-tools, input, select, button")) {
       return;
     }
     if (event.key === "Escape" && selectionPinned) {
@@ -6174,11 +6814,20 @@
   $("roomFocus").addEventListener("change", (event) => {
     focusRoom = event.target.value || undefined;
     focusFloor = currentProgram.rooms.find((room) => room.name === focusRoom)?.floor;
+    if (focusRoom) {
+      $("designRoom").value = focusRoom;
+      syncDesignRoom();
+    }
     updateFloorVisibility();
     resetCamera();
   });
   $("floorFocus").addEventListener("change", (event) => {
     focusFloor = event.target.value === "" ? undefined : Number(event.target.value);
+    const area = currentProgram.rooms.find((room) => room.floor === focusFloor);
+    if (area) {
+      $("designRoom").value = area.name;
+      syncDesignRoom();
+    }
     focusRoom = undefined;
     $("roomFocus").value = "";
     updateFloorVisibility();
