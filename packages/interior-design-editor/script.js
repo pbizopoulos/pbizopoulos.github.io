@@ -1080,8 +1080,298 @@
       },
     ]),
   });
+  function labyrinthExample() {
+    const size = 19,
+      width = size * 2 + 1,
+      passages = Array.from({ length: width }, () => Array.from({ length: width }).fill(false)),
+      visited = new Set(["0,0"]),
+      stack = [[0, 0]],
+      items = [];
+    let seed = 20_260_929;
+    passages[1][1] = true;
+    while (stack.length > 0) {
+      const [x, z] = stack.at(-1),
+        choices = [
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+          [0, -1],
+        ].filter(
+          ([dx, dz]) =>
+            x + dx >= 0 &&
+            x + dx < size &&
+            z + dz >= 0 &&
+            z + dz < size &&
+            !visited.has(`${x + dx},${z + dz}`),
+        );
+      if (choices.length === 0) {
+        stack.pop();
+        continue;
+      }
+      seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+      const [dx, dz] = choices[seed % choices.length];
+      passages[z * 2 + 1 + dz][x * 2 + 1 + dx] = true;
+      passages[(z + dz) * 2 + 1][(x + dx) * 2 + 1] = true;
+      visited.add(`${x + dx},${z + dz}`);
+      stack.push([x + dx, z + dz]);
+    }
+    passages[0][1] = true;
+    passages[width - 1][width - 2] = true;
+    for (let z = 0; z < width; z += 1) {
+      for (let x = 0; x < width;) {
+        if (passages[z][x]) {
+          x += 1;
+          continue;
+        }
+        let length = 1;
+        while (length < 7 && x + length < width && !passages[z][x + length]) {
+          length += 1;
+        }
+        if (length % 2 === 0) {
+          length -= 1;
+        }
+        items.push([x + (length - 1) / 2, z, `hedge[${(length * 1.2).toFixed(1)}x1.2x2.4]`]);
+        x += length;
+      }
+    }
+    return buildExample(
+      "The Minotaur's circuit — 361 chambers. Enter north-west; escape south-east. Top view reveals the route; first person hides it.",
+      1.2,
+      [
+        {
+          cols: width,
+          items,
+          kind: "balcony",
+          name: "labyrinth",
+          rails: [],
+          rows: width,
+          x: 0,
+          z: 0,
+        },
+      ],
+    );
+  }
+  examples["The Minotaur's labyrinth"] = labyrinthExample();
+  examples.Backrooms = buildExample(
+    "Level yellow — four connected departments, offset partitions, abandoned workstations and a room that thinks it is a swimming pool. Restore ceilings for fluorescent claustrophobia.",
+    1,
+    Array.from({ length: 4 }, (_, index) => {
+      const items = [];
+      for (let row = 2; row < 17; row += 4) {
+        for (let col = 2; col < 17; col += 4) {
+          items.push(
+            [
+              col,
+              row,
+              (col + row + index) % 3 === 0
+                ? "column"
+                : (Math.floor(col / 4) + Math.floor(row / 4) + index) % 2 === 0
+                  ? "partition[2.8x0.18x2.65]"
+                  : "partition@90[2.8x0.18x2.65]",
+            ],
+            [col, row + 1, "fluorescent_light"],
+          );
+        }
+      }
+      items.push(
+        [6, 0, index === 3 ? "vending_machine~north" : "filing_cabinet~north"],
+        [12, 0, "desk~north"],
+        [12, 1, "chair@180"],
+      );
+      if (index === 3) {
+        items.push([8, 16, "pool[3x2x0.6]"]);
+      }
+      return {
+        cols: 18,
+        doors: ["north", "east", "south", "west"],
+        items,
+        name: ["intake", "duplicate_office", "lost_records", "poolrooms"][index],
+        rows: 18,
+        style: "liminal",
+        walls: ["north", "east", "south", "west"],
+        windows: [],
+        x: (index % 2) * 18,
+        z: Math.floor(index / 2) * 18,
+      };
+    }),
+  );
+  const towerThemes = [
+    ["arrival", "sofa", "aquarium", "sculpture"],
+    ["coworking", "desk", "bookshelf", "vending_machine"],
+    ["archive", "bookshelf", "desk", "filing_cabinet"],
+    ["robot_garden", "hydroponic_rack", "planter", "server_rack"],
+    ["arcade", "arcade_machine", "arcade_machine", "vending_machine"],
+    ["wellness", "treadmill", "sun_lounger", "hot_tub"],
+    ["music", "piano", "sofa", "sculpture"],
+    ["cloud_suite", "bed", "wardrobe", "aquarium"],
+  ];
+  examples["Cloud city skyscraper"] = buildExample(
+    "24 floors / 72 metres — a vertical city of gardens, archives, arcades and sky suites. Two aligned lifts serve every floor. Select a floor; E / Shift+E travels at either lift.",
+    1,
+    Array.from({ length: 24 }, (_, floor) => {
+      const [theme, left, middle, right] = towerThemes[floor % towerThemes.length],
+        rooftop = floor === 23,
+        items = [
+          [3, 3, "elevator"],
+          [14, 3, "elevator"],
+        ];
+      if (rooftop) {
+        items.push(
+          [8, 10, "pool"],
+          [3, 10, "sun_lounger"],
+          [14, 10, "sun_lounger"],
+          [3, 15, "telescope"],
+          [14, 15, "solar_panel"],
+          [8, 16, "parasol"],
+        );
+      } else {
+        items.push(
+          [3, 9, left],
+          [8, 9, middle],
+          [14, 9, right],
+          [3, 14, "bench"],
+          [8, 14, "sculpture"],
+          [14, 14, "planter"],
+        );
+      }
+      return {
+        cols: 18,
+        doors: floor === 0 ? ["south"] : [],
+        floor,
+        items,
+        kind: rooftop ? "balcony" : "room",
+        name: rooftop ? "sky_pool_observatory" : `level_${floor}_${theme}`,
+        rails: ["north", "east", "south", "west"],
+        rows: 18,
+        style: floor % 3 === 0 ? "blue" : "industrial",
+        walls: ["north", "east", "south", "west"],
+        windows: rooftop
+          ? undefined
+          : floor === 0
+            ? ["north", "east", "west"]
+            : ["north", "east", "south", "west"],
+        x: 0,
+        z: 0,
+      };
+    }),
+  );
+  const destinations = [
+    [
+      "Rooftop Riviera",
+      "riviera",
+      "aquatic",
+      "balcony",
+      "An above-ground pool club with a plunge spa, shade, loungers and a fountain court.",
+      [
+        [6, 7, "pool"],
+        [14, 5, "hot_tub"],
+        [2, 7, "sun_lounger"],
+        [10, 7, "sun_lounger"],
+        [2, 12, "parasol"],
+        [6, 13, "bistro_table"],
+        [5, 15, "outdoor_chair"],
+        [8, 15, "outdoor_chair"],
+        [14, 13, "fountain"],
+        [2, 2, "planter"],
+        [10, 2, "planter"],
+      ],
+    ],
+    [
+      "Lunar seed vault",
+      "moon_greenhouse",
+      "industrial",
+      "room",
+      "A lunar botanical station: hydroponic farms, an algae aquarium, solar collectors and the last reading chair on the moon.",
+      [
+        [3, 3, "hydroponic_rack"],
+        [8, 3, "hydroponic_rack"],
+        [13, 3, "hydroponic_rack"],
+        [3, 8, "hydroponic_rack"],
+        [8, 8, "aquarium"],
+        [13, 8, "server_rack"],
+        [3, 13, "solar_panel"],
+        [8, 13, "armchair"],
+        [13, 13, "telescope"],
+      ],
+    ],
+    [
+      "The drowned arcade",
+      "tidal_arcade",
+      "aquatic",
+      "room",
+      "After closing time, the arcade became a bathhouse. Islands of games surround a luminous pool; the vending machine is still working.",
+      [
+        [8, 9, "pool"],
+        [2, 3, "arcade_machine"],
+        [5, 3, "arcade_machine"],
+        [11, 3, "arcade_machine"],
+        [14, 3, "vending_machine"],
+        [2, 10, "aquarium"],
+        [14, 10, "aquarium"],
+        [3, 15, "bench"],
+        [13, 15, "bench"],
+      ],
+    ],
+    [
+      "Midnight observatory",
+      "star_salon",
+      "neutral",
+      "balcony",
+      "A roofless salon for listening to piano music while waiting for meteor showers.",
+      [
+        [3, 3, "telescope"],
+        [8, 3, "telescope@90"],
+        [13, 3, "telescope@180"],
+        [4, 10, "piano"],
+        [10, 10, "sculpture"],
+        [3, 15, "sofa@180"],
+        [8, 15, "fountain"],
+        [13, 15, "sofa@180"],
+      ],
+    ],
+    [
+      "Museum of tomorrow's ruins",
+      "future_ruins",
+      "industrial",
+      "room",
+      "An archaeological gallery from the future: server monoliths, an overgrown colonnade and one surviving arcade cabinet.",
+      [
+        [3, 3, "column"],
+        [8, 3, "column"],
+        [13, 3, "column"],
+        [3, 7, "server_rack"],
+        [8, 7, "sculpture"],
+        [13, 7, "arcade_machine"],
+        [3, 12, "hedge"],
+        [8, 12, "fountain"],
+        [13, 12, "hydroponic_rack"],
+        [5, 16, "bench"],
+        [11, 16, "bench"],
+      ],
+    ],
+  ];
+  for (const [title, name, style, kind, description, items] of destinations) {
+    examples[title] = buildExample(description, 1, [
+      {
+        cols: 18,
+        doors: kind === "room" ? ["south"] : [],
+        items,
+        kind,
+        name,
+        rails: ["north", "east", "south", "west"],
+        rows: 18,
+        style,
+        walls: ["north", "east", "south", "west"],
+        windows: kind === "room" ? ["north", "east", "west"] : undefined,
+        x: 0,
+        z: 0,
+      },
+    ]);
+  }
   const catalog = {
       air_conditioner: [1.02, 0.22, 0.31],
+      aquarium: [1.8, 0.65, 1.45],
+      arcade_machine: [0.75, 0.85, 1.7],
       armchair: [0.86, 0.83, 0.86],
       bar_stool: [0.42, 0.42, 0.69],
       bathtub: [1.6, 0.78, 0.58],
@@ -1094,13 +1384,19 @@
       coat_rack: [0.6, 0.6, 1.75],
       coffee_maker: [0.25, 0.3, 0.35],
       coffee_table: [1.08, 0.64, 0.43],
+      column: [0.55, 0.55, 2.7],
       console_table: [1.1, 0.35, 0.8],
       desk: [1.35, 0.7, 0.75],
       dining_table: [1.55, 0.9, 0.75],
       dresser: [1.03, 0.49, 0.92],
       elevator: [1.6, 1.6, 3],
       filing_cabinet: [0.48, 0.55, 0.68],
+      fluorescent_light: [1.2, 0.3, 2.7],
+      fountain: [1.8, 1.8, 1.5],
       fridge: [0.73, 0.7, 1.82],
+      hedge: [2, 0.65, 1.7],
+      hot_tub: [2.2, 2.2, 0.85],
+      hydroponic_rack: [1.8, 0.7, 2],
       kitchen_chair: [0.5, 0.53, 0.86],
       kitchen_counter: [1.48, 0.62, 0.9],
       kitchen_island: [1.55, 0.85, 0.91],
@@ -1112,24 +1408,35 @@
       nightstand: [0.49, 0.44, 0.52],
       ottoman: [0.62, 0.54, 0.42],
       outdoor_chair: [0.6, 0.6, 0.82],
+      parasol: [2.6, 2.6, 2.5],
+      partition: [2, 0.18, 2.65],
+      piano: [1.5, 0.65, 1.2],
       pillow: [0.38, 0.3, 0.1],
       plant: [0.48, 0.48, 1.12],
       planter: [1.05, 0.34, 0.46],
+      pool: [5.6, 3.4, 0.85],
       rug: [1.55, 1.15, 0.025],
+      sculpture: [0.9, 0.9, 1.8],
+      server_rack: [0.8, 0.9, 2.1],
       shoe_rack: [0.9, 0.32, 0.48],
       shower: [0.93, 0.93, 2.05],
       side_table: [0.48, 0.48, 0.54],
       sideboard: [1.38, 0.48, 0.83],
       sink: [1.08, 0.62, 0.9],
       sofa: [1.75, 0.82, 0.78],
+      solar_panel: [1.8, 1.2, 0.8],
       stairs: [1.2, 3.6, 3],
       stove: [0.64, 0.65, 0.88],
+      sun_lounger: [0.75, 1.95, 0.65],
       table_lamp: [0.28, 0.28, 0.4],
+      telescope: [1.1, 1.2, 1.65],
       toilet: [0.43, 0.65, 0.72],
       towel_rack: [0.65, 0.32, 0.95],
+      treadmill: [0.9, 1.8, 1.3],
       tv: [0.93, 0.09, 0.6],
       tv_stand: [1.33, 0.42, 0.53],
       vanity: [0.95, 0.52, 0.84],
+      vending_machine: [0.95, 0.8, 1.9],
       wall_lamp: [0.22, 0.19, 0.3],
       wardrobe: [1.25, 0.56, 1.95],
       washing_machine: [0.6, 0.64, 0.85],
@@ -1537,9 +1844,9 @@
         return;
       }
       if (/^FLOOR\s+/iu.test(text)) {
-        const match = text.match(/^FLOOR\s+([0-7])$/iu);
-        if (!match || active) {
-          fail("Use FLOOR 0–7 outside a layout", line);
+        const match = text.match(/^FLOOR\s+(\d+)$/iu);
+        if (!match || Number(match[1]) > 31 || active) {
+          fail("Use FLOOR 0–31 outside a layout", line);
         }
         floor = Number(match[1]);
         currentRoom = undefined;
@@ -1570,8 +1877,8 @@
             x: Number(m[5] || 0),
             z: Number(m[6] || 0),
           };
-        if (room.cols > 20 || room.rows > 20 || room.cols < 2 || room.rows < 2) {
-          fail("Room dimensions must be 2–20 cells", line);
+        if (room.cols > 40 || room.rows > 40 || room.cols < 2 || room.rows < 2) {
+          fail("Room dimensions must be 2–40 cells", line);
         }
         if (program.rooms.some((r) => r.name === room.name)) {
           fail(`Room "${room.name}" is already defined`, line);
@@ -1653,8 +1960,8 @@
           fail("Define a ROOM before its STYLE", line);
         }
         const style = text.slice(6).trim().toLowerCase();
-        if (!["warm", "blue", "neutral"].includes(style)) {
-          fail("STYLE must be warm, blue, or neutral", line);
+        if (!["warm", "blue", "neutral", "liminal", "industrial", "aquatic"].includes(style)) {
+          fail("STYLE must be warm, blue, neutral, liminal, industrial, or aquatic", line);
         }
         currentRoom.style = style;
       } else if (/^MOUNT\s+/iu.test(text)) {
@@ -2082,20 +2389,25 @@
   const grainTexture = surfaceTexture("wood"),
     weaveTexture = surfaceTexture("fabric"),
     colors = {
+      amber: "#edb956",
       ceiling: "#f5f2eb",
       clay: "#b97861",
+      concrete: "#b5bab6",
       cream: "#e7d5ba",
       fabric: "#8fa7a0",
       fabricDark: "#627f79",
       floor: "#9f7656",
+      glow: "#d6fff1",
       green: "#5c956f",
       metal: "#586873",
       rug: "#aa7055",
       screen: "#16232b",
       wall: "#d4d0c7",
+      water: "#42bfd1",
       white: "#ebe9e2",
       wood: "#ae8060",
       woodDark: "#694d3e",
+      yellow: "#cfc18a",
     },
     mat = (color, roughness = 0.82, metalness = 0) =>
       new THREE.MeshStandardMaterial({ color, envMapIntensity: 0.45, metalness, roughness }),
@@ -2125,6 +2437,10 @@
   material.metal.metalness = 0.85;
   material.metal.roughness = 0.27;
   material.screen.roughness = 0.16;
+  material.water.roughness = 0.12;
+  material.water.metalness = 0.35;
+  material.glow.emissive.set("#a0f8da");
+  material.glow.emissiveIntensity = 0.8;
   function box(parent, w, h, d, x, y, z, m) {
     const upholstered = [material.fabric, material.fabricDark, material.cream].includes(m),
       radius = Math.min(upholstered ? 0.065 : 0.018, Math.min(w, h, d) * 0.24),
@@ -2251,6 +2567,268 @@
       group.userData.detailed = true;
       const [cw, cd, ch] = catalog[name];
       switch (name) {
+        case "pool":
+        case "hot_tub": {
+          box(group, cw, 0.12, cd, 0, 0.06, 0, material.white);
+          box(group, cw - 0.24, 0.035, cd - 0.24, 0, ch - 0.18, 0, material.water);
+          for (const side of [-1, 1]) {
+            box(group, cw, ch, 0.12, 0, ch / 2, side * (cd / 2 - 0.06), material.white);
+            box(group, 0.12, ch, cd, side * (cw / 2 - 0.06), ch / 2, 0, material.white);
+            box(
+              group,
+              cw + 0.04,
+              0.07,
+              0.2,
+              0,
+              ch - 0.035,
+              side * (cd / 2 - 0.06),
+              material.concrete,
+            );
+          }
+          for (let i = 0; i < 4; i += 1) {
+            box(group, cw * 0.65, 0.008, 0.015, 0, ch - 0.157, ((i - 1.5) * cd) / 5, material.glow);
+          }
+          for (const side of [-1, 1]) {
+            cylinder(group, 0.025, 0.025, ch, side * 0.22, ch / 2, cd / 2 - 0.22, material.metal);
+          }
+          for (let step = 0; step < 3; step += 1) {
+            box(group, 0.48, 0.035, 0.1, 0, 0.2 + step * 0.2, cd / 2 - 0.22, material.metal);
+          }
+          break;
+        }
+        case "sun_lounger": {
+          legs(group, cw, cd, 0.25, "metal");
+          box(group, cw, 0.12, cd, 0, 0.3, 0, material.wood);
+          box(group, cw - 0.08, 0.08, cd * 0.6, 0, 0.4, cd * 0.18, material.cream);
+          const back = box(group, cw - 0.08, 0.09, cd * 0.4, 0, 0.48, -cd * 0.28, material.cream);
+          back.rotation.x = -0.4;
+          break;
+        }
+        case "parasol": {
+          cylinder(group, 0.3, 0.36, 0.1, 0, 0.05, 0, material.concrete);
+          cylinder(group, 0.025, 0.025, ch - 0.2, 0, (ch - 0.2) / 2, 0, material.wood);
+          cylinder(group, 0.02, cw / 2, 0.45, 0, ch - 0.225, 0, material.cream, 8);
+          break;
+        }
+        case "fountain": {
+          cylinder(group, cw / 2, cw / 2, 0.25, 0, 0.125, 0, material.concrete);
+          cylinder(group, cw * 0.43, cw * 0.43, 0.02, 0, 0.26, 0, material.water);
+          cylinder(group, 0.12, 0.22, 1, 0, 0.75, 0, material.concrete);
+          cylinder(group, 0.46, 0.15, 0.18, 0, 1.22, 0, material.white);
+          cylinder(group, 0.035, 0.06, 0.25, 0, 1.375, 0, material.water);
+          for (let i = 0; i < 8; i += 1) {
+            const angle = (i * Math.PI) / 4;
+            cylinder(
+              group,
+              0.012,
+              0.022,
+              0.85,
+              Math.cos(angle) * 0.4,
+              0.75,
+              Math.sin(angle) * 0.4,
+              material.water,
+              6,
+            );
+          }
+          break;
+        }
+        case "hedge": {
+          group.userData.detailed = false;
+          box(group, cw, ch, cd, 0, ch / 2, 0, material.green);
+          box(group, cw * 0.94, 0.08, cd * 0.9, 0, ch - 0.04, 0, material.fabricDark);
+          break;
+        }
+        case "partition": {
+          group.userData.detailed = false;
+          box(group, cw, ch, cd, 0, ch / 2, 0, material.yellow);
+          box(group, cw, 0.09, cd + 0.015, 0, 0.045, 0, material.woodDark);
+          break;
+        }
+        case "column": {
+          cylinder(group, cw * 0.4, cw * 0.4, ch, 0, ch / 2, 0, material.concrete, 12);
+          box(group, cw, 0.12, cd, 0, 0.06, 0, material.white);
+          box(group, cw, 0.12, cd, 0, ch - 0.06, 0, material.white);
+          break;
+        }
+        case "fluorescent_light": {
+          box(group, cw, 0.07, cd, 0, ch - 0.035, 0, material.metal);
+          for (const side of [-1, 1]) {
+            box(group, cw - 0.08, 0.025, 0.07, 0, ch - 0.075, side * 0.075, material.glow);
+          }
+          break;
+        }
+        case "vending_machine":
+        case "arcade_machine":
+        case "server_rack": {
+          box(group, cw, ch, cd, 0, ch / 2, 0, material.metal);
+          box(group, cw - 0.12, ch * 0.54, 0.035, 0, ch * 0.61, cd / 2, material.screen);
+          box(group, cw - 0.08, 0.14, 0.04, 0, ch - 0.1, cd / 2, material.glow);
+          if (name === "server_rack") {
+            for (let i = 0; i < 9; i += 1) {
+              box(group, cw - 0.16, 0.1, 0.05, 0, 0.2 + i * 0.19, cd / 2 + 0.01, material.screen);
+              box(
+                group,
+                0.045,
+                0.025,
+                0.06,
+                cw * 0.3,
+                0.2 + i * 0.19,
+                cd / 2 + 0.02,
+                material.glow,
+              );
+            }
+          } else if (name === "vending_machine") {
+            for (let row = 0; row < 3; row += 1) {
+              for (let col = 0; col < 4; col += 1) {
+                box(
+                  group,
+                  0.12,
+                  0.17,
+                  0.07,
+                  (col - 1.5) * 0.18,
+                  0.8 + row * 0.25,
+                  cd / 2 + 0.03,
+                  col % 2 ? material.amber : material.fabric,
+                );
+              }
+            }
+            box(group, cw * 0.6, 0.18, 0.04, 0, 0.25, cd / 2 + 0.01, material.screen);
+          } else {
+            box(group, cw - 0.1, 0.3, 0.04, 0, 1.12, cd / 2 + 0.025, material.water);
+            box(group, cw, 0.09, 0.22, 0, 0.8, cd / 2 - 0.07, material.amber);
+            cylinder(group, 0.03, 0.03, 0.12, -0.18, 0.9, cd / 2, material.screen);
+            cylinder(group, 0.05, 0.05, 0.025, 0.18, 0.87, cd / 2, material.glow);
+          }
+          break;
+        }
+        case "aquarium": {
+          box(group, cw, 0.55, cd, 0, 0.275, 0, material.woodDark);
+          const glass = mat("#5cc7cf", 0.12);
+          glass.transparent = true;
+          glass.opacity = 0.28;
+          glass.depthWrite = false;
+          box(group, cw, ch - 0.55, cd, 0, (ch + 0.55) / 2, 0, glass);
+          box(group, cw, 0.06, cd, 0, ch - 0.03, 0, material.metal);
+          box(group, cw - 0.08, 0.05, cd - 0.08, 0, 0.58, 0, material.cream);
+          for (let i = 0; i < 5; i += 1) {
+            const fish = cylinder(
+              group,
+              0.06,
+              0.015,
+              0.18,
+              (i - 2) * 0.27,
+              0.85 + (i % 2) * 0.25,
+              ((i % 3) - 1) * 0.15,
+              material.amber,
+              8,
+            );
+            fish.rotation.z = Math.PI / 2;
+          }
+          break;
+        }
+        case "telescope": {
+          cylinder(group, 0.05, 0.05, 1.1, 0, 0.55, 0, material.metal);
+          for (let i = 0; i < 3; i += 1) {
+            const angle = (i * Math.PI * 2) / 3,
+              leg = cylinder(
+                group,
+                0.025,
+                0.025,
+                0.95,
+                Math.cos(angle) * 0.22,
+                0.42,
+                Math.sin(angle) * 0.22,
+                material.metal,
+              );
+            leg.rotation.set(Math.sin(angle) * 0.5, 0, -Math.cos(angle) * 0.5);
+          }
+          const scope = new THREE.Group();
+          cylinder(scope, 0.14, 0.12, 0.9, 0, 0, 0, material.white);
+          cylinder(scope, 0.12, 0.12, 0.02, 0, 0.46, 0, material.water);
+          cylinder(scope, 0.05, 0.05, 0.17, 0, -0.5, 0, material.screen);
+          scope.rotation.x = -Math.PI / 3;
+          scope.position.y = 1.3;
+          group.add(scope);
+          break;
+        }
+        case "treadmill": {
+          box(group, cw, 0.18, cd, 0, 0.09, 0, material.metal);
+          box(group, cw - 0.15, 0.02, cd - 0.15, 0, 0.19, 0, material.screen);
+          for (const side of [-1, 1]) {
+            cylinder(
+              group,
+              0.035,
+              0.035,
+              1.1,
+              side * (cw / 2 - 0.05),
+              0.65,
+              -cd * 0.35,
+              material.metal,
+            );
+          }
+          box(group, cw, 0.15, 0.3, 0, 1.2, -cd * 0.35, material.screen);
+          box(group, 0.3, 0.02, 0.16, 0, 1.285, -cd * 0.35, material.water);
+          break;
+        }
+        case "piano": {
+          box(group, cw, ch, cd * 0.6, 0, ch / 2, -cd * 0.2, material.woodDark);
+          box(group, cw, 0.1, cd, 0, 0.73, 0, material.woodDark);
+          for (let i = 0; i < 24; i += 1) {
+            box(group, 0.051, 0.035, 0.22, (i - 11.5) * 0.057, 0.8, cd * 0.27, material.white);
+            if (![2, 6].includes(i % 7)) {
+              box(group, 0.029, 0.035, 0.13, (i - 11) * 0.057, 0.83, cd * 0.2, material.screen);
+            }
+          }
+          break;
+        }
+        case "sculpture": {
+          box(group, cw * 0.7, 0.55, cd * 0.7, 0, 0.275, 0, material.concrete);
+          const knot = new THREE.Mesh(
+            new THREE.TorusKnotGeometry(0.28, 0.075, 64, 8),
+            material.amber,
+          );
+          knot.position.y = 1.18;
+          knot.scale.y = 1.5;
+          group.add(knot);
+          break;
+        }
+        case "solar_panel": {
+          legs(group, cw, cd, 0.32, "metal");
+          const panel = new THREE.Group();
+          box(panel, cw, 0.06, cd, 0, 0, 0, material.metal);
+          for (let row = 0; row < 3; row += 1) {
+            for (let col = 0; col < 6; col += 1) {
+              box(
+                panel,
+                0.27,
+                0.015,
+                0.35,
+                (col - 2.5) * 0.29,
+                0.04,
+                (row - 1) * 0.38,
+                material.screen,
+              );
+            }
+          }
+          panel.position.y = 0.52;
+          panel.rotation.x = 0.4;
+          group.add(panel);
+          break;
+        }
+        case "hydroponic_rack": {
+          for (const side of [-1, 1]) {
+            box(group, 0.06, ch, cd, side * (cw / 2 - 0.03), ch / 2, 0, material.metal);
+          }
+          for (let shelf = 0; shelf < 3; shelf += 1) {
+            const y = 0.2 + shelf * 0.6;
+            box(group, cw, 0.12, cd, 0, y, 0, material.white);
+            box(group, cw - 0.15, 0.025, 0.08, 0, y + 0.48, 0, material.glow);
+            for (let plant = 0; plant < 5; plant += 1) {
+              cylinder(group, 0.12, 0.07, 0.23, (plant - 2) * 0.32, y + 0.18, 0, material.green, 6);
+            }
+          }
+          break;
+        }
         case "stairs": {
           for (let i = 0; i < 16; i += 1) {
             const height = (ch * (i + 1)) / 16;
@@ -2860,7 +3438,10 @@
   }
   function addArchitecture(program) {
     const trim = mat("#886f60"),
-      wallHeight = 2.75;
+      wallHeight = 2.75,
+      largeScene =
+        program.rooms.reduce((area, room) => area + room.cols * room.rows * program.grid ** 2, 0) >
+        1200;
     wallRoots = [];
     ceilingRoots = [];
     material.ceiling.transparent = true;
@@ -2891,13 +3472,19 @@
       room.centerX = centerX;
       room.centerZ = centerZ;
       const floorMaterial =
-        room.kind === "balcony"
-          ? mat("#b9aa95")
-          : /(bath|wash)/u.test(room.name)
-            ? mat("#d6e0db")
-            : /(kitchen)/u.test(room.name)
-              ? mat("#ccc7b9")
-              : material.floor;
+        room.style === "liminal"
+          ? material.yellow
+          : room.style === "industrial"
+            ? material.concrete
+            : room.style === "aquatic"
+              ? material.white
+              : room.kind === "balcony"
+                ? mat("#b9aa95")
+                : /(bath|wash)/u.test(room.name)
+                  ? mat("#d6e0db")
+                  : /(kitchen)/u.test(room.name)
+                    ? mat("#ccc7b9")
+                    : material.floor;
       const openings = program.connectors
         .filter((link) => link.upper === room)
         .map((link) => ({
@@ -2964,7 +3551,12 @@
           ceilingOpenings,
         );
       }
-      if (room.kind !== "balcony" && !/(bath|wash|kitchen)/u.test(room.name)) {
+      if (
+        !largeScene &&
+        !["liminal", "industrial", "aquatic"].includes(room.style) &&
+        room.kind !== "balcony" &&
+        !/(bath|wash|kitchen)/u.test(room.name)
+      ) {
         let plank = 0;
         for (let z = -depth / 2 + 0.018; z < depth / 2 - 0.018; z += 0.24) {
           const boardDepth = Math.min(0.234, depth / 2 - 0.018 - z);
@@ -2987,7 +3579,7 @@
           plank += 1;
         }
       }
-      if (room.kind !== "balcony") {
+      if (room.kind !== "balcony" && program.rooms.length <= 8) {
         const light = new THREE.PointLight(
           room.style === "blue" ? "#ffe0b2" : "#ffe8ce",
           18,
@@ -2998,11 +3590,17 @@
         roomRoot.add(light);
       }
       const wallMaterial =
-        room.style === "blue"
-          ? mat("#4e9bc0")
-          : room.style === "neutral"
-            ? mat("#d9dedb")
-            : material.wall;
+        room.style === "liminal"
+          ? material.yellow
+          : room.style === "industrial"
+            ? material.concrete
+            : room.style === "aquatic"
+              ? mat("#a8d8d7")
+              : room.style === "blue"
+                ? mat("#4e9bc0")
+                : room.style === "neutral"
+                  ? mat("#d9dedb")
+                  : material.wall;
       if (room.kind === "balcony") {
         const seam = mat("#8e8579");
         for (let z = -depth / 2 + 0.36; z < depth / 2; z += 0.36) {
@@ -3323,7 +3921,11 @@
       for (let j = i + 1; j < entries.length; j += 1) {
         const a = entries[i],
           b = entries[j];
-        if (a.token.floor !== b.token.floor || a.token.name === "rug" || b.token.name === "rug") {
+        if (
+          a.token.floor !== b.token.floor ||
+          ["rug", "fluorescent_light"].includes(a.token.name) ||
+          ["rug", "fluorescent_light"].includes(b.token.name)
+        ) {
           continue;
         }
         const A = broad(a),
@@ -3351,6 +3953,7 @@
           currentProgram.grid,
         focusFloor === undefined && !room ? (currentProgram.floors.at(-1) + 1) * 3 : 3,
       ),
+      framing = Math.max(1, 1.1 / camera.aspect),
       cx = room?.centerX || 0,
       cz = room?.centerZ || 0,
       elevation =
@@ -3358,9 +3961,9 @@
         (focusFloor === undefined ? currentProgram.floors.at(-1) * 1.5 : focusFloor * 3);
     controls.target.set(cx, elevation + 0.3, cz);
     camera.position.set(
-      cx + (top ? 0 : extent * 0.18),
-      elevation + (top ? extent * 1.65 : extent * 0.95),
-      cz + (top ? 0.001 : extent * 1.4),
+      cx + (top ? 0 : extent * 0.18 * framing),
+      elevation + (top ? extent * 1.65 : extent * 0.95) * framing,
+      cz + (top ? 0.001 : extent * 1.4 * framing),
     );
     camera.lookAt(controls.target);
     controls.update();
@@ -3491,6 +4094,16 @@
     collisionEntries = [];
     currentProgram = program;
     compiledSource = editor.state.doc.toString();
+    const sceneExtent = Math.max(
+      program.cols * program.grid,
+      program.rows * program.grid,
+      (program.floors.at(-1) + 1) * 3,
+    );
+    scene.fog.near = Math.max(25, sceneExtent * 2);
+    scene.fog.far = Math.max(80, sceneExtent * 5);
+    controls.maxDistance = Math.max(100, sceneExtent * 4);
+    camera.far = Math.max(250, sceneExtent * 8);
+    camera.updateProjectionMatrix();
     addArchitecture(program);
     updateSun();
     if (!program.rooms.some((room) => room.name === focusRoom)) {
@@ -3609,7 +4222,7 @@
     }
     for (const entry of collisionEntries) {
       const { token } = entry;
-      if (token.floor !== floor || ["rug", "stairs"].includes(token.name)) {
+      if (token.floor !== floor || ["rug", "stairs", "fluorescent_light"].includes(token.name)) {
         continue;
       }
       const angle = (token.yaw * Math.PI) / 180,
@@ -3719,13 +4332,22 @@
       "One-bedroom apartment",
       "City apartment + balcony",
     ],
+    "Impossible destinations": [
+      "The Minotaur's labyrinth",
+      "Backrooms",
+      "Cloud city skyscraper",
+      "Lunar seed vault",
+      "The drowned arcade",
+      "Midnight observatory",
+      "Museum of tomorrow's ruins",
+    ],
     "Multiple floors": [
       "Two-storey home",
       "Three-storey townhouse",
       "Three-floor library",
       "Four-floor tower",
     ],
-    "Outdoor areas": ["Balcony garden"],
+    "Outdoor areas": ["Balcony garden", "Rooftop Riviera"],
     "Single rooms": [
       "Living room",
       "Bedroom",

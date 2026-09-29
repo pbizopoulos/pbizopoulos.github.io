@@ -233,7 +233,26 @@
       <h2>Quick guide</h2>
       <ul>
         <li><code>ROOM living 8x6 AT 0,0</code> — size and position in grid cells.</li>
-        <li><code>FLOOR 1</code> — subsequent rooms sit 3m above floor 0; levels 0–7.</li>
+        <li><code>FLOOR 1</code> — subsequent rooms sit 3m above floor 0; levels 0–31.</li>
+        <li>
+          Rooms support 2–40 cells per side, within a 40×40 floor plan, with up to 32 rooms. Choose
+          “Impossible destinations” for a 361-chamber labyrinth, Backrooms, a 24-floor skyscraper,
+          and more. Use the floor selector to explore the tower one level at a time.
+        </li>
+        <li>
+          Water &amp; outdoors: <code>pool</code>, <code>hot_tub</code>, <code>fountain</code>,
+          <code>sun_lounger</code>, <code>parasol</code>, <code>hedge</code>, and
+          <code>solar_panel</code>. Pools are raised basins; reserve space around their full
+          footprint.
+        </li>
+        <li>
+          Play &amp; discovery: <code>arcade_machine</code>, <code>vending_machine</code>,
+          <code>aquarium</code>, <code>piano</code>, <code>treadmill</code>, <code>telescope</code>,
+          <code>sculpture</code>, <code>server_rack</code>, and <code>hydroponic_rack</code>. Build
+          mazes with <code>partition</code> and <code>column</code>;
+          <code>fluorescent_light</code> sits overhead, leaving the floor passable. Try
+          <code>STYLE liminal</code>, <code>STYLE industrial</code>, or <code>STYLE aquatic</code>.
+        </li>
         <li>
           <code>LAYOUT living</code> … <code>END</code> — rows north→south, cells west→east. Use
           <code>|</code> between cells and <code>.</code> for blanks.
