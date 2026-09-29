@@ -847,7 +847,7 @@
             [4, 3, "archway[5.2x0.25x2.7]"],
             [0, 1, "grape_trellis@90[2.4x0.4x2.5]"],
           ],
-          { kind: "balcony", rails: ["east", "west"], surface: "stone" },
+          { kind: "balcony", rails: ["west"], surface: "stone" },
         ),
         room(
           "upper_bedroom",
@@ -1036,21 +1036,8 @@
             (dir) =>
               (dir === "east" || dir === "west" ? room.rows : room.cols) * program.grid > 2.2,
           ),
-          doors = [...room.doors];
-        if (
-          eligible.length > 0 &&
-          eligible.every((dir) => doors.includes(dir)) &&
-          doors.length > 1
-        ) {
-          doors.splice(doors.indexOf(eligible[0]), 1);
-          const doorCommand = `DOORS ${doors.join(" ")}`;
-          if (room.doorsLine) {
-            lines[room.doorsLine - 1] = doorCommand;
-          } else {
-            additions.push(doorCommand);
-          }
-        }
-        const windows = eligible.filter((dir) => !doors.includes(dir)),
+          doors = new Set(room.doors);
+        const windows = eligible.filter((dir) => !doors.has(dir)),
           command = `WINDOWS ${windows.join(" ") || "none"}`;
         if (room.windowsLine) {
           lines[room.windowsLine - 1] = command;
@@ -1229,6 +1216,10 @@
       root.add(group);
       group.userData.terrain = true;
       const ground = finish({ grass: "#748961", paving: "#a5aaa5", sand: "#bcad88" }[program.site]);
+      if (program.site === "grass") {
+        ground.map = material.grass.map;
+        ground.userData.textureScale = 1.5;
+      }
       addBox(
         group,
         width + program.margin * 2,
@@ -1239,6 +1230,24 @@
         0,
         ground,
       );
+      if (program.margin >= 3 && program.site === "grass") {
+        const bark = finish("#6c5843"),
+          leaves = finish("#405e37");
+        for (const xSign of [-1, 1]) {
+          for (const zSign of [-1, 1]) {
+            const x = xSign * (width / 2 + program.margin - 1.4),
+              z = zSign * (depth / 2 + program.margin - 1.4);
+            cylinder(group, 0.12, 0.18, 1.8, x, 0.7, z, bark, 6);
+            const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 1), leaves);
+            crown.position.set(x, 2.1, z);
+            crown.scale.y = 1.25;
+            crown.castShadow = true;
+            crown.receiveShadow = true;
+            group.add(crown);
+          }
+        }
+        batchFurniture(group);
+      }
       for (const sign of [-1, 1]) {
         addBox(group, width + 2, 0.04, 1, 0, -0.19, sign * (depth / 2 + 0.5), trim);
         addBox(group, 1, 0.04, depth, sign * (width / 2 + 0.5), -0.19, 0, trim);
@@ -1523,7 +1532,22 @@
       while (openings.length < 4) {
         openings.push(new THREE.Vector4());
       }
-      roomMaterials.set(room.name, { materials: new Map(), openings });
+      roomMaterials.set(room.name, {
+        base: room.elevation,
+        bounds: new THREE.Vector4(
+          room.centerX - (room.cols * program.grid) / 2,
+          room.centerZ - (room.rows * program.grid) / 2,
+          room.centerX + (room.cols * program.grid) / 2,
+          room.centerZ + (room.rows * program.grid) / 2,
+        ),
+        materials: new Map(),
+        openings,
+        walls: new THREE.Vector4(
+          ...["west", "north", "east", "south"].map((side) =>
+            room.walls.includes(side) && !room.doors.includes(side) ? 1 : 0,
+          ),
+        ),
+      });
     }
     function visit(node, roomName) {
       const name = node.userData.token?.room || roomName,
@@ -1544,6 +1568,9 @@
               shader.uniforms.daylightStrength = daylightStrength;
               shader.uniforms.daylightPass = daylightPass;
               shader.uniforms.daylightOpenings = { value: entry.openings };
+              shader.uniforms.roomBounds = { value: entry.bounds };
+              shader.uniforms.roomBase = { value: entry.base };
+              shader.uniforms.roomWalls = { value: entry.walls };
               shader.vertexShader = `varying vec3 daylightPosition;\n${shader.vertexShader}`;
               shader.vertexShader = shader.vertexShader.replace(
                 "#include <project_vertex>",
@@ -1554,6 +1581,7 @@
                 "uniform float daylightStrength;",
                 "uniform float daylightPass;",
                 "uniform vec4 daylightOpenings[4];",
+                "uniform vec4 roomBounds; uniform vec4 roomWalls; uniform float roomBase;",
                 shader.fragmentShader,
               ].join("\n");
               shader.fragmentShader = shader.fragmentShader.replace(
@@ -1566,6 +1594,10 @@
                   "}",
                   "irradiance += vec3(0.82, 0.9, 1.0) * min(daylightFill, 0.8) * daylightStrength * daylightPass * PI;",
                   "#include <lights_fragment_end>",
+                  "vec4 edge = abs(vec4(daylightPosition.xz - roomBounds.xy, roomBounds.zw - daylightPosition.xz));",
+                  "vec4 nearWall = exp(-edge * 9.0) * roomWalls;",
+                  "float contact = max(max(nearWall.x,nearWall.y),max(nearWall.z,nearWall.w)) * exp(-abs(daylightPosition.y-roomBase)*9.0);",
+                  "reflectedLight.indirectDiffuse *= 1.0 - 0.22 * contact;",
                 ].join("\n"),
               );
             };
@@ -1792,9 +1824,9 @@
       "LAYOUT main",
       ". | . | . | . | . | . | . | . | .",
       ". | plant | . | . | . | . | . | bookshelf~north | .",
-      ". | . | . | chair@0 | . | . | . | . | .",
+      ". | . | . | . | chair@0 | . | . | . | .",
       ". | . | chair@90 | . | dining_table(setting_on_top) | . | chair@270 | . | .",
-      ". | . | . | chair@180 | . | . | . | . | .",
+      ". | . | . | . | chair@180 | . | . | . | .",
       ". | . | . | . | . | . | . | . | .",
       ". | . | . | . | . | . | . | . | .",
       ". | . | . | . | . | . | . | . | .",
@@ -4274,6 +4306,94 @@
       azimuth: (Math.atan2(east, north) / radians + 360) % 360,
     };
   }
+  function lunarDirection(date, time, latitude, longitude, offset, orientation) {
+    const rad = Math.PI / 180,
+      days = (Date.parse(`${date}T${time}:00Z`) - offset * 3_600_000) / 86_400_000 - 10_957.5,
+      mean = rad * (134.963 + 13.064993 * days),
+      lon = rad * (218.316 + 13.176396 * days + 6.289 * Math.sin(mean)),
+      lat = rad * 5.128 * Math.sin(rad * (93.272 + 13.22935 * days)),
+      obliquity = rad * 23.4397,
+      declination = Math.asin(
+        Math.sin(lat) * Math.cos(obliquity) + Math.cos(lat) * Math.sin(obliquity) * Math.sin(lon),
+      ),
+      ascension = Math.atan2(
+        Math.sin(lon) * Math.cos(obliquity) - Math.tan(lat) * Math.sin(obliquity),
+        Math.cos(lon),
+      ),
+      hour = rad * (280.16 + 360.9856235 * days + longitude) - ascension,
+      phi = latitude * rad,
+      direction = new THREE.Vector3(
+        -Math.cos(declination) * Math.sin(hour),
+        Math.sin(phi) * Math.sin(declination) +
+          Math.cos(phi) * Math.cos(declination) * Math.cos(hour),
+        -(
+          Math.cos(phi) * Math.sin(declination) -
+          Math.sin(phi) * Math.cos(declination) * Math.cos(hour)
+        ),
+      );
+    return direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), orientation * rad);
+  }
+  const skyUniforms = {
+      day: { value: 1 },
+      moonDirection: { value: new THREE.Vector3() },
+      sunDirection: { value: new THREE.Vector3() },
+      twilight: { value: 0 },
+    },
+    skyMaterial = new THREE.ShaderMaterial({
+      depthTest: false,
+      depthWrite: false,
+      fragmentShader: [
+        "varying vec3 direction;",
+        "uniform vec3 sunDirection;",
+        "uniform vec3 moonDirection;",
+        "uniform float day;",
+        "uniform float twilight;",
+        "float hash(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }",
+        "void main() {",
+        "vec3 ray = normalize(direction);",
+        "float height = max(ray.y, 0.0);",
+        "float horizon = pow(1.0 - height, 5.0);",
+        "vec3 night = mix(vec3(0.002,0.004,0.012), vec3(0.012,0.018,0.03), horizon);",
+        "vec3 daylight = mix(vec3(0.12,0.32,0.64), vec3(0.65,0.76,0.8), horizon);",
+        "vec3 color = mix(night, daylight, day);",
+        "float facingSun = pow(max(dot(ray, normalize(vec3(sunDirection.x,0.001,sunDirection.z))),0.0),8.0);",
+        "color += vec3(0.55,0.14,0.035) * twilight * horizon * facingSun;",
+        "float sunAngle = dot(ray, sunDirection);",
+        "color += vec3(1.0,0.65,0.3) * pow(max(sunAngle,0.0),256.0) * day * 0.35;",
+        "color += vec3(8.0,6.5,4.0) * smoothstep(0.999986,0.999991,sunAngle) * step(0.0,ray.y);",
+        "vec2 starUV = vec2(atan(ray.z,ray.x),asin(ray.y)) * 180.0;",
+        "vec3 cell = vec3(floor(starUV),0.0);",
+        "float star = step(0.992,hash(cell)) * (1.0-smoothstep(0.06,0.24,length(fract(starUV)-0.5)));",
+        "color += vec3(star * 2.0) * (1.0-day) * (1.0-twilight) * smoothstep(0.0,0.15,ray.y);",
+        "float moonCos = dot(ray,moonDirection);",
+        "float moonRadius = 0.0045;",
+        "if (moonCos > cos(moonRadius) && ray.y > 0.0) {",
+        "vec3 tangent = (ray - moonDirection * moonCos) / moonRadius;",
+        "vec3 normal = tangent - moonDirection * sqrt(max(0.0,1.0-dot(tangent,tangent)));",
+        "float lit = max(dot(normal,sunDirection),0.0);",
+        "color = vec3(0.008,0.01,0.016) + vec3(0.8,0.83,0.88) * lit;",
+        "}",
+        "color = mix(vec3(0.006,0.009,0.012) + vec3(0.12,0.16,0.1)*day, color, smoothstep(-0.025,0.0,ray.y));",
+        "gl_FragColor = vec4(color,1.0);",
+        "#include <tonemapping_fragment>",
+        "#include <colorspace_fragment>",
+        "}",
+      ].join("\n"),
+      side: THREE.BackSide,
+      uniforms: skyUniforms,
+      vertexShader: [
+        "varying vec3 direction;",
+        "void main() {",
+        "direction = position;",
+        "vec4 clip = projectionMatrix * vec4(mat3(viewMatrix) * position, 1.0);",
+        "gl_Position = clip.xyww;",
+        "}",
+      ].join("\n"),
+    }),
+    sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMaterial);
+  sky.frustumCulled = false;
+  sky.renderOrder = -1000;
+  scene.add(sky);
   function updateSun() {
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
@@ -4323,7 +4443,24 @@
     previousDaylight = altitude > 0;
     updateIndoorLights();
     sunlight.color.setHSL(0.1, 0.15 + 0.55 * (1 - Math.min(1, daylight * 3)), 0.9);
-    scene.background.set("#000000").lerp(new THREE.Color("#eff2ee"), Math.min(1, daylight * 4));
+    skyUniforms.sunDirection.value
+      .copy(sunlight.position)
+      .sub(sunlight.target.position)
+      .normalize();
+    skyUniforms.moonDirection.value.copy(
+      lunarDirection(
+        $("sunDate").value,
+        $("sunTime").value,
+        $("sunLatitude").valueAsNumber,
+        $("sunLongitude").valueAsNumber,
+        $("sunOffset").valueAsNumber,
+        $("sunOrientation").valueAsNumber,
+      ),
+    );
+    skyUniforms.day.value = THREE.MathUtils.smoothstep(altitude, -6, 12);
+    skyUniforms.twilight.value =
+      (1 - THREE.MathUtils.smoothstep(altitude, 0, 12)) *
+      THREE.MathUtils.smoothstep(altitude, -12, -1);
     Object.assign(sunlight.shadow.camera, {
       bottom: -radius,
       far: radius * 5,
