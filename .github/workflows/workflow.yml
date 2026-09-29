@@ -24,6 +24,8 @@ jobs:
           mkdir -p _site/interior-design-editor
           cp packages/interior-design-editor/{index.html,script.js,style.css} \
             _site/interior-design-editor/
+          cp -r packages/interior-design-editor/prm \
+            _site/interior-design-editor/
       - name: Upload static files as artifact
         id: deployment
         uses: actions/upload-pages-artifact@main
