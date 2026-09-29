@@ -1,4 +1,364 @@
 /* eslint-disable max-lines, max-lines-per-function -- Each standalone page keeps its scene and application logic in one script. */ /* eslint-disable prefer-named-capture-group -- The grammar parser consumes positional regex captures in a fixed order. */ /* eslint-disable no-magic-numbers -- Scene coordinates, dimensions, colors, and animation timings are literal design data. */ /* eslint-disable id-length -- Short coordinate and drawing parameter names follow the geometry notation. */ /* eslint-disable max-statements, max-params, complexity, max-depth -- Rendering and grammar routines keep their sequential operations together. */ /* eslint-disable one-var, sort-vars -- Declarations follow dependency and initialization order. */ /* eslint-disable func-style, no-use-before-define, unicorn/consistent-function-scoping -- Hoisted helpers and closures share application state inside an isolated entry point. */ /* eslint-disable no-ternary, no-nested-ternary, unicorn/no-nested-ternary -- Inline choices express visual variants and fallback values. */ /* eslint-disable init-declarations, no-undefined -- Optional application state is initialized when its resources become available. */ /* eslint-disable no-continue, unicorn/no-array-for-each -- Iteration guards skip inactive entities and process grammar rows. */ /* eslint-disable oxc/no-optional-chaining -- Optional scene and pointer state is intentionally nullable. */ /* eslint-disable oxc/no-async-await, unicorn/prefer-top-level-await -- The asynchronous entry point catches library-loading failures and reports them in the page. */ (async () => {
+  // Procedural furniture: no model downloads or full-resolution photo textures.
+  const referenceCatalog = {
+    awning: [3.6, 1.8, 2.65],
+    canopy_bed: [1.55, 2.05, 1.95],
+    fireplace: [1.35, 0.65, 2.7],
+    folding_chair: [0.5, 0.58, 0.88],
+    garment_rack: [1.05, 0.5, 1.7],
+    gym_bench: [0.65, 1.45, 1.1],
+    kitchenette: [2.4, 0.65, 2.25],
+    slatted_table: [0.85, 0.85, 0.75],
+    sofa_bed: [1.9, 0.85, 0.85],
+    timber_rail: [2.4, 0.1, 1.05],
+    towel_stack: [0.48, 0.32, 0.24],
+    woven_chair: [0.68, 0.75, 0.85],
+  };
+
+  function addReferenceAsset(name, group, { THREE, box, cylinder, material: m }) {
+    if (!referenceCatalog[name]) return;
+    const [w, d, h] = referenceCatalog[name];
+    const b = (width, height, depth, x, y, z, finish = m.wood) =>
+      box(group, width, height, depth, x, y, z, finish);
+    const rod = (a, b, radius = 0.018, finish = m.wood) => {
+      const start = new THREE.Vector3(...a),
+        end = new THREE.Vector3(...b);
+      const part = cylinder(group, radius, radius, start.distanceTo(end), 0, 0, 0, finish, 12);
+      part.position.copy(start).add(end).multiplyScalar(0.5);
+      part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.sub(start).normalize());
+      return part;
+    };
+    if (name === "awning") {
+      b(w, 0.12, 0.13, 0, h - 0.06, -d / 2, m.white);
+      const canopy = b(w, 0.025, d, 0, h - 0.22, 0, m.ochre);
+      canopy.rotation.x = 0.2;
+      // Scallops are a single extruded silhouette, not dozens of overlapping meshes.
+      const shape = new THREE.Shape();
+      shape.moveTo(-w / 2, 0);
+      shape.lineTo(w / 2, 0);
+      shape.lineTo(w / 2, -0.12);
+      for (let i = 8; i > 0; i -= 1) {
+        const x = -w / 2 + (i * w) / 8;
+        shape.quadraticCurveTo(x - w / 16, -0.26, x - w / 8, -0.12);
+      }
+      shape.closePath();
+      const valance = new THREE.Mesh(
+        new THREE.ExtrudeGeometry(shape, {
+          depth: 0.018,
+          bevelEnabled: false,
+          curveSegments: 4,
+        }),
+        m.ochre,
+      );
+      valance.position.set(0, h - 0.4, d / 2 - 0.02);
+      valance.castShadow = true;
+      valance.receiveShadow = true;
+      group.add(valance);
+      for (const side of [-1, 1]) {
+        rod([side * w * 0.4, h - 0.15, -d / 2], [side * w * 0.3, h - 0.5, 0], 0.018, m.white);
+        rod([side * w * 0.3, h - 0.5, 0], [side * w * 0.4, h - 0.43, d / 2], 0.018, m.white);
+      }
+    } else if (name === "fireplace") {
+      b(w, 0.22, d, 0, 0.11, 0, m.plaster);
+      b(w + 0.08, 0.055, d + 0.05, 0, 0.25, 0, m.slate);
+      b(w - 0.24, 0.85, 0.07, 0, 0.68, -d / 2 + 0.04, m.stone);
+      for (const side of [-1, 1]) b(0.14, 0.88, d, side * (w / 2 - 0.07), 0.7, 0, m.plaster);
+      for (let row = 0; row < 6; row += 1) {
+        b(w - 0.28, 0.008, 0.01, 0, 0.32 + row * 0.13, -d / 2 + 0.08, m.slate);
+        for (let col = 0; col < 3; col += 1)
+          b(
+            0.008,
+            0.12,
+            0.01,
+            -0.42 + col * 0.34 + (row % 2) * 0.12,
+            0.38 + row * 0.13,
+            -d / 2 + 0.08,
+            m.slate,
+          );
+      }
+      b(w + 0.13, 0.07, d + 0.07, 0, 1.17, 0, m.woodDark);
+      const hood = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.68, 1.46, 4, 1), m.plaster);
+      hood.rotation.y = Math.PI / 4;
+      hood.scale.z = 0.6;
+      hood.position.set(0, 1.97, -0.02);
+      hood.castShadow = true;
+      hood.receiveShadow = true;
+      group.add(hood);
+      rod([-0.3, 0.32, 0.07], [0.3, 0.34, 0.12], 0.055, m.woodDark);
+    } else if (name === "canopy_bed") {
+      b(w, 0.2, d, 0, 0.22, 0);
+      b(w - 0.08, 0.2, d - 0.08, 0, 0.42, 0, m.cream);
+      b(w - 0.04, 0.07, d * 0.7, 0, 0.55, 0.25, m.linen);
+      b(w - 0.02, 0.018, 0.4, 0, 0.592, 0.55, m.cream);
+      for (const side of [-1, 1]) {
+        rod(
+          [side * (w / 2 - 0.035), 0, -d / 2 + 0.04],
+          [side * (w / 2 - 0.035), h, -d / 2 + 0.04],
+          0.028,
+        );
+        b(0.6, 0.12, 0.38, side * 0.36, 0.57, -0.68, m.linen).rotation.y = side * 0.08;
+      }
+      rod([-0.15, 0.67, 0.3], [-0.15, 0.67, 0.58], 0.075, m.cream);
+      rod([0.06, 0.67, 0.3], [0.06, 0.67, 0.58], 0.075, m.cream);
+      rod([-w / 2, h - 0.03, -d / 2 + 0.04], [w / 2, h - 0.03, -d / 2 + 0.04], 0.028);
+      rod([-w / 2, 0.7, d / 2 - 0.04], [w / 2, 0.7, d / 2 - 0.04], 0.026);
+      for (const side of [-1, 1])
+        rod(
+          [side * (w / 2 - 0.035), 0, d / 2 - 0.04],
+          [side * (w / 2 - 0.035), 0.72, d / 2 - 0.04],
+          0.026,
+        );
+    } else if (name === "garment_rack") {
+      for (const side of [-1, 1]) {
+        for (const front of [-1, 1])
+          rod([(side * w) / 2, 0, (front * d) / 2], [side * w * 0.4, h, 0], 0.025);
+      }
+      rod([-w / 2, h - 0.04, 0], [w / 2, h - 0.04, 0], 0.024);
+      for (let i = 0; i < 7; i += 1) b(0.025, 0.025, d - 0.06, -0.43 + i * 0.143, 0.22, 0);
+      for (const x of [-0.25, 0.12]) {
+        rod([x, h - 0.1, 0], [x - 0.17, h - 0.28, 0], 0.012);
+        rod([x - 0.17, h - 0.28, 0], [x + 0.17, h - 0.28, 0], 0.012);
+        rod([x + 0.17, h - 0.28, 0], [x, h - 0.1, 0], 0.012);
+      }
+    } else if (name === "slatted_table") {
+      for (const x of [-1, 1])
+        for (const z of [-1, 1])
+          b(0.045, h - 0.04, 0.045, x * (w / 2 - 0.06), (h - 0.04) / 2, z * (d / 2 - 0.06));
+      for (let i = 0; i < 9; i += 1) b(w / 10, 0.045, d, ((i - 4) * w) / 9, h - 0.023, 0);
+      for (const side of [-1, 1]) b(w, 0.075, 0.035, 0, h - 0.08, side * (d / 2 - 0.03));
+    } else if (name === "folding_chair" || name === "woven_chair") {
+      const woven = name === "woven_chair";
+      for (const side of [-1, 1]) {
+        rod([side * w * 0.42, 0, -d * 0.4], [side * w * 0.42, 0.5, d * 0.3], 0.023);
+        rod([side * w * 0.42, 0, d * 0.4], [side * w * 0.42, h, -d * 0.38], 0.023);
+        if (woven) b(0.06, 0.035, d * 0.8, side * w * 0.46, 0.63, 0);
+      }
+      for (let i = 0; i < 7; i += 1) {
+        b(w * 0.82, 0.025, d / 10, 0, 0.45, ((i - 3) * d) / 10, woven ? m.linen : m.wood);
+        b(w * 0.82, 0.035, 0.027, 0, 0.58 + i * 0.04, -d * 0.35, woven ? m.linen : m.wood);
+        if (woven) b(0.04, 0.29, 0.032, ((i - 3) * w) / 9, 0.7, -d * 0.35 + 0.014, m.cream);
+      }
+    } else if (name === "sofa_bed") {
+      for (const x of [-0.78, 0.78])
+        for (const z of [-0.28, 0.28]) rod([x, 0, z], [x, 0.23, z], 0.035);
+      b(w, 0.16, d, 0, 0.3, 0, m.woodDark);
+      for (let i = 0; i < 3; i += 1) {
+        b(w / 3 - 0.012, 0.15, d - 0.1, ((i - 1) * w) / 3, 0.45, 0.04, m.linen);
+        b(w / 3 - 0.012, 0.42, 0.16, ((i - 1) * w) / 3, 0.65, -0.32, m.linen).rotation.x = -0.12;
+      }
+      b(0.32, 0.32, 0.13, 0.65, 0.67, -0.15, m.ochre).rotation.z = -0.18;
+    } else if (name === "kitchenette") {
+      b(w, 0.12, d - 0.08, 0, 0.06, 0, m.slate);
+      b(w, 0.75, d - 0.04, 0, 0.49, 0, m.white);
+      b(w + 0.03, 0.055, d + 0.03, 0, 0.9, 0);
+      for (let i = 0; i < 4; i += 1) {
+        const x = ((i - 1.5) * w) / 4;
+        b(w / 4 - 0.018, 0.67, 0.035, x, 0.49, d / 2, m.white);
+        b(w / 4 - 0.1, 0.54, 0.018, x, 0.49, d / 2 + 0.023, m.plaster);
+        b(0.19, 0.02, 0.035, x, 0.73, d / 2 + 0.04);
+        b(w / 4 - 0.016, 0.65, 0.32, x, h - 0.325, -0.16, m.white);
+        b(w / 4 - 0.09, 0.55, 0.02, x, h - 0.325, 0.012, i < 2 ? m.screen : m.plaster);
+        b(0.018, 0.09, 0.03, x + 0.19, h - 0.54, 0.03);
+      }
+      b(0.65, 0.012, 0.43, -0.48, 0.934, 0.02, m.metal);
+      b(0.52, 0.013, 0.32, -0.48, 0.941, 0.02, m.slate);
+      rod([-0.48, 0.94, -0.21], [-0.48, 1.22, -0.21], 0.018, m.metal);
+      rod([-0.48, 1.22, -0.21], [-0.48, 1.22, -0.04], 0.018, m.metal);
+      b(0.53, 0.018, 0.48, 0.86, 0.94, 0, m.screen);
+      b(0.47, 0.46, 0.015, 0.9, 0.47, d / 2 + 0.055, m.screen);
+      b(0.36, 0.025, 0.035, 0.9, 0.72, d / 2 + 0.075, m.metal);
+    } else if (name === "timber_rail") {
+      for (let i = 0; i <= 12; i += 1)
+        b(0.035, h - 0.1, 0.035, -w / 2 + (i * w) / 12, h / 2, 0, m.woodDark);
+      for (const y of [0.06, h - 0.03]) b(w + 0.04, 0.06, d, 0, y, 0, m.woodDark);
+    } else if (name === "towel_stack") {
+      for (const x of [-0.12, 0.12]) rod([x, 0.08, -0.15], [x, 0.08, 0.15], 0.08, m.cream);
+      rod([0, 0.19, -0.14], [0, 0.19, 0.14], 0.07, m.linen);
+    } else if (name === "gym_bench") {
+      for (const z of [-0.5, 0.5]) {
+        b(w, 0.055, 0.065, 0, 0.04, z, m.screen);
+        rod([0, 0.06, z], [0, 0.4, z * 0.5], 0.035, m.metal);
+      }
+      b(0.42, 0.1, 0.45, 0, 0.43, 0.4, m.screen);
+      b(0.42, 0.1, 0.9, 0, 0.75, -0.18, m.screen).rotation.x = 0.7;
+    }
+  }
+
+  function referenceApartment(buildExample) {
+    const room = (name, floor, cols, rows, x, z, items, extra = {}) => ({
+      name,
+      floor,
+      cols,
+      rows,
+      x,
+      z,
+      items,
+      style: "mediterranean",
+      walls: ["north", "east", "south", "west"],
+      ...extra,
+    });
+    return buildExample(
+      "Mediterranean three-level apartment — interpretation of the supplied photographs, not a measured survey.\n# Floor 0: guest suite and gym. Floor 1: kitchenette, fireplace and garden terrace.\n# Floor 2: bedroom, twin sleeping area and orange-awning balcony.\n# Select a floor and room, then use first person to explore. Dimensions and connections are inferred.",
+      0.75,
+      [
+        room(
+          "guest_suite",
+          0,
+          8,
+          10,
+          0,
+          0,
+          [
+            [2, 2, "bed(pillows_on_top)"],
+            [0, 2, "nightstand"],
+            [4, 2, "nightstand"],
+            [6, 1, "garment_rack"],
+            [1, 7, "sofa_bed@90"],
+            [4, 5, "rug"],
+          ],
+          { doors: ["east", "south"], mounts: [["north", 2, "painting"]] },
+        ),
+        room(
+          "lower_stair_hall",
+          0,
+          5,
+          10,
+          8,
+          0,
+          [
+            [1, 4, "stairs"],
+            [3, 1, "washing_machine"],
+            [3, 8, "laundry_basket"],
+          ],
+          { doors: ["west", "south"] },
+        ),
+        room(
+          "fitness_room",
+          0,
+          8,
+          4,
+          0,
+          10,
+          [
+            [2, 1, "gym_bench"],
+            [5, 1, "desk"],
+            [5, 2, "chair@180"],
+          ],
+          { doors: ["north"], mounts: [["south", 2, "poster"]] },
+        ),
+        room(
+          "lower_bath",
+          0,
+          5,
+          4,
+          8,
+          10,
+          [
+            [0, 2, "vanity~west"],
+            [4, 2, "shower"],
+            [2, 3, "toilet~south"],
+          ],
+          { doors: ["north"], mounts: [["west", 2, "mirror"]] },
+        ),
+        room(
+          "living_kitchen",
+          1,
+          8,
+          10,
+          0,
+          0,
+          [
+            [5, 1, "kitchenette~north"],
+            [7, 2, "fridge~east"],
+            [1, 1, "fireplace~north"],
+            [1, 5, "sofa_bed@90"],
+            [3, 7, "woven_chair@30"],
+            [5, 6, "coffee_table"],
+            [5, 3, "rug"],
+            [0, 8, "plant"],
+          ],
+          {
+            doors: ["east", "south"],
+            mounts: [
+              ["west", 3, "painting"],
+              ["east", 8, "air_conditioner"],
+            ],
+          },
+        ),
+        room(
+          "main_stair_hall",
+          1,
+          5,
+          10,
+          8,
+          0,
+          [
+            [3, 4, "stairs@180"],
+            [0, 8, "shoe_rack"],
+          ],
+          { doors: ["west", "north"] },
+        ),
+        room(
+          "garden_terrace",
+          1,
+          8,
+          4,
+          0,
+          10,
+          [
+            [4, 1, "awning[5.7x2.8x2.65]"],
+            [4, 2, "dining_table"],
+            [2, 2, "folding_chair@90"],
+            [6, 2, "folding_chair@270"],
+            [0, 2, "planter@90"],
+          ],
+          { kind: "balcony", rails: ["east", "west"] },
+        ),
+        room(
+          "upper_bedroom",
+          2,
+          8,
+          10,
+          0,
+          0,
+          [
+            [1, 1, "bed[0.9x2x0.56]"],
+            [3, 1, "bed[0.9x2x0.56]"],
+            [2, 6, "canopy_bed"],
+            [0, 6, "side_table"],
+            [4, 6, "side_table(towels_on_top)"],
+            [6, 1, "garment_rack"],
+            [1, 8, "rug"],
+          ],
+          {
+            doors: ["east", "south"],
+            mounts: [
+              ["west", 5, "painting"],
+              ["east", 1, "air_conditioner"],
+            ],
+          },
+        ),
+        room("upper_landing", 2, 5, 10, 8, 0, [[1, 8, "console_table"]], { doors: ["west"] }),
+        room(
+          "sunny_balcony",
+          2,
+          8,
+          3,
+          0,
+          10,
+          [
+            [4, 1, "awning[5.7x2.1x2.65]"],
+            [2, 1, "slatted_table"],
+            [1, 1, "folding_chair@90"],
+            [3, 1, "folding_chair@270"],
+            [6, 1, "planter"],
+          ],
+          { kind: "balcony", rails: ["south", "east", "west"] },
+        ),
+      ],
+      { pillows: ["pillow | pillow"], towels: ["towel_stack"] },
+    );
+  }
   const THREE = await import("three"),
     { mergeGeometries } = await import("three/addons/utils/BufferGeometryUtils.js"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
@@ -879,7 +1239,7 @@
       if (
         room.kind !== "balcony" &&
         room.windows?.length !== 0 &&
-        !["liminal", "industrial", "aquatic"].includes(room.style) &&
+        !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
         !room.items.some((item) => ["ceiling_light", "fluorescent_light"].includes(item[2]))
       ) {
         const count = room.cols * room.rows * grid ** 2 >= 18 ? 2 : 1;
@@ -2099,6 +2459,7 @@
     ]);
   }
   const catalog = {
+      ...referenceCatalog,
       air_conditioner: [1.02, 0.22, 0.31],
       aquarium: [1.8, 0.65, 1.45],
       arcade_machine: [0.75, 0.85, 1.7],
@@ -2770,8 +3131,21 @@
           fail("Define a ROOM before its STYLE", line);
         }
         const style = text.slice(6).trim().toLowerCase();
-        if (!["warm", "blue", "neutral", "liminal", "industrial", "aquatic"].includes(style)) {
-          fail("STYLE must be warm, blue, neutral, liminal, industrial, or aquatic", line);
+        if (
+          ![
+            "warm",
+            "blue",
+            "neutral",
+            "liminal",
+            "industrial",
+            "aquatic",
+            "mediterranean",
+          ].includes(style)
+        ) {
+          fail(
+            "STYLE must be warm, blue, neutral, liminal, industrial, aquatic, or mediterranean",
+            line,
+          );
         }
         currentRoom.style = style;
       } else if (/^MOUNT\s+/iu.test(text)) {
@@ -3257,12 +3631,18 @@
             (y / 256) * Math.PI * 48 + 1.8 * Math.sin(phase) + 0.5 * Math.sin(phase * 3),
           ),
           value =
-            kind === "wood"
-              ? 216 +
-                grain * 8 +
-                Math.sin((y / 256) * Math.PI * 146 + Math.sin(phase) * 4) * 3 +
-                noise * 8
-              : 218 + (x % 4 < 2 === y % 4 < 2 ? 12 : -12) + noise * 12,
+            kind === "plaster"
+              ? 235 + noise * 20
+              : kind === "tile"
+                ? x < 2 || y < 2
+                  ? 180
+                  : 228 + noise * 9 + 4 * Math.sin(phase + y / 32)
+                : kind === "wood"
+                  ? 216 +
+                    grain * 8 +
+                    Math.sin((y / 256) * Math.PI * 146 + Math.sin(phase) * 4) * 3 +
+                    noise * 8
+                  : 218 + (x % 4 < 2 === y % 4 < 2 ? 12 : -12) + noise * 12,
           offset = (y * 256 + x) * 4;
         pixels.data[offset] = value;
         pixels.data[offset + 1] = value;
@@ -3280,6 +3660,12 @@
   const grainTexture = surfaceTexture("wood"),
     weaveTexture = surfaceTexture("fabric"),
     colors = {
+      ochre: "#c96a16",
+      linen: "#a49d8e",
+      plaster: "#f1ede3",
+      stone: "#c9c1b2",
+      slate: "#655f54",
+      terracotta: "#ad6442",
       amber: "#edb956",
       ceiling: "#f5f2eb",
       clay: "#b97861",
@@ -3319,11 +3705,24 @@
     item.roughness = 0.56;
     item.userData.textureScale = 0.6;
   }
-  for (const key of ["fabric", "fabricDark", "cream", "rug"]) {
+  for (const key of ["fabric", "fabricDark", "cream", "rug", "linen", "ochre"]) {
     material[key].map = weaveTexture;
     material[key].bumpMap = weaveTexture;
     material[key].bumpScale = 0.002;
     material[key].userData.textureScale = 0.22;
+  }
+  const plasterTexture = surfaceTexture("plaster"),
+    tileTexture = surfaceTexture("tile");
+  material.plaster.bumpMap = plasterTexture;
+  material.plaster.bumpScale = 0.008;
+  material.plaster.userData.textureScale = 0.5;
+  material.plaster.roughness = 0.94;
+  for (const key of ["stone", "terracotta"]) {
+    material[key].map = tileTexture;
+    material[key].bumpMap = tileTexture;
+    material[key].bumpScale = 0.002;
+    material[key].userData.textureScale = key === "stone" ? 0.6 : 0.3;
+    material[key].roughness = 0.72;
   }
   material.white.roughness = 0.3;
   material.metal.metalness = 0.85;
@@ -3334,11 +3733,17 @@
   material.glow.emissive.set("#a0f8da");
   material.glow.emissiveIntensity = 0.8;
   function box(parent, w, h, d, x, y, z, m) {
-    const upholstered = [material.fabric, material.fabricDark, material.cream].includes(m),
+    const upholstered = [
+        material.fabric,
+        material.fabricDark,
+        material.cream,
+        material.linen,
+      ].includes(m),
       radius = Math.min(upholstered ? 0.065 : 0.018, Math.min(w, h, d) * 0.24),
-      geometry = parent.userData.detailed
-        ? new RoundedBoxGeometry(w, h, d, 2, radius)
-        : new THREE.BoxGeometry(w, h, d);
+      geometry =
+        parent.userData.detailed && Math.min(w, h, d) > 0.06
+          ? new RoundedBoxGeometry(w, h, d, 2, radius)
+          : new THREE.BoxGeometry(w, h, d);
     if (m.userData.textureScale) {
       const positions = geometry.attributes.position,
         normals = geometry.attributes.normal,
@@ -3361,7 +3766,7 @@
     parent.add(mesh);
     return mesh;
   }
-  function cylinder(parent, r1, r2, h, x, y, z, m, segments = 32) {
+  function cylinder(parent, r1, r2, h, x, y, z, m, segments = 16) {
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, segments), m);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
@@ -3434,6 +3839,43 @@
       leaf.castShadow = true;
       leaf.receiveShadow = true;
       group.add(leaf);
+    }
+  }
+  // Merge only static, opaque siblings. Keep token groups intact for picking and editing.
+  // Lights and transparent panes retain their individual render/lifecycle behavior.
+  function batchFurniture(group) {
+    const batches = new Map();
+    for (const child of group.children) {
+      if (
+        !child.isMesh ||
+        child.children.length ||
+        Array.isArray(child.material) ||
+        child.material.transparent
+      )
+        continue;
+      const key = `${child.material.uuid}:${child.castShadow}:${child.receiveShadow}`;
+      if (!batches.has(key)) batches.set(key, []);
+      batches.get(key).push(child);
+    }
+    for (const meshes of batches.values()) {
+      if (meshes.length < 2) continue;
+      const parts = meshes.map((mesh) => {
+        mesh.updateMatrix();
+        const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+        geometry.applyMatrix4(mesh.matrix);
+        return geometry;
+      });
+      const geometry = mergeGeometries(parts);
+      parts.forEach((part) => part.dispose());
+      if (!geometry) continue;
+      const combined = new THREE.Mesh(geometry, meshes[0].material);
+      combined.castShadow = meshes[0].castShadow;
+      combined.receiveShadow = meshes[0].receiveShadow;
+      for (const mesh of meshes) {
+        group.remove(mesh);
+        mesh.geometry.dispose();
+      }
+      group.add(combined);
     }
   }
   function makeFurniture(token, semantic = false) {
@@ -3774,6 +4216,33 @@
               cd / 2 - ((i + 0.5) * cd) / 16,
               material.wood,
             );
+          }
+          for (const side of [-1, 1]) {
+            for (let i = 0; i < 12; i += 1) {
+              const z = cd / 2 - ((i + 0.5) * cd) / 12;
+              const y = (ch * (i + 0.5)) / 12;
+              box(
+                group,
+                0.035,
+                0.85,
+                0.035,
+                side * (cw / 2 - 0.045),
+                y + 0.425,
+                z,
+                material.woodDark,
+              );
+            }
+            const rail = box(
+              group,
+              0.065,
+              0.065,
+              Math.hypot(cd, ch),
+              side * (cw / 2 - 0.045),
+              ch / 2 + 0.85,
+              0,
+              material.woodDark,
+            );
+            rail.rotation.x = Math.atan2(ch, cd);
           }
           break;
         }
@@ -4362,7 +4831,11 @@
           break;
         }
       }
+      addReferenceAsset(name, group, { THREE, box, cylinder, material });
       addDecoration(group, name, box);
+      if (!lightAssets.includes(name)) {
+        batchFurniture(group);
+      }
       group.scale.set(w / cw, h / ch, d / cd);
     }
     group.userData.token = token;
@@ -4422,19 +4895,23 @@
         }
       }
       const floorMaterial =
-        room.style === "liminal"
-          ? material.yellow
-          : room.style === "industrial"
-            ? material.concrete
-            : room.style === "aquatic"
-              ? material.white
-              : room.kind === "balcony"
-                ? mat("#b9aa95")
-                : /(bath|wash)/u.test(room.name)
-                  ? mat("#d6e0db")
-                  : /(kitchen)/u.test(room.name)
-                    ? mat("#ccc7b9")
-                    : material.floor;
+        room.style === "mediterranean"
+          ? room.kind === "balcony"
+            ? material.terracotta
+            : material.stone
+          : room.style === "liminal"
+            ? material.yellow
+            : room.style === "industrial"
+              ? material.concrete
+              : room.style === "aquatic"
+                ? material.white
+                : room.kind === "balcony"
+                  ? mat("#b9aa95")
+                  : /(bath|wash)/u.test(room.name)
+                    ? mat("#d6e0db")
+                    : /(kitchen)/u.test(room.name)
+                      ? mat("#ccc7b9")
+                      : material.floor;
       const openings = program.connectors
         .filter((link) => link.upper === room)
         .map((link) => ({
@@ -4503,7 +4980,7 @@
       }
       if (
         !largeScene &&
-        !["liminal", "industrial", "aquatic"].includes(room.style) &&
+        !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
         room.kind !== "balcony" &&
         !/(bath|wash|kitchen)/u.test(room.name)
       ) {
@@ -4530,17 +5007,19 @@
         }
       }
       const wallMaterial =
-        room.style === "liminal"
-          ? material.yellow
-          : room.style === "industrial"
-            ? material.concrete
-            : room.style === "aquatic"
-              ? mat("#a8d8d7")
-              : room.style === "blue"
-                ? mat("#4e9bc0")
-                : room.style === "neutral"
-                  ? mat("#d9dedb")
-                  : material.wall;
+        room.style === "mediterranean"
+          ? material.plaster
+          : room.style === "liminal"
+            ? material.yellow
+            : room.style === "industrial"
+              ? material.concrete
+              : room.style === "aquatic"
+                ? mat("#a8d8d7")
+                : room.style === "blue"
+                  ? mat("#4e9bc0")
+                  : room.style === "neutral"
+                    ? mat("#d9dedb")
+                    : material.wall;
       if (room.kind === "balcony") {
         const seam = mat("#8e8579");
         for (let z = -depth / 2 + 0.36; z < depth / 2; z += 0.36) {
@@ -4556,6 +5035,29 @@
             middle = vertical ? centerZ : centerX,
             x = vertical ? fixed : middle,
             z = vertical ? middle : fixed;
+          if (room.style === "mediterranean") {
+            box(
+              wallRoot,
+              vertical ? 0.16 : length,
+              0.95,
+              vertical ? length : 0.16,
+              x,
+              0.475,
+              z,
+              material.plaster,
+            );
+            box(
+              wallRoot,
+              vertical ? 0.2 : length,
+              0.045,
+              vertical ? length : 0.2,
+              x,
+              0.97,
+              z,
+              material.stone,
+            );
+            continue;
+          }
           box(
             wallRoot,
             vertical ? 0.045 : length,
@@ -4696,22 +5198,58 @@
               vertical ? fixed : middle + offset,
               1.14,
               vertical ? middle + offset : fixed,
-              material.white,
+              room.style === "mediterranean" ? material.wood : material.white,
             );
           }
           const leafLength = gap - 0.1;
           const outward = { east: 1, north: -1, south: 1, west: -1 }[dir];
-          const leaf = box(
-            opening,
-            vertical ? leafLength : 0.055,
-            2.12,
-            vertical ? 0.055 : leafLength,
-            vertical ? fixed + (outward * leafLength) / 2 : middle - gap / 2 + 0.055,
-            1.06,
-            vertical ? middle - gap / 2 + 0.055 : fixed + (outward * leafLength) / 2,
-            material.wood,
-          );
-          leaf.userData.openDoorLeaf = true;
+          const glazed =
+            room.style === "mediterranean" &&
+            (!sharedEdge ||
+              program.rooms.some(
+                (other) => other.kind === "balcony" && sharedWall(room, other, dir),
+              ));
+          if (glazed) {
+            const leaf = new THREE.Group();
+            leaf.position.set(
+              vertical ? fixed + (outward * leafLength) / 2 : middle - gap / 2 + 0.055,
+              0,
+              vertical ? middle - gap / 2 + 0.055 : fixed + (outward * leafLength) / 2,
+            );
+            leaf.rotation.y = vertical ? 0 : Math.PI / 2;
+            leaf.userData.openDoorLeaf = true;
+            opening.add(leaf);
+            const glass = mat("#cedcda", 0.15);
+            glass.transparent = true;
+            glass.opacity = 0.22;
+            glass.depthWrite = false;
+            glass.userData.windowPane = true;
+            for (const x of [-leafLength / 2 + 0.03, leafLength / 2 - 0.03]) {
+              box(leaf, 0.06, 2.12, 0.06, x, 1.06, 0, material.wood);
+            }
+            for (const y of [0.045, 0.68, 2.085]) {
+              box(leaf, leafLength, 0.07, 0.06, 0, y, 0, material.wood);
+            }
+            for (const [y, height] of [
+              [0.36, 0.56],
+              [1.38, 1.32],
+            ]) {
+              box(leaf, leafLength - 0.12, height, 0.018, 0, y, 0, glass).castShadow = false;
+            }
+            box(leaf, 0.025, 0.12, 0.035, leafLength / 2 - 0.05, 1.05, 0.045, material.metal);
+          } else {
+            const leaf = box(
+              opening,
+              vertical ? leafLength : 0.055,
+              2.12,
+              vertical ? 0.055 : leafLength,
+              vertical ? fixed + (outward * leafLength) / 2 : middle - gap / 2 + 0.055,
+              1.06,
+              vertical ? middle - gap / 2 + 0.055 : fixed + (outward * leafLength) / 2,
+              material.wood,
+            );
+            leaf.userData.openDoorLeaf = true;
+          }
         } else if (hasWindow) {
           const span = Math.min(2.1, length * 0.48),
             offset = THREE.MathUtils.clamp(
@@ -4755,19 +5293,55 @@
             box(opening, 0.025, 0.98, span - 0.09, fixed, windowY, center, glass).castShadow =
               false;
             for (const y of [1.15, 2.2]) {
-              box(opening, thickness + 0.04, 0.055, span, fixed, y, center, material.white);
+              box(
+                opening,
+                thickness + 0.04,
+                0.055,
+                span,
+                fixed,
+                y,
+                center,
+                room.style === "mediterranean" ? material.wood : material.white,
+              );
             }
             for (const z of [center - span / 2, center, center + span / 2]) {
-              box(opening, thickness + 0.04, 1.05, 0.055, fixed, windowY, z, material.white);
+              box(
+                opening,
+                thickness + 0.04,
+                1.05,
+                0.055,
+                fixed,
+                windowY,
+                z,
+                room.style === "mediterranean" ? material.wood : material.white,
+              );
             }
           } else {
             box(opening, span - 0.09, 0.98, 0.025, center, windowY, fixed, glass).castShadow =
               false;
             for (const y of [1.15, 2.2]) {
-              box(opening, span, 0.055, thickness + 0.04, center, y, fixed, material.white);
+              box(
+                opening,
+                span,
+                0.055,
+                thickness + 0.04,
+                center,
+                y,
+                fixed,
+                room.style === "mediterranean" ? material.wood : material.white,
+              );
             }
             for (const x of [center - span / 2, center, center + span / 2]) {
-              box(opening, 0.055, 1.05, thickness + 0.04, x, windowY, fixed, material.white);
+              box(
+                opening,
+                0.055,
+                1.05,
+                thickness + 0.04,
+                x,
+                windowY,
+                fixed,
+                room.style === "mediterranean" ? material.wood : material.white,
+              );
             }
           }
         } else {
@@ -4888,8 +5462,8 @@
           b = entries[j];
         if (
           a.token.floor !== b.token.floor ||
-          ["rug", ...overheadLights].includes(a.token.name) ||
-          ["rug", ...overheadLights].includes(b.token.name)
+          ["rug", "awning", ...overheadLights].includes(a.token.name) ||
+          ["rug", "awning", ...overheadLights].includes(b.token.name)
         ) {
           continue;
         }
@@ -5272,7 +5846,10 @@
     }
     for (const entry of collisionEntries) {
       const { token } = entry;
-      if (token.floor !== floor || ["rug", "stairs", ...overheadLights].includes(token.name)) {
+      if (
+        token.floor !== floor ||
+        ["rug", "awning", "stairs", ...overheadLights].includes(token.name)
+      ) {
         continue;
       }
       const angle = (token.yaw * Math.PI) / 180,
@@ -5396,6 +5973,7 @@
   }
   animate();
   examples["Decor gallery"] = decorationExample;
+  examples["Mediterranean three-level apartment"] = referenceApartment(buildExample);
   for (const name of Object.keys(examples)) {
     examples[name] = enrichExample(examples[name], parseProgram, name);
   }
@@ -5416,6 +5994,7 @@
       "Museum of tomorrow's ruins",
     ],
     "Multiple floors": [
+      "Mediterranean three-level apartment",
       "Two-storey home",
       "Three-storey townhouse",
       "Three-floor library",
