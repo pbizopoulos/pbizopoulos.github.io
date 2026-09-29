@@ -67,6 +67,73 @@
         <section class="preview-panel" aria-label="3D scene preview">
           <div id="viewport" class="viewport">
             <div class="preview-tools">
+              <details class="sun-panel">
+                <summary class="tool-button">Sun &amp; shadows</summary>
+                <form id="sunSettings" class="sun-settings">
+                  <label
+                    >Date
+                    <input id="sunDate" type="date" min="1900-01-01" max="2100-12-31" required
+                  /></label>
+                  <label
+                    >Local time <input id="sunTime" type="time" value="12:00" required
+                  /></label>
+                  <label
+                    >Latitude (° N)
+                    <input
+                      id="sunLatitude"
+                      type="number"
+                      min="-90"
+                      max="90"
+                      step="any"
+                      value="37.9838"
+                      required
+                  /></label>
+                  <label
+                    >Longitude (° E)
+                    <input
+                      id="sunLongitude"
+                      type="number"
+                      min="-180"
+                      max="180"
+                      step="any"
+                      value="23.7275"
+                      required
+                  /></label>
+                  <label
+                    >UTC offset (hours)
+                    <input
+                      id="sunOffset"
+                      type="number"
+                      min="-12"
+                      max="14"
+                      step="0.25"
+                      value="3"
+                      required
+                  /></label>
+                  <label
+                    >Building orientation (°)
+                    <input
+                      id="sunOrientation"
+                      type="number"
+                      min="0"
+                      max="360"
+                      step="any"
+                      value="0"
+                      required
+                  /></label>
+                  <p>
+                    Orientation is the bearing of the layout’s north wall: 0° true north, 90° east.
+                    Negative coordinates mean south or west. Set the UTC offset for your location
+                    and date, including daylight saving.
+                  </p>
+                  <output id="sunStatus" aria-live="polite"></output>
+                  <p>
+                    Default location: Athens. Approximate clear-sky sunlight; indoor lights remain
+                    on. Restore walls and ceilings to study sunlight through windows. Hidden floors
+                    do not cast shadows.
+                  </p>
+                </form>
+              </details>
               <select id="floorFocus" class="room-focus" aria-label="Visible floor" hidden></select>
               <select id="roomFocus" class="room-focus" aria-label="Focus room" hidden></select
               ><button

@@ -22,6 +22,62 @@ select,
 textarea {
   font: inherit;
 }
+input {
+  font: inherit;
+}
+input:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #598d7d;
+  outline-offset: 2px;
+}
+.sun-panel summary {
+  cursor: pointer;
+  width: auto;
+  white-space: nowrap;
+}
+.sun-settings {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(340px, 100%);
+  max-height: calc(100dvh - 150px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #d7dfd8;
+  border-radius: 5px;
+  background: #fffffff5;
+  color: #56675c;
+  font-size: 11px;
+}
+.sun-settings label {
+  display: grid;
+  gap: 4px;
+}
+.sun-settings input {
+  min-width: 0;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #d7dfd8;
+  border-radius: 4px;
+}
+.sun-settings p,
+.sun-settings output {
+  grid-column: 1 / -1;
+  margin: 0;
+  line-height: 1.5;
+}
+.sun-settings output {
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .sun-settings {
+    max-height: calc(50dvh - 65px);
+  }
+}
 button {
   cursor: pointer;
 }

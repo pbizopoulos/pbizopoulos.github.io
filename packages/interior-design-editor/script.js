@@ -1920,9 +1920,9 @@
   controls.maxDistance = 100;
   controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
   controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
-  scene.add(new THREE.HemisphereLight("#faf4e9", "#65746e", 0.8));
+  const skylight = new THREE.HemisphereLight("#faf4e9", "#65746e", 0.8);
+  scene.add(skylight);
   const sunlight = new THREE.DirectionalLight("#ffedd3", 2.4);
-  sunlight.position.set(-5, 9, 6);
   sunlight.castShadow = true;
   sunlight.shadow.mapSize.set(2048, 2048);
   sunlight.shadow.camera.left = -12;
@@ -1931,9 +1931,118 @@
   sunlight.shadow.camera.bottom = -12;
   sunlight.shadow.normalBias = 0.025;
   sunlight.shadow.radius = 3;
-  scene.add(sunlight);
+  scene.add(sunlight, sunlight.target);
   const sceneRoot = new THREE.Group();
   scene.add(sceneRoot);
+  const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation"],
+    sharedSettings = new URLSearchParams(location.hash.slice(1)),
+    today = new Date();
+  $("sunDate").value =
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  for (const field of sunFields) {
+    const input = $(`sun${field}`),
+      sharedValue = sharedSettings.get(`sun${field}`),
+      fallback = input.value;
+    if (sharedValue !== null) {
+      input.value = sharedValue;
+      if (!input.checkValidity()) {
+        input.value = fallback;
+      }
+    }
+  }
+  function solarPosition(date, time, latitude, longitude, offset) {
+    const radians = Math.PI / 180,
+      [year, month, day] = date.split("-").map(Number),
+      [hour, minute] = time.split(":").map(Number),
+      start = Date.UTC(year, 0, 1),
+      days = (Date.UTC(year + 1, 0, 1) - start) / 86_400_000,
+      dayOfYear = (Date.UTC(year, month - 1, day) - start) / 86_400_000 + 1,
+      gamma = ((2 * Math.PI) / days) * (dayOfYear - 1 + (hour + minute / 60 - 12) / 24),
+      equation =
+        229.18 *
+        (0.000075 +
+          0.001868 * Math.cos(gamma) -
+          0.032077 * Math.sin(gamma) -
+          0.014615 * Math.cos(2 * gamma) -
+          0.040849 * Math.sin(2 * gamma)),
+      declination =
+        0.006918 -
+        0.399912 * Math.cos(gamma) +
+        0.070257 * Math.sin(gamma) -
+        0.006758 * Math.cos(2 * gamma) +
+        0.000907 * Math.sin(2 * gamma) -
+        0.002697 * Math.cos(3 * gamma) +
+        0.00148 * Math.sin(3 * gamma),
+      hourAngle =
+        ((hour * 60 + minute + equation + 4 * longitude - 60 * offset) / 4 - 180) * radians,
+      lat = latitude * radians,
+      east = -Math.cos(declination) * Math.sin(hourAngle),
+      north =
+        Math.cos(lat) * Math.sin(declination) -
+        Math.sin(lat) * Math.cos(declination) * Math.cos(hourAngle),
+      up =
+        Math.sin(lat) * Math.sin(declination) +
+        Math.cos(lat) * Math.cos(declination) * Math.cos(hourAngle);
+    return {
+      altitude: Math.asin(Math.max(-1, Math.min(1, up))) / radians,
+      azimuth: (Math.atan2(east, north) / radians + 360) % 360,
+    };
+  }
+  function updateSun() {
+    if (!$("sunSettings").checkValidity()) {
+      $("sunStatus").textContent = "Enter a valid date, time, and values within the shown ranges.";
+      return;
+    }
+    const { altitude, azimuth } = solarPosition(
+        $("sunDate").value,
+        $("sunTime").value,
+        $("sunLatitude").valueAsNumber,
+        $("sunLongitude").valueAsNumber,
+        $("sunOffset").valueAsNumber,
+      ),
+      elevation = (altitude * Math.PI) / 180,
+      bearing = ((azimuth - $("sunOrientation").valueAsNumber) * Math.PI) / 180,
+      height = currentProgram ? (currentProgram.floors.at(-1) + 1) * 3 : 3,
+      radius = currentProgram
+        ? Math.hypot(
+            currentProgram.cols * currentProgram.grid,
+            currentProgram.rows * currentProgram.grid,
+            height,
+          ) /
+            2 +
+          2
+        : 12,
+      daylight = Math.max(0, Math.sin(elevation));
+    sunlight.target.position.set(0, height / 2, 0);
+    sunlight.position
+      .set(
+        Math.sin(bearing) * Math.cos(elevation),
+        Math.sin(elevation),
+        -Math.cos(bearing) * Math.cos(elevation),
+      )
+      .multiplyScalar(radius * 3)
+      .add(sunlight.target.position);
+    sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
+    sunlight.castShadow = altitude > 0;
+    sunlight.color.setHSL(0.1, 0.15 + 0.55 * (1 - Math.min(1, daylight * 3)), 0.9);
+    skylight.intensity = 0.12 + 0.68 * Math.min(1, daylight * 3);
+    scene.background.set("#182333").lerp(new THREE.Color("#eff2ee"), Math.min(1, daylight * 4));
+    scene.fog.color.copy(scene.background);
+    Object.assign(sunlight.shadow.camera, {
+      bottom: -radius,
+      far: radius * 5,
+      left: -radius,
+      near: radius,
+      right: radius,
+      top: radius,
+    });
+    sunlight.shadow.camera.updateProjectionMatrix();
+    $("sunStatus").textContent =
+      `${altitude > 0 ? "Daylight" : "Sun below horizon · no direct sunlight"} · Elevation ${altitude.toFixed(1)}° · Bearing ${azimuth.toFixed(1)}° from true north`;
+  }
+  $("sunSettings").addEventListener("submit", (event) => event.preventDefault());
+  $("sunSettings").addEventListener("input", updateSun);
+  $("sunSettings").addEventListener("focusin", () => pressedKeys.clear());
   function surfaceTexture(kind) {
     const canvas = document.createElement("canvas");
     canvas.width = 256;
@@ -3383,6 +3492,7 @@
     currentProgram = program;
     compiledSource = editor.state.doc.toString();
     addArchitecture(program);
+    updateSun();
     if (!program.rooms.some((room) => room.name === focusRoom)) {
       focusRoom = undefined;
     }
@@ -3704,6 +3814,9 @@
     }
   });
   document.addEventListener("keydown", (event) => {
+    if (event.target.closest(".sun-settings")) {
+      return;
+    }
     if (
       event.key === "?" &&
       !editor.hasFocus &&
@@ -3811,6 +3924,11 @@
     const url = new URL(location.href);
     url.searchParams.delete("example");
     url.hash = new URLSearchParams({ scene: editor.state.doc.toString() }).toString();
+    const settings = new URLSearchParams(url.hash.slice(1));
+    for (const field of sunFields) {
+      settings.set(`sun${field}`, $(`sun${field}`).value);
+    }
+    url.hash = settings.toString();
     try {
       await navigator.clipboard.writeText(url.href);
       showStatus("Share URL copied");
