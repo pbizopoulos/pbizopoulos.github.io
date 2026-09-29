@@ -6,7 +6,7 @@ let
   site = pkgs.runCommand "${pname}-site" { } ''
     mkdir -p "$out"
     cp ${./index.html} "$out/index.html"
-    for asset in script.js style.css collisions.js celestial.js layout-language.js layout-parser.js layout-parser.terms.js layout-tokens.js; do
+    for asset in script.js style.css; do
       if [ -f ${./.}/"$asset" ]; then
         cp ${./.}/"$asset" "$out/$asset"
       fi

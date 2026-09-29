@@ -959,15 +959,21 @@
     { mergeGeometries } = await import("three/addons/utils/BufferGeometryUtils.js"),
     { OrbitControls } = await import("three/addons/controls/OrbitControls.js"),
     { PointerLockControls } = await import("three/addons/controls/PointerLockControls.js"),
-    { solarPosition, lunarDirection } = await import("./celestial.js"),
+    { default: SunCalc } = await import("suncalc"),
+    { Box3, Matrix3, Matrix4, Vector3 } = THREE,
+    { OBB } = await import("three/addons/math/OBB.js"),
+    { default: RBush } = await import("rbush"),
+    { LRParser } = await import("@lezer/lr"),
     { default: TinyQueue } = await import("tinyqueue"),
-    { createCollisionIndex, overlapWarnings } = await import("./collisions.js"),
-    { readLayout, layoutLanguage } = await import("./layout-language.js"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
     { EditorView, Decoration, keymap, lineNumbers, drawSelection } =
       await import("@codemirror/view"),
     {
+      LRLanguage,
+      LanguageSupport,
+      foldService,
+      syntaxTree,
       foldGutter,
       codeFolding,
       foldKeymap,
@@ -991,7 +997,386 @@
       "globe_lamp",
     ],
     overheadLights = lightAssets.slice(0, 5);
-  function sharedWall(room, other, dir) {
+  function celestialTime(date, time, offset) {
+    return new Date(Date.parse(`${date}T${time}:00Z`) - offset * 3_600_000);
+  }
+  function solarPosition(date, time, latitude, longitude, offset) {
+    const position = SunCalc.getPosition(celestialTime(date, time, offset), latitude, longitude);
+    return {
+      altitude: THREE.MathUtils.radToDeg(position.altitude),
+      azimuth: (THREE.MathUtils.radToDeg(position.azimuth) + 180) % 360,
+    };
+  }
+  function lunarDirection(date, time, latitude, longitude, offset, orientation) {
+    const { altitude, azimuth } = SunCalc.getMoonPosition(
+        celestialTime(date, time, offset),
+        latitude,
+        longitude,
+      ),
+      bearing = azimuth + Math.PI - THREE.MathUtils.degToRad(orientation);
+    return new THREE.Vector3(
+      Math.sin(bearing) * Math.cos(altitude),
+      Math.sin(altitude),
+      -Math.cos(bearing) * Math.cos(altitude),
+    );
+  }
+  /* eslint-disable no-shadow -- Keep the consolidated helpers in their original scopes. */ const {
+    createCollisionIndex,
+    overlapWarnings,
+  } = (() => {
+    const trees = new Set(["olive_tree", "citrus_tree", "topiary_tree", "palm"]);
+    const ignored = new Set([
+      "rug",
+      "kilim_rug",
+      "ceiling_fan",
+      "floor_drain",
+      "curtain_pair",
+      "gym_mat",
+      "stone_path",
+      "archway",
+      "timber_pergola",
+      "awning",
+    ]);
+    function createCollisionIndex(entries) {
+      const floors = new Map();
+      const items = entries.map((entry, id) => {
+        const { token, x, z } = entry;
+        const [width, depth] = token.dimensions;
+        const angle = (token.yaw * Math.PI) / 180;
+        const rotation = new Matrix3().setFromMatrix4(new Matrix4().makeRotationY(angle));
+        const box = new OBB(new Vector3(x, 0, z), new Vector3(width / 2, 1, depth / 2), rotation);
+        const walkingBox = box.clone();
+        walkingBox.halfSize.x += 0.2;
+        walkingBox.halfSize.z += 0.2;
+        const footprintWidth = trees.has(token.name) ? Math.max(0.3, width * 0.16) : width;
+        const footprintDepth = trees.has(token.name) ? footprintWidth : depth;
+        const boundWidth = Math.max(width, footprintWidth);
+        const boundDepth = Math.max(depth, footprintDepth);
+        const bounds = new Box3(
+          new Vector3(-boundWidth / 2, -1, -boundDepth / 2),
+          new Vector3(boundWidth / 2, 1, boundDepth / 2),
+        )
+          .applyMatrix4(new Matrix4().makeRotationY(angle))
+          .translate(box.center);
+        const warningBox = new OBB(
+          box.center.clone(),
+          new Vector3(
+            Math.max(0, footprintWidth / 2 - 0.04),
+            1,
+            Math.max(0, footprintDepth / 2 - 0.04),
+          ),
+          rotation,
+        );
+        const item = {
+          entry,
+          id,
+          maxX: bounds.max.x,
+          maxY: bounds.max.z,
+          minX: bounds.min.x,
+          minY: bounds.min.z,
+          walkingBox,
+          warningBox,
+        };
+        if (!floors.has(token.floor)) {
+          floors.set(token.floor, new RBush());
+        }
+        return item;
+      });
+      for (const [floor, index] of floors) {
+        index.load(items.filter((item) => item.entry.token.floor === floor));
+      }
+      return { items, search: (floor, bounds) => floors.get(floor)?.search(bounds) || [] };
+    }
+    function overlapWarnings(index, overheadLights) {
+      const warnings = [];
+      const skip = (item) =>
+        ignored.has(item.entry.token.name) || overheadLights.includes(item.entry.token.name);
+      for (const a of index.items) {
+        if (skip(a)) {
+          continue;
+        }
+        const candidates = index.search(a.entry.token.floor, a).toSorted((a, b) => a.id - b.id);
+        for (const b of candidates) {
+          if (b.id <= a.id || skip(b)) {
+            continue;
+          }
+          if (a.warningBox.intersectsOBB(b.warningBox)) {
+            warnings.push(`${a.entry.token.name} overlaps ${b.entry.token.name}`);
+          }
+        }
+      }
+      return warnings;
+    }
+    return { createCollisionIndex, overlapWarnings };
+  })();
+  const { readLayout, layoutLanguage } = (() => {
+    const keywords = new Set([
+      "WALL_THICKNESS",
+      "SITE",
+      "FACADE",
+      "ROOF",
+      "LIGHT",
+      "AT",
+      "POWER",
+      "FLOOR",
+      "ROOM",
+      "BALCONY",
+      "GARDEN",
+      "GRID",
+      "WALLS",
+      "RAILS",
+      "WINDOWS",
+      "DOORS",
+      "HEIGHT",
+      "SURFACE",
+      "STYLE",
+      "MOUNT",
+      "LAYOUT",
+      "END",
+    ]);
+    function specializeKeyword(value, stack) {
+      const keyword = value.toUpperCase();
+      return keywords.has(keyword) && stack.canShift(terms[keyword]) ? terms[keyword] : -1;
+    }
+    /* eslint-disable no-redeclare, no-bitwise, sort-keys -- Generated by Lezer. */ const terms =
+      (() => {
+        const WALL_THICKNESS = 1,
+          SITE = 2,
+          FACADE = 3,
+          ROOF = 4,
+          LIGHT = 5,
+          AT = 6,
+          POWER = 7,
+          FLOOR = 8,
+          ROOM = 9,
+          BALCONY = 10,
+          GARDEN = 11,
+          GRID = 12,
+          WALLS = 13,
+          RAILS = 14,
+          WINDOWS = 15,
+          DOORS = 16,
+          HEIGHT = 17,
+          SURFACE = 18,
+          STYLE = 19,
+          MOUNT = 20,
+          LAYOUT = 21,
+          END = 22,
+          Comment = 23,
+          Program = 24,
+          Statement = 25,
+          WallThickness = 26,
+          Number = 27,
+          Site = 28,
+          Name = 29,
+          Facade = 30,
+          Roof = 31,
+          Light = 32,
+          Point = 33,
+          Floor = 34,
+          SignedNumber = 35,
+          Room = 36,
+          Dimensions2 = 37,
+          Grid = 38,
+          Walls = 39,
+          Directions = 40,
+          Rails = 41,
+          Windows = 42,
+          Doors = 43,
+          Height = 44,
+          Surface = 45,
+          Style = 46,
+          Mount = 47,
+          Link = 48,
+          Layout = 49,
+          End = 50,
+          Row = 51,
+          ObjectToken = 52,
+          Empty = 53,
+          Asset = 54,
+          Rotation = 55,
+          Size = 56,
+          Dimensions3 = 57,
+          Child = 58,
+          Wall = 59;
+        return {
+          WALL_THICKNESS,
+          SITE,
+          FACADE,
+          ROOF,
+          LIGHT,
+          AT,
+          POWER,
+          FLOOR,
+          ROOM,
+          BALCONY,
+          GARDEN,
+          GRID,
+          WALLS,
+          RAILS,
+          WINDOWS,
+          DOORS,
+          HEIGHT,
+          SURFACE,
+          STYLE,
+          MOUNT,
+          LAYOUT,
+          END,
+          Comment,
+          Program,
+          Statement,
+          WallThickness,
+          Number,
+          Site,
+          Name,
+          Facade,
+          Roof,
+          Light,
+          Point,
+          Floor,
+          SignedNumber,
+          Room,
+          Dimensions2,
+          Grid,
+          Walls,
+          Directions,
+          Rails,
+          Windows,
+          Doors,
+          Height,
+          Surface,
+          Style,
+          Mount,
+          Link,
+          Layout,
+          End,
+          Row,
+          ObjectToken,
+          Empty,
+          Asset,
+          Rotation,
+          Size,
+          Dimensions3,
+          Child,
+          Wall,
+        };
+      })();
+    const parser = LRParser.deserialize({
+      version: 14,
+      states:
+        "-nQYQPOOO!vQPO'#CvO!{QPO'#CxO#QQPO'#CzO#VQPO'#C{O#[QPO'#C|O#aQQO'#DOO#fQSO'#DQO#nQPO'#DSO#sQPO'#DTO#sQPO'#DVO#sQPO'#DWO#sQPO'#DXO#xQPO'#DYO#}QPO'#DZO$SQPO'#D[O$XQPO'#D]O$^QPO'#D_OOQO'#D`'#D`OOQO'#Dd'#DdOOQO'#Db'#DbO$cQPO'#DbO%WQPO'#DaOOQO'#Cu'#CuOOQO'#Dj'#DjQ%lQPO'#DjQYQPOOO%qQPO,59bO%vQPO,59dOOQO,59f,59fOOQO,59g,59gO&RQPO,59hOOQO,59j,59jO&WQPO,59lO&cQSO,59lOOQO,59n,59nO&hQPO'#DUOOQO,59o,59oOOQO,59q,59qOOQO,59r,59rOOQO,59s,59sOOQO,59t,59tOOQO,59u,59uOOQO,59v,59vO&vQPO,59wOOQO,59y,59yO&{QQO'#DeO'QQWO'#DfO'VQPO'#DhO'[QPO'#DiOOQO,59|,59|O'aQPO,59|O'xQPO,59|O(PQPO,59|O(ZQPO,59|OOQO'#Dl'#DlO(hQPO'#DlO(sQPO,59{OOQO,5:U,5:UOOQO-E7h-E7hOOQO1G.|1G.|OOQO1G/O1G/OO)XQSO1G/SO)^QSO1G/WO)cQPO1G/WOOQO'#Dk'#DkO)nQPO'#DkO)sQPO,59pO*RQPO1G/cOOQO,5:P,5:PO*WQPO,5:QO*]QPO,5:SOOQO,5:T,5:TOOQO1G/h1G/hO*bQPO1G/hO*yQPO1G/hO+QQPO1G/hOOQO,5:W,5:WOOQO-E7j-E7jO+[QPO7+$nOOQO7+$r7+$rO+gQSO7+$rOOQO,5:V,5:VOOQO-E7i-E7iO+lQPO7+$}OOQO1G/l1G/lOOQO1G/n1G/nOOQO7+%S7+%SO+wQPO7+%SO,`QPO7+%SO,gQPO<<HYOOQO<<H^<<H^OOQO<<Hi<<HiOOQO<<Hn<<HnO,lQPO<<HnOOQOAN=tAN=tOOQOAN>YAN>Y",
+      stateData:
+        "-T~O!cOSgOS~OPPOQQORROSSOTTOWUOXVOYVOZVO[WO]XO^YO_ZO`[Oa]Ob^Oc_Od`OeaOfbOkcOmcO!VdO!lhO~OkkO~OmlO~OmmO~OmnO~OmoO~OspO~OmrOuqO~OksO~OmtO~OkyO~OmzO~Om{O~Om|O~Om}O~O!Q!SO!e!OO!f!PO!h!QO!j!ROk!UXm!UX!V!UX!a!UX!k!UX!l!UX~OkcOmcO!VdO!k!YO!a!TX!l!TX~O!l![O~Ok!^O~Ok!_O!ala!lla~OU!`O~OU!aO!ata!lta~Ou!bO~Om!cO!d!dO!axX!lxX~Ok!fO~Os!gO~O!Z!hO~Om!iO~Om!jO~O!Q!kOk!Uam!Ua!V!Ua!a!Ua!k!Ua!l!Ua~O!j!RO~P'aO!h!QO!j!RO~P'aO!f!PO!h!QO!j!RO~P'aOkcOmcO!VdO~OkcOmcO!VdO!k!YO!a!Ta!l!Ta~Oq!qO~Oq!rO~OU!sO!ati!lti~Om!tO~Om!cO!d!dO!axa!lxa~Om!vO~O!g!wO~O!i!xO~O!Q!yOk!Uim!Ui!V!Ui!a!Ui!k!Ui!l!Ui~O!j!RO~P*bO!h!QO!j!RO~P*bOV!|O!apq!lpq~Oq!}O~O!Q#OO!a!Pq!l!Pq~O!Q#POk!Uqm!Uq!V!Uq!a!Uq!k!Uq!l!Uq~O!j!RO~P+wOk#RO~O!Q#SOk!Uym!Uy!V!Uy!a!Uy!k!Uy!l!Uy~O",
+      goto: "$`!aPPPPPPPPPPPPPPPPPPPPPPPPP!b!fP!fP!f!f!fP!fP!fP!f!f!j!f!f!f!f!f!f!fP!f!f!f!vP#R#Y#]P#c#m#|$S$YTiOjTgOjQuXQvYQwZRx[SfOjS!Xf!ZR!o!YZeOfj!Y!ZR!WeQ!VeR!n!WQ!UeS!m!V!WR!{!nQ!TeU!l!U!V!WS!z!m!nR#Q!{QjOR!]jQ!etR!u!eQ!ZfR!p!Z",
+      nodeNames:
+        "⚠ WALL_THICKNESS SITE FACADE ROOF LIGHT AT POWER FLOOR ROOM BALCONY GARDEN GRID WALLS RAILS WINDOWS DOORS HEIGHT SURFACE STYLE MOUNT LAYOUT END Comment Program Statement WallThickness Number Site Name Facade Roof Light Point Floor SignedNumber Room Dimensions2 Grid Walls Directions Rails Windows Doors Height Surface Style Mount Link Layout End Row ObjectToken Empty Asset Rotation Size Dimensions3 Child Wall",
+      maxTerm: 74,
+      skippedNodes: [0, 23],
+      repeatNodeCount: 3,
+      tokenData:
+        ")s~RcXY!^YZ!l]^!^pq!^st!qxy#Yyz#_|}#d}!O#i!O!P$[!Q![$a!^!_(S!b!c(w!c!}(|!}#O)_#P#Q)d#T#o(|#p#q)i#r#s)n~!cR!c~XY!^]^!^pq!^~!qO!l~~!vSg~OY!qZ;'S!q;'S;=`#S<%lO!q~#VP;=`<%l!q~#_O!h~~#dO!i~~#iO!d~R#nP!VP!Q![#qQ#vQsQ!O!P#|!Q![#qQ$PP!Q![$SQ$XPsQ!Q![$SP$aO!VP_$hTkPsQ|}$w!O!P%h!Q![$a!z!{'k#l#m'kS$zP!Q![$}S%SQqS!O!P%Y!Q![$}S%]P!Q![%`S%ePqS!Q![%`_%kP!Q![%n_%uSkPsQ|}$w!Q![%n!z!{&R#l#m&RW&UP!Q![&XW&[S!O!P&h!Q![&X!z!{&z#l#m&zW&kP!Q![&nW&qR!Q![&n!z!{&z#l#m&zW&}P!Q!['QW'VQ!ZW!O!P']!Q!['QW'`P!Q!['cW'hP!ZW!Q!['c['nP!Q!['q['vSuS!O!P&h!Q!['q!z!{&z#l#m&z~(VVOY(SZ!^(S!_!`(S!`!a(l!a;'S(S;'S;=`(q<%lO(S~(qO!Q~~(tP;=`<%l(S~(|O!e~~)RSm~!Q![(|!c!}(|#R#S(|#T#o(|~)dO!f~~)iO!g~~)nO!k~~)sO!j~",
+      tokenizers: [0, 1, 2, 3],
+      topRules: { Program: [0, 24] },
+      specialized: [
+        {
+          term: 29,
+          get: (value, stack) => specializeKeyword(value, stack) << 1,
+          external: specializeKeyword,
+        },
+      ],
+      tokenPrec: 0,
+    });
+    /* eslint-enable no-redeclare, no-bitwise, sort-keys */ function textOf(source, node) {
+      return node ? source.slice(node.from, node.to) : undefined;
+    }
+    function readLayout(source) {
+      const tree = parser.parse(source);
+      tree.iterate({
+        enter(node) {
+          if (node.type.isError) {
+            const line = source.slice(0, node.from).split("\n").length;
+            throw Object.assign(new Error("Invalid layout syntax"), { line });
+          }
+        },
+      });
+      return tree.topNode.getChildren("Statement").map((statement) => {
+        const node = statement.firstChild;
+        const lineStart = source.lastIndexOf("\n", node.from - 1) + 1;
+        const get = (name) => textOf(source, node.getChild(name));
+        return {
+          areaKind: node.firstChild.name.toLowerCase(),
+          dimensions: get("Dimensions2")?.split(/x/iu).map(Number),
+          directions: node
+            .getChild("Directions")
+            ?.getChildren("Name")
+            .map((child) => textOf(source, child).toLowerCase()),
+          kind: node.name,
+          line: source.slice(0, node.from).split("\n").length,
+          names: node.getChildren("Name").map((child) => textOf(source, child)),
+          number: Number(get("SignedNumber") || get("Number")),
+          numbers: node.getChildren("Number").map((child) => Number(textOf(source, child))),
+          point: get("Point")?.split(",").map(Number) || [0, 0],
+          text: textOf(source, node),
+          tokens: node.getChildren("ObjectToken").map((token) => {
+            const part = (name) => textOf(source, token.getChild(name));
+            return {
+              child: part("Child")?.slice(1, -1),
+              dimensions: part("Size")?.slice(1, -1).split(/x/iu).map(Number),
+              end: token.to - lineStart,
+              name: part("Asset"),
+              start: token.from - lineStart,
+              text: textOf(source, token),
+              url: part("Link")?.slice(1, -1),
+              wall: part("Wall")?.slice(1).toLowerCase(),
+              yaw: part("Rotation")?.slice(1),
+            };
+          }),
+          url: get("Link")?.slice(1, -1),
+        };
+      });
+    }
+    function layoutFold(state, from) {
+      const line = state.doc.lineAt(from);
+      const statements = syntaxTree(state)
+        .topNode.getChildren("Statement")
+        .map((node) => node.firstChild);
+      const index = statements.findIndex((node) => node.from >= line.from && node.from <= line.to);
+      const header = statements[index];
+      if (!header || !["Layout", "Room", "Floor"].includes(header.name)) {
+        return;
+      }
+      let end = header.to;
+      let rooms = 0;
+      for (const node of statements.slice(index + 1)) {
+        if (node.name === "Room") {
+          rooms += 1;
+        }
+        if (header.name === "Layout") {
+          if (node.name === "End") {
+            return { from: line.to, to: node.to };
+          }
+          if (["Layout", "Room", "Floor"].includes(node.name)) {
+            return;
+          }
+        } else if (
+          (header.name === "Floor" ? ["Floor", "Layout"] : ["Room", "Floor", "Layout"]).includes(
+            node.name,
+          )
+        ) {
+          break;
+        }
+        end = node.to;
+      }
+      if (end > line.to && (header.name !== "Floor" || rooms > 1)) {
+        return { from: line.to, to: end };
+      }
+    }
+    const layoutLanguage = new LanguageSupport(LRLanguage.define({ parser }), [
+      foldService.of(layoutFold),
+    ]);
+    return { layoutLanguage, readLayout };
+  })();
+  /* eslint-enable no-shadow */ function sharedWall(room, other, dir) {
     if (room === other || room.floor !== other.floor) {
       return false;
     }
@@ -3508,23 +3893,39 @@
   }
   function parseToken(syntax, line) {
     const { text: token, yaw, wall, child, start, end } = syntax;
-    if ([".", "0", "-"].includes(token)) return;
+    if ([".", "0", "-"].includes(token)) {
+      return;
+    }
     const url = productUrl(syntax.url, line),
       name = aliases[syntax.name] || syntax.name.toLowerCase();
-    if (!catalog[name]) fail(`Unknown object "${syntax.name}"`, line);
+    if (!catalog[name]) {
+      fail(`Unknown object "${syntax.name}"`, line);
+    }
     const dimensions = syntax.dimensions || catalog[name];
     if (dimensions.some((n) => !Number.isFinite(n) || n <= 0 || n > 10)) {
       fail("Dimensions must be between 0 and 10 metres", line);
     }
-    if (child && !/_on_top$/iu.test(child)) fail(`Invalid object "${token}"`, line);
+    if (child && !/_on_top$/iu.test(child)) {
+      fail(`Invalid object "${token}"`, line);
+    }
     if (wall && !["north", "east", "south", "west"].includes(wall)) {
       fail(`Invalid wall "${wall}"`, line);
     }
     if (wall && (yaw !== undefined || ["stairs", "elevator"].includes(name))) {
-      fail("Wall placement sets the facing direction and cannot be used with @ or connectors", line);
+      fail(
+        "Wall placement sets the facing direction and cannot be used with @ or connectors",
+        line,
+      );
     }
     return {
-      child: child?.slice(0, -7), dimensions, line, name, url, wall, start, end,
+      child: child?.slice(0, -7),
+      dimensions,
+      end,
+      line,
+      name,
+      start,
+      url,
+      wall,
       yaw: wall ? { east: 270, north: 0, south: 180, west: 90 }[wall] : Number(yaw || 0),
     };
   }
@@ -3636,7 +4037,7 @@
           );
         }
         if (setting === "site" && statement.numbers[0] !== undefined) {
-          const margin = statement.numbers[0];
+          const [margin] = statement.numbers;
           if (!Number.isFinite(margin) || margin < 1 || margin > 30) {
             fail("SITE margin must be 1–30 metres", line);
           }
@@ -3652,7 +4053,7 @@
           fail("Use MOUNT east 2 wall_lamp for wall fixtures", line);
         }
         const [x, z] = statement.point,
-          power = statement.numbers[0];
+          [power] = statement.numbers;
         if (
           x > currentRoom.cols - 1 ||
           z > currentRoom.rows - 1 ||
@@ -3675,14 +4076,14 @@
         }
         const [cols, rows] = statement.dimensions,
           [x, z] = statement.point,
-          kind = statement.areaKind === "garden" ? "balcony" : statement.areaKind,
+          areaKind = statement.areaKind === "garden" ? "balcony" : statement.areaKind,
           room = {
             cols,
             doors: [],
             elevation: floor * 3,
             floor,
             height: 2.75,
-            kind,
+            kind: areaKind,
             lights: [],
             line,
             mounts: [],
@@ -3691,7 +4092,7 @@
             rows,
             style: "warm",
             surface: statement.areaKind === "garden" ? "grass" : "auto",
-            walls: kind === "balcony" ? [] : ["north", "east", "west"],
+            walls: areaKind === "balcony" ? [] : ["north", "east", "west"],
             x,
             z,
           };
@@ -3718,7 +4119,7 @@
         if (!currentRoom) {
           fail("Define a ROOM before its WALLS", line);
         }
-        const directions = statement.directions;
+        const { directions } = statement;
         if (directions.some((d) => !["north", "south", "east", "west", "none"].includes(d))) {
           fail("Walls must use north, south, east, west or none", line);
         }
@@ -3728,7 +4129,7 @@
         if (!currentRoom || currentRoom.kind !== "balcony") {
           fail("RAILS applies to the most recent BALCONY", line);
         }
-        const directions = statement.directions;
+        const { directions } = statement;
         if (directions.some((d) => !["north", "south", "east", "west", "none"].includes(d))) {
           fail("Rails must use north, south, east, west or none", line);
         }
@@ -3737,7 +4138,7 @@
         if (!currentRoom || currentRoom.kind === "balcony") {
           fail("WINDOWS needs an indoor ROOM", line);
         }
-        const directions = statement.directions;
+        const { directions } = statement;
         if (
           directions.some((dir) => !["north", "south", "east", "west", "none"].includes(dir)) ||
           (directions.includes("none") && directions.length > 1)
@@ -3750,7 +4151,7 @@
         if (!currentRoom) {
           fail("Define a ROOM before its DOORS", line);
         }
-        const directions = statement.directions;
+        const { directions } = statement;
         if (directions.some((d) => !["north", "south", "east", "west"].includes(d))) {
           fail("Doors must use north, south, east or west", line);
         }
@@ -3758,13 +4159,7 @@
         currentRoom.doorsLine = line;
       } else if (kind === "Height") {
         const height = statement.number;
-        if (
-          active ||
-          !currentRoom ||
-          currentRoom.kind !== "room" ||
-          height < 2.4 ||
-          height > 6
-        ) {
+        if (active || !currentRoom || currentRoom.kind !== "room" || height < 2.4 || height > 6) {
           fail("Use HEIGHT 2.4–6 metres inside an indoor room definition", line);
         }
         currentRoom.height = height;
@@ -3808,7 +4203,10 @@
           fail("MOUNT needs an indoor ROOM", line);
         }
         const [side, asset] = statement.names;
-        if (!["north", "south", "east", "west"].includes(side.toLowerCase()) || !Number.isInteger(statement.number)) {
+        if (
+          !["north", "south", "east", "west"].includes(side.toLowerCase()) ||
+          !Number.isInteger(statement.number)
+        ) {
           fail("MOUNT requires a wall direction and a whole cell number", line);
         }
         if (!["air_conditioner", "wall_lamp", ...wallDecor].includes(asset.toLowerCase())) {
@@ -3836,14 +4234,16 @@
         if (!active) {
           fail(`Unexpected text "${text}"`, line);
         }
-        // A row uses either pipes or whitespace, never a mixture. Links may contain pipes.
-        const tokens = statement.tokens;
+        const { tokens } = statement;
         const separators = tokens.slice(1).map((token, index) => {
           const previous = tokens[index];
           const original = raw[line - 1];
           return original.slice(previous.end, token.start);
         });
-        if (separators.some((gap) => gap.includes("|")) && separators.some((gap) => !gap.includes("|"))) {
+        if (
+          separators.some((gap) => gap.includes("|")) &&
+          separators.some((gap) => !gap.includes("|"))
+        ) {
           fail("Separate every grid cell with |, or use whitespace throughout the row", line);
         }
         program.layouts[active].push(tokens.map((token) => parseToken(token, line)));
@@ -6790,8 +7190,10 @@
       }
     }
     for (const { entry, walkingBox } of collisionIndex.search(floor, {
-      minX: x - radius * Math.SQRT2, minY: z - radius * Math.SQRT2,
-      maxX: x + radius * Math.SQRT2, maxY: z + radius * Math.SQRT2,
+      maxX: x + radius * Math.SQRT2,
+      maxY: z + radius * Math.SQRT2,
+      minX: x - radius * Math.SQRT2,
+      minY: z - radius * Math.SQRT2,
     })) {
       const { token } = entry;
       if (
@@ -7097,7 +7499,7 @@
           edges = Array.from({ length: nodes.length }),
           heap = new TinyQueue([], (a, b) => a.cost - b.cost);
         distance[origin.id] = 0;
-        heap.push({ id: origin.id, cost: 0 });
+        heap.push({ cost: 0, id: origin.id });
         let visited = 0;
         while (heap.length > 0) {
           const next = heap.pop();
@@ -7110,7 +7512,7 @@
               distance[edge.to] = cost;
               previous[edge.to] = next.id;
               edges[edge.to] = edge;
-              heap.push({ id: edge.to, cost });
+              heap.push({ cost, id: edge.to });
             }
           }
           visited += 1;
