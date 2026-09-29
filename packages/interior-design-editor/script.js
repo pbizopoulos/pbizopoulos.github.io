@@ -955,7 +955,7 @@
             [3, 1, "sink~north"],
             [5, 1, "stove~north"],
             [3, 4, "kitchen_table"],
-            [1, 4, "kitchen_chair@90"],
+            [1, 5, "kitchen_chair@90"],
             [5, 4, "kitchen_chair@270"],
           ],
           name: "kitchen",
@@ -968,8 +968,8 @@
           cols: 9,
           items: [
             [1, 1, "planter"],
-            [3, 1, "outdoor_chair@90"],
-            [5, 1, "bistro_table"],
+            [3, 2, "outdoor_chair@90"],
+            [5, 2, "bistro_table"],
             [7, 1, "outdoor_chair@270"],
           ],
           kind: "balcony",
@@ -1056,7 +1056,7 @@
           cols: 7,
           doors: [],
           items: [
-            [2, 1, "bathtub@90"],
+            [1, 1, "bathtub@90"],
             [5, 1, "shower"],
             [2, 4, "vanity"],
             [5, 4, "toilet"],
@@ -1185,7 +1185,7 @@
             [3, 1, "sink~north"],
             [5, 1, "stove~north"],
             [3, 4, "kitchen_table"],
-            [1, 4, "kitchen_chair@90"],
+            [1, 5, "kitchen_chair@90"],
             [5, 4, "kitchen_chair@270"],
             [6, 6, "plant"],
           ],
@@ -1316,7 +1316,7 @@
             [2, 4, "kitchen_chair@90"],
             [4, 4, "dining_table"],
             [6, 4, "kitchen_chair@270"],
-            [4, 6, "kitchen_chair@180"],
+            [2, 6, "kitchen_chair@180"],
           ],
           name: "dining",
           rows: 8,
@@ -1362,8 +1362,8 @@
           doors: ["east"],
           items: [
             [1, 1, "wardrobe~north"],
-            [4, 2, "bed@0(pillows_on_top)"],
-            [7, 2, "nightstand"],
+            [4, 3, "bed@0(pillows_on_top)"],
+            [6, 2, "nightstand"],
             [1, 5, "dresser"],
             [7, 5, "plant"],
           ],
@@ -1378,7 +1378,7 @@
           doors: [],
           items: [
             [1, 1, "bookshelf~north"],
-            [5, 1, "desk(work_on_top)"],
+            [5, 2, "desk(work_on_top)"],
             [5, 3, "chair@180"],
             [1, 5, "armchair@90"],
             [3, 5, "side_table"],
@@ -1424,7 +1424,7 @@
             [5, 1, "desk(work_on_top)"],
             [5, 3, "chair@180"],
             [1, 5, "armchair@90"],
-            [3, 5, "side_table"],
+            [2, 5, "side_table"],
           ],
           name: "office",
           rows: 7,
@@ -1909,7 +1909,7 @@
         [12, 1, "chair@180"],
       );
       if (index === 3) {
-        items.push([8, 16, "pool[3x2x0.6]"]);
+        items.push([4, 16, "pool[3x2x0.6]"]);
       }
       return {
         cols: 18,
@@ -2301,7 +2301,7 @@
         codeFolding(),
         foldGutter(),
         EditorState.tabSize.of(2),
-        EditorView.contentAttributes.of({ "aria-label": "Room layout", spellcheck: "false" }),
+        EditorView.contentAttributes.of({ "aria-label": "Design source", spellcheck: "false" }),
         keymap.of([
           {
             key: "Mod-Enter",
@@ -2436,7 +2436,7 @@
     status.className = `message${kind === "ok" ? "" : ` ${kind}`}`;
     status.lastElementChild.textContent = message;
     $("editorState").textContent =
-      kind === "error" ? "NEEDS ATTENTION" : kind === "warn" ? "CHECK PLACEMENT" : "ROOM LAYOUT";
+      kind === "error" ? "NEEDS ATTENTION" : kind === "warn" ? "CHECK PLACEMENT" : "READY TO EDIT";
   }
   function fail(message, line) {
     const error = new Error(message);
@@ -2909,7 +2909,7 @@
             fail(`Missing LAYOUT ${token.child} for object on line ${token.line}`, token.line);
           }
           if (token?.child && program.layouts[token.child].flat().some((item) => item?.wall)) {
-            fail("Wall placement is only available in room layouts", token.line);
+            fail("Wall placement is only available in a main layout", token.line);
           }
         }
       }
@@ -3007,7 +3007,7 @@
         !program.rooms.some((room) => room.name === name) &&
         rows.flat().some((token) => token && ["stairs", "elevator"].includes(token.name))
       ) {
-        fail("Place stairs and elevators in a room layout", 1);
+        fail("Place stairs and elevators in a main layout", 1);
       }
     }
     return program;
