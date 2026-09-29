@@ -1,4 +1,4 @@
-/* eslint-disable max-lines, max-lines-per-function -- Each standalone page keeps its scene and application logic in one script. */ /* eslint-disable prefer-named-capture-group -- The grammar parser consumes positional regex captures in a fixed order. */ /* eslint-disable no-magic-numbers -- Scene coordinates, dimensions, colors, and animation timings are literal design data. */ /* eslint-disable id-length -- Short coordinate and drawing parameter names follow the geometry notation. */ /* eslint-disable max-statements, max-params, complexity, max-depth -- Rendering and grammar routines keep their sequential operations together. */ /* eslint-disable one-var, sort-vars -- Declarations follow dependency and initialization order. */ /* eslint-disable func-style, no-use-before-define, unicorn/consistent-function-scoping -- Hoisted helpers and closures share application state inside an isolated entry point. */ /* eslint-disable no-ternary, no-nested-ternary, unicorn/no-nested-ternary -- Inline choices express visual variants and fallback values. */ /* eslint-disable init-declarations, no-undefined -- Optional application state is initialized when its resources become available. */ /* eslint-disable no-continue, unicorn/no-array-for-each -- Iteration guards skip inactive entities and process grammar rows. */ /* eslint-disable oxc/no-optional-chaining -- Optional scene and pointer state is intentionally nullable. */ /* eslint-disable oxc/no-async-await, unicorn/prefer-top-level-await -- The asynchronous entry point catches library-loading failures and reports them in the page. */ (async () => {
+(async () => {
   // Procedural furniture: no model downloads or full-resolution photo textures.
   const referenceCatalog = {
     awning: [3.6, 1.8, 2.65],
@@ -198,7 +198,7 @@
       ...extra,
     });
     return buildExample(
-      "Mediterranean three-level apartment — interpretation of the supplied photographs, not a measured survey.\n# Floor 0: guest suite and gym. Floor 1: kitchenette, fireplace and garden terrace.\n# Floor 2: bedroom, twin sleeping area and orange-awning balcony.\n# Select a floor and room, then use first person to explore. Dimensions and connections are inferred.",
+      "",
       0.75,
       [
         room(
@@ -1202,7 +1202,7 @@
     examples[name] = lines.join("\n");
   }
   function buildExample(description, grid, rooms, sublayouts = {}) {
-    const lines = [`# ${description}`, `GRID ${grid}`];
+    const lines = description ? [`# ${description}`, `GRID ${grid}`] : [`GRID ${grid}`];
     for (const room of rooms) {
       lines.push(
         `FLOOR ${room.floor || 0}`,
