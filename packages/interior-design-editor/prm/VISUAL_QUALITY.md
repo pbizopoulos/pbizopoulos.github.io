@@ -18,7 +18,7 @@ texture or source implementation is included here.
 
 The editor must render rooms that are edited interactively, so it combines
 prefiltered environment lighting, window daylight, sun shadows, warm room fill,
-contact shadows and screen-space ambient occlusion. Three.js
+contact shadows and Three.js GTAO ambient occlusion. Three.js
 [Reflector](https://threejs.org/docs/pages/Reflector.html) supplies mirrors in
 settled High-quality views. Each reflection target is limited to 512 square pixels
 with multisampling disabled and one reflection bounce. Balanced/Fast views and
@@ -60,3 +60,38 @@ The Nix package and Pages workflow both copy this directory. Run `nix fmt` and
 `nix build .#interior-design-editor --no-link` before publishing. Also inspect the
 bedroom, kitchen, garden and bath at desktop and mobile sizes in all three quality
 modes, and verify an exported image.
+
+## Furniture and catalog refinement
+
+The catalog now contains 161 assets, including a bent timber wishbone chair,
+round pedestal dining table, upholstered bed, modular chaise sofa, ceramic
+lamp, woven pendant and arched mirror. Static pieces share the existing cached
+furniture templates. Light fixtures now merge their opaque meshes as well;
+the woven pendant needs five object draws instead of 32 (excluding the studio
+shadow). Mirror templates stay uncached so each reflector owns its target.
+
+Reduced back-facing daylight fill restores interior contrast. Neutral scanned
+timber grain and roughness retain editable material tints; terracotta has a
+richer earth palette. Seats use soft cushion meshes, and draped covers and
+rolled towels have low-cost asymmetric folds. Pulled-aside curtains expose
+French-door frames more clearly.
+
+The desktop source panel defaults to 30% and has a pointer/keyboard resizable
+divider. Hovering furniture highlights its source without opening the panel;
+Edit cell reveals the source deliberately. Assets has category counts and a
+static thumbnail atlas alongside one live preview, retaining names and live
+previews if thumbnails cannot load.
+
+## Settled-view ambient occlusion
+
+Three.js [GTAOPass](https://threejs.org/docs/pages/GTAOPass.html) replaces the
+hand-written ambient occlusion kernel. It reuses the scene depth prepass and
+reconstructs normals from depth, then denoises the result. Balanced uses 12 AO
+samples; High uses 24. Both run at no more than half linear resolution and
+500,000 pixels. Moving and Fast views bypass it; switching to Fast releases
+its targets. Quality switching returns to stable geometry/texture counts and
+still views stop drawing. The compositor keeps AO bounded to avoid black halos.
+
+Opaque batches that are entirely indexed preserve their vertex indices;
+heterogeneous batches retain the existing non-indexed compatibility path.
+This lowers repeated foliage vertex storage without changing the silhouette.

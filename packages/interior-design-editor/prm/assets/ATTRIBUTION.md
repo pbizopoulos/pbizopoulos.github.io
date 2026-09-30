@@ -15,3 +15,22 @@ Texture loading happens after initial scene construction, uses local URLs, and
 falls back to generated relief if a map is unavailable. No remote asset API is
 required at runtime. Reference apartment photographs and Roometron assets are
 not redistributed with the editor.
+
+## Timber color and roughness
+
+`wood-grain-color.jpg` and `wood-grain-roughness.jpg` also derive from CC0
+[Wood Table 001](https://polyhaven.com/a/wood_table_001). The 1K diffuse map was
+resized to 512 pixels, converted to luminance and normalized around 222 (8-bit)
+so it supplies real grain variation while the editor supplies the timber color.
+The roughness map was resized to 512 pixels. Both use JPEG quality 85 with
+metadata removed, adding approximately 93 KiB. Roughness and height are linear
+maps; the grain color map uses sRGB. All four maps total approximately 195 KiB.
+
+## Catalog thumbnails
+
+`furniture-thumbnails.webp` is an original atlas rendered from this editor's
+procedural furniture with Three.js. Its manifest names each tile explicitly,
+so new catalog entries do not shift existing thumbnails. The 161 previews add
+approximately 129 KiB and load only when opening Assets. They require no live
+renderers per card. Rebuild with `prm/generate-thumbnails.cjs` after changing
+furniture silhouettes or materials; see the script header for prerequisites.
