@@ -357,7 +357,7 @@ h2 {
 .selection-card {
   position: absolute;
   z-index: 2;
-  top: 54px;
+  top: calc(var(--preview-tools-height, 84px) + 24px);
   right: 12px;
   min-width: 145px;
   padding: 10px 12px;
@@ -490,4 +490,104 @@ button svg {
 }
 .room-focus {
   max-width: 175px;
+}
+.primary-tools,
+.secondary-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+  pointer-events: none;
+}
+.primary-tools > *,
+.secondary-tools > * {
+  pointer-events: auto;
+}
+.primary-tools .view-buttons {
+  margin-right: auto;
+}
+.quality-control,
+.walk-lens {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid #d7dfd8;
+  border-radius: 5px;
+  background: #fffffff0;
+  color: #56675c;
+  font-size: 11px;
+}
+.quality-control select,
+.walk-lens select {
+  border: 0;
+  background: transparent;
+  color: #2e3933;
+  font: inherit;
+  min-height: 26px;
+}
+.walk-lens {
+  position: absolute;
+  z-index: 2;
+  bottom: 54px;
+  left: 12px;
+}
+.walk-lens[hidden],
+.render-progress[hidden] {
+  display: none;
+}
+.render-progress {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 14px 18px;
+  border: 1px solid #d7dfd8;
+  border-radius: 8px;
+  background: #fffffff5;
+  box-shadow: 0 4px 24px #25362b18;
+  color: #35443b;
+  font-size: 12px;
+  pointer-events: none;
+}
+.render-spinner {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  border: 2px solid #d7dfd8;
+  border-top-color: #557b64;
+  border-radius: 50%;
+  animation: render-spin 0.85s linear infinite;
+}
+@keyframes render-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .render-spinner {
+    animation: none;
+  }
+}
+@media (max-width: 560px) {
+  .view-buttons .tool-button {
+    padding: 7px;
+  }
+  .primary-tools .view-buttons {
+    margin-right: 0;
+  }
+  .preview-tools {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  .room-focus {
+    max-width: 145px;
+  }
 }

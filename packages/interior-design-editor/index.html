@@ -70,8 +70,14 @@
           </div>
         </section>
         <section class="preview-panel" aria-label="3D scene preview">
-          <div id="viewport" class="viewport">
+          <div id="viewport" class="viewport" aria-busy="true">
+            <div id="renderProgress" class="render-progress" role="status" aria-live="polite">
+              <span class="render-spinner" aria-hidden="true"></span>
+              <span id="renderProgressText">Loading editor &amp; 3D libraries…</span>
+            </div>
             <div class="preview-tools">
+              <div id="viewControls" class="primary-tools"></div>
+              <div id="sceneControls" class="secondary-tools"></div>
               <details class="sun-panel">
                 <summary class="tool-button">Sun &amp; shadows</summary>
                 <form id="sunSettings" class="sun-settings">
@@ -139,20 +145,12 @@
                       min="-2"
                       max="4"
                       step="0.5"
-                      value="1"
+                      value="0"
                       required
                     />
                   </label>
                   <output id="sunStatus" aria-live="polite"></output>
                   <output id="indoorLights" aria-live="polite">Automatic fixture lighting</output>
-                  <label
-                    >Quality
-                    <select id="renderQuality">
-                      <option value="fast">Fast</option>
-                      <option value="balanced" selected>Balanced</option>
-                      <option value="high">High</option>
-                    </select>
-                  </label>
                   <output id="renderStats" title="Scene rendering workload"
                     >Preparing scene…</output
                   >
@@ -249,7 +247,7 @@
                   title="First person view"
                   aria-label="First person view"
                 >
-                  1st person
+                  Walk
                 </button>
                 <button
                   id="walkthroughButton"
@@ -282,6 +280,14 @@
                   <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
                 </svg>
               </button>
+            </div>
+            <div id="walkLensControl" class="walk-lens" hidden>
+              <label for="walkLens">Lens</label>
+              <select id="walkLens" aria-label="Walk camera lens">
+                <option value="60">Natural · 60°</option>
+                <option value="75" selected>Wide · 75°</option>
+                <option value="90">Ultra wide · 90°</option>
+              </select>
             </div>
             <div id="selectionCard" class="selection-card" hidden></div>
             <div class="axis-cue" aria-hidden="true">

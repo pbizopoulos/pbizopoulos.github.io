@@ -3979,6 +3979,47 @@
     viewport = $("viewport"),
     status = $("message"),
     selectionCard = $("selectionCard");
+  const primaryTools = $("viewControls"),
+    secondaryTools = $("sceneControls"),
+    qualityControl = document.createElement("label");
+  qualityControl.className = "quality-control";
+  qualityControl.innerHTML =
+    'Quality <select id="renderQuality" aria-label="Render quality"><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select>';
+  qualityControl.title =
+    "Fast: lower resolution · Balanced: everyday editing · High: contact shading and sharper shadows";
+  primaryTools.append(
+    document.querySelector(".view-buttons"),
+    qualityControl,
+    $("saveViewButton"),
+    $("fullscreenButton"),
+  );
+  secondaryTools.append(
+    document.querySelector(".sun-panel"),
+    $("floorFocus"),
+    $("roomFocus"),
+    $("cutawayButton"),
+    $("gridButton"),
+    $("wallsButton"),
+    $("ceilingsButton"),
+    $("lightsButton"),
+  );
+  new ResizeObserver(() => {
+    viewport.style.setProperty(
+      "--preview-tools-height",
+      `${document.querySelector(".preview-tools").offsetHeight}px`,
+    );
+  }).observe(document.querySelector(".preview-tools"));
+  function renderProgress(message) {
+    $("renderProgress").hidden = !message;
+    $("renderProgressText").textContent = message || "";
+    viewport.setAttribute("aria-busy", String(Boolean(message)));
+  }
+  function paintProgress(message) {
+    renderProgress(message);
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => setTimeout(resolve, 0));
+    });
+  }
   Object.assign(catalog, referenceCatalog, decorCatalog);
   let compileTimer,
     compiledSource,
@@ -7518,7 +7559,8 @@
       return;
     }
     firstPerson = enabled;
-    camera.fov = enabled ? 60 : 45;
+    camera.fov = enabled ? Number($("walkLens").value) : 45;
+    $("walkLensControl").hidden = !enabled;
     camera.updateProjectionMatrix();
     if (enabled) {
       orbitCeilingsCollapsed = ceilingsCollapsed;
@@ -7577,6 +7619,13 @@
       renderer.domElement.style.cursor = "";
     }
   }
+  $("walkLens").addEventListener("change", () => {
+    if (firstPerson) {
+      camera.fov = Number($("walkLens").value);
+      camera.updateProjectionMatrix();
+      requestRender();
+    }
+  });
   function updateFloorVisibility() {
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
@@ -7671,7 +7720,40 @@
     daylightCeilings.clear();
     sceneRoot.clear();
   }
-  function compile(resetView = false) {
+  let pendingCompile,
+    sceneBuilding = false;
+  /* eslint-disable no-await-in-loop -- Serialize builds so shader preparation cannot race scene disposal. */ async function compile(
+    resetView = false,
+  ) {
+    pendingCompile = { resetView: resetView || pendingCompile?.resetView || false };
+    if (sceneBuilding) {
+      return;
+    }
+    sceneBuilding = true;
+    try {
+      while (pendingCompile) {
+        const request = pendingCompile;
+        pendingCompile = undefined;
+        await paintProgress("Building scene…");
+        const built = buildScene(request.resetView);
+        if (built) {
+          await paintProgress("Preparing materials & shadows…");
+          await renderer.compileAsync(scene, camera);
+        }
+      }
+      await paintProgress("Rendering view…");
+      requestRender();
+    } catch (error) {
+      showStatus(`Could not render scene: ${error.message}`, "error");
+      renderProgress();
+    } finally {
+      sceneBuilding = false;
+      if (pendingCompile) {
+        compile(pendingCompile.resetView);
+      }
+    }
+  }
+  /* eslint-enable no-await-in-loop */ function buildScene(resetView = false) {
     const buildStarted = performance.now();
     stopWalkthrough();
     let program;
@@ -7800,6 +7882,7 @@
       setFirstPerson(false);
       setFirstPerson(true);
     }
+    return true;
   }
   function resize() {
     renderDirty = true;
@@ -8466,7 +8549,7 @@
     if (walkthrough && !walkthrough.planning) {
       advanceWalkthrough(delta);
     } else if (firstPerson) {
-      const speed = 0.065,
+      const speed = 2.6 * delta,
         direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
       direction.y = 0;
@@ -8495,7 +8578,7 @@
       renderDirty = true;
       lastView.copy(camera.matrixWorld);
     }
-    if (renderDirty) {
+    if (renderDirty && !sceneBuilding && !document.hidden) {
       renderer.info.reset();
       const renderStarted = performance.now();
       renderDetail();
@@ -8503,6 +8586,7 @@
       stats.textContent = `${renderer.info.render.calls.toLocaleString()} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles · ${lastBuildTime.toFixed(0)} ms build`;
       stats.title = `${renderer.info.memory.geometries} geometries · ${renderer.info.memory.textures} textures · ${(performance.now() - renderStarted).toFixed(1)} ms CPU submission (not GPU frame time)`;
       renderDirty = false;
+      renderProgress();
     }
   }
   animate();
@@ -8977,7 +9061,9 @@
   const requestedExample = new URLSearchParams(location.search).get("example"),
     sharedSource = new URLSearchParams(location.hash.slice(1)).get("scene");
   if (sharedSource === null) {
-    loadExample(examples[requestedExample] ? requestedExample : "Living room");
+    loadExample(
+      examples[requestedExample] ? requestedExample : "Mediterranean three-level apartment",
+    );
   } else {
     editor.setState(editorState(sharedSource));
     updateFoldButton(editor.state);
@@ -8985,6 +9071,8 @@
     compile(true);
   }
 })().catch((_error) => {
+  document.querySelector("#renderProgress")?.setAttribute("hidden", "");
+  document.querySelector("#viewport")?.setAttribute("aria-busy", "false");
   const message = document.querySelector("#message span:last-child");
   if (message) {
     message.textContent = "Could not load the editor or 3D libraries. Check your connection.";
