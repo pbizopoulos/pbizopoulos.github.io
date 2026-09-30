@@ -2,21 +2,17 @@
   const referenceCatalog = {
     ac_condenser: [0.82, 0.36, 0.62],
     accent_chair: [0.72, 0.8, 0.86],
-    botanical_print: [0.42, 0.04, 0.58],
-    ceramic_vessels: [0.48, 0.22, 0.32],
-    wall_tv: [1.1, 0.07, 0.65],
-    wall_outlet: [0.16, 0.025, 0.085],
-    roman_blind: [1.6, 0.12, 1.5],
-    citrus_bowl: [0.28, 0.28, 0.18],
-    linen_throw: [1.2, 0.8, 0.16],
-    book_stack: [0.3, 0.23, 0.14],
     archway: [3.6, 0.3, 2.7],
     awning: [3.6, 1.8, 2.65],
     bbq: [0.85, 0.55, 0.95],
+    book_stack: [0.3, 0.23, 0.14],
+    botanical_print: [0.42, 0.04, 0.58],
     breakfast_bar: [1.5, 0.48, 1.05],
     cafe_setting: [0.65, 0.38, 0.22],
     canopy_bed: [1.55, 2.05, 1.95],
     ceiling_fan: [1.2, 1.2, 2.65],
+    ceramic_vessels: [0.48, 0.22, 0.32],
+    citrus_bowl: [0.28, 0.28, 0.18],
     citrus_tree: [2.2, 2.2, 2.8],
     curtain_pair: [1.8, 0.18, 2.5],
     cypress: [1.2, 1.2, 3.5],
@@ -34,6 +30,7 @@
     kilim_rug: [1.4, 0.8, 0.015],
     kitchen_accessories: [0.65, 0.32, 0.42],
     kitchenette: [2.4, 0.65, 2.25],
+    linen_throw: [1.2, 0.8, 0.16],
     olive_tree: [2.5, 2.5, 2.8],
     outdoor_kitchen: [2.4, 0.7, 0.95],
     palm: [2.4, 2.4, 2.6],
@@ -41,6 +38,7 @@
     retaining_wall: [2.4, 0.3, 0.65],
     retro_fridge: [0.6, 0.64, 1.55],
     roller_shutter: [1.8, 0.18, 2.5],
+    roman_blind: [1.6, 0.12, 1.5],
     shower_set: [0.5, 0.2, 1.9],
     slatted_table: [0.85, 0.85, 0.75],
     sleeping_loft: [3.4, 3.6, 3.35],
@@ -53,6 +51,8 @@
     towel_rail: [0.65, 0.14, 1.25],
     towel_stack: [0.48, 0.32, 0.24],
     trellis: [1.8, 0.12, 1.8],
+    wall_outlet: [0.16, 0.025, 0.085],
+    wall_tv: [1.1, 0.07, 0.65],
     wicker_basket: [0.5, 0.36, 0.3],
     woven_chair: [0.68, 0.75, 0.85],
   };
@@ -94,7 +94,17 @@
         const face = cylinder(group, 0.025, 0.025, 0.004, x, h / 2, d / 2 + 0.002, m.porcelain, 16);
         face.rotation.x = Math.PI / 2;
         for (const pin of [-0.009, 0.009]) {
-          const socket = cylinder(group, 0.004, 0.004, 0.003, x + pin, h / 2, d / 2 + 0.005, m.screen, 8);
+          const socket = cylinder(
+            group,
+            0.004,
+            0.004,
+            0.003,
+            x + pin,
+            h / 2,
+            d / 2 + 0.005,
+            m.screen,
+            8,
+          );
           socket.rotation.x = Math.PI / 2;
         }
       }
@@ -111,9 +121,27 @@
         group.add(leaf);
       }
     } else if (name === "ceramic_vessels") {
-      for (const [x, height, radius, finish] of [[-0.14, 0.24, 0.065, m.porcelain], [0, 0.32, 0.07, m.clay], [0.16, 0.14, 0.06, m.olive]]) {
-        const profile = [[0.7, 0], [1, 0.1], [1, 0.5], [0.55, 0.85], [0.55, 1], [0.4, 1], [0.4, 0.83]],
-          vessel = new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r * radius, y * height)), 20), finish);
+      for (const [x, height, radius, finish] of [
+        [-0.14, 0.24, 0.065, m.porcelain],
+        [0, 0.32, 0.07, m.clay],
+        [0.16, 0.14, 0.06, m.olive],
+      ]) {
+        const profile = [
+            [0.7, 0],
+            [1, 0.1],
+            [1, 0.5],
+            [0.55, 0.85],
+            [0.55, 1],
+            [0.4, 1],
+            [0.4, 0.83],
+          ],
+          vessel = new THREE.Mesh(
+            new THREE.LatheGeometry(
+              profile.map(([r, y]) => new THREE.Vector2(r * radius, y * height)),
+              20,
+            ),
+            finish,
+          );
         vessel.position.x = x;
         vessel.castShadow = true;
         vessel.receiveShadow = true;
@@ -122,15 +150,41 @@
     } else if (name === "roman_blind") {
       b(w + 0.04, 0.06, 0.08, 0, h - 0.03, 0, m.woodDark);
       for (let i = 0; i < 10; i += 1) {
-        b(w, h / 10 + 0.015, 0.026, 0, h - 0.09 - i * (h - 0.09) / 10, Math.sin(i * 0.5) * 0.01, m.curtain).rotation.x = -0.06;
+        b(
+          w,
+          h / 10 + 0.015,
+          0.026,
+          0,
+          h - 0.09 - (i * (h - 0.09)) / 10,
+          Math.sin(i * 0.5) * 0.01,
+          m.curtain,
+        ).rotation.x = -0.06;
       }
       rod([w / 2 - 0.025, 0.08, 0.03], [w / 2 - 0.025, h - 0.08, 0.03], 0.003, m.cream);
     } else if (name === "citrus_bowl") {
-      const bowl = new THREE.Mesh(new THREE.LatheGeometry([[0.04, 0], [0.07, 0.02], [0.12, 0.06], [0.14, 0.08], [0.13, 0.08], [0.11, 0.045], [0.04, 0.014]].map(([r, y]) => new THREE.Vector2(r, y)), 20), m.porcelain);
+      const bowl = new THREE.Mesh(
+        new THREE.LatheGeometry(
+          [
+            [0.04, 0],
+            [0.07, 0.02],
+            [0.12, 0.06],
+            [0.14, 0.08],
+            [0.13, 0.08],
+            [0.11, 0.045],
+            [0.04, 0.014],
+          ].map(([r, y]) => new THREE.Vector2(r, y)),
+          20,
+        ),
+        m.porcelain,
+      );
       group.add(bowl);
       for (let i = 0; i < 5; i += 1) {
         const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), m.amber);
-        fruit.position.set(Math.cos(i * 2.4) * 0.064, 0.087 + (i % 2) * 0.03, Math.sin(i * 2.4) * 0.064);
+        fruit.position.set(
+          Math.cos(i * 2.4) * 0.064,
+          0.087 + (i % 2) * 0.03,
+          Math.sin(i * 2.4) * 0.064,
+        );
         fruit.scale.set(1.1, 0.9, 0.9);
         fruit.castShadow = true;
         group.add(fruit);
@@ -255,10 +309,7 @@
         for (let i = 0; i < 40; i += 1) {
           const angle = i * 2.4,
             latitude = Math.acos(1 - (2 * (i + 0.5)) / 40),
-            tuft = new THREE.Mesh(
-              gardenLeafGeometry.clone(),
-              i % 5 ? finish : m.leafLight,
-            );
+            tuft = new THREE.Mesh(gardenLeafGeometry.clone(), i % 5 ? finish : m.leafLight);
           tuft.position.set(
             x + sx * Math.sin(latitude) * Math.cos(angle),
             y + sy * Math.cos(latitude),
@@ -718,7 +769,8 @@
       b(w - 0.02, 0.22, d - 0.03, 0, 0.31, 0, m.cream);
       cushion(group, w - 0.035, 0.18, d - 0.07, 0, 0.45, 0.035, m.cream);
       for (const side of [-1, 1]) {
-        cushion(group, w / 2 - 0.03, 0.43, 0.19, side * w / 4, 0.65, -0.29, m.cream).rotation.x = -0.12;
+        cushion(group, w / 2 - 0.03, 0.43, 0.19, (side * w) / 4, 0.65, -0.29, m.cream).rotation.x =
+          -0.12;
       }
       piping(group, w - 0.09, d - 0.14, 0, 0.48, 0.035, m.linen);
       const bolster = cylinder(group, 0.14, 0.14, 0.13, 0.64, 0.68, -0.13, m.linen, 24);
@@ -728,7 +780,6 @@
     } else if (name === "kitchenette") {
       b(w, 0.12, d - 0.08, 0, 0.06, 0, m.slate);
       b(w, 0.75, d - 0.04, 0, 0.49, 0, m.white);
-      // Four countertop sections leave an actual opening for the basin.
       b(0.385, 0.055, d + 0.03, -1.0225, 0.9, 0);
       b(1.345, 0.055, d + 0.03, 0.5425, 0.9, 0);
       for (const side of [-1, 1]) {
@@ -1044,8 +1095,8 @@
       ],
       {
         baskets: ["wicker_basket | wicker_basket"],
-        breakfast: ["citrus_bowl | cafe_setting"],
         bedside: ["table_lamp"],
+        breakfast: ["citrus_bowl | cafe_setting"],
         pillows: ["pillow | pillow"],
         tea: ["cafe_setting"],
         towels: ["towel_stack"],
@@ -1864,7 +1915,16 @@
       wall_clock: [0.32, 0.06, 0.32],
       wall_shelf: [0.8, 0.22, 0.32],
     },
-    wallDecor = ["poster", "painting", "mirror", "wall_clock", "wall_shelf", "botanical_print", "wall_tv", "wall_outlet"];
+    wallDecor = [
+      "poster",
+      "painting",
+      "mirror",
+      "wall_clock",
+      "wall_shelf",
+      "botanical_print",
+      "wall_tv",
+      "wall_outlet",
+    ];
   function addDecoration(group, name, addBox) {
     if (!decorCatalog[name]) {
       return;
@@ -2194,10 +2254,10 @@
       const saved = {
           autoClear: renderer.autoClear,
           autoClearDepth: renderer.autoClearDepth,
-          environmentIntensity: scene.environmentIntensity,
           background: scene.background,
           clearAlpha: renderer.getClearAlpha(),
           clearColor: renderer.getClearColor(new THREE.Color()),
+          environmentIntensity: scene.environmentIntensity,
           shadows: renderer.shadowMap.needsUpdate,
           sunVisible: sunlight.visible,
           target: renderer.getRenderTarget(),
@@ -2267,22 +2327,20 @@
     };
   }
   function createDetailRenderer(renderer, scene, sceneRoot, camera, renderBeauty) {
-    // Opt-in screen-space AO uses one depth prepass and a half-resolution AO
-    // target. No ray tracing, per-room cubemap captures, or temporal accumulation.
     const beauty = new THREE.WebGLRenderTarget(1, 1, {
-        type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(1, 1),
+        depthTexture: new THREE.DepthTexture(1, 1),
         samples: Math.min(2, renderer.capabilities.maxSamples),
+        type: THREE.HalfFloatType,
       }),
-      occlusion = new THREE.WebGLRenderTarget(1, 1, {depthBuffer: false}),
+      occlusion = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false }),
       depthMaterial = new THREE.MeshDepthMaterial(),
       screen = new THREE.Scene(),
       screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
-      vertexShader = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+      vertexShader =
+        "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
       aoMaterial = new THREE.ShaderMaterial({
-        depthTest: false, depthWrite: false, toneMapped: false,
-        uniforms: {depthMap: {value: beauty.depthTexture}, projectionInverse: {value: camera.projectionMatrixInverse},
-          projectionScale: {value: 1}, resolution: {value: new THREE.Vector2(1, 1)}},
-        vertexShader,
+        depthTest: false,
+        depthWrite: false,
         fragmentShader: [
           "varying vec2 vUv; uniform sampler2D depthMap; uniform mat4 projectionInverse;",
           "uniform vec2 resolution; uniform float projectionScale;",
@@ -2313,12 +2371,18 @@
           " gl_FragColor = vec4(vec3(clamp(1.0-blocked*1.6/12.0,0.55,1.0)),1.0);",
           "}",
         ].join("\n"),
+        toneMapped: false,
+        uniforms: {
+          depthMap: { value: beauty.depthTexture },
+          projectionInverse: { value: camera.projectionMatrixInverse },
+          projectionScale: { value: 1 },
+          resolution: { value: new THREE.Vector2(1, 1) },
+        },
+        vertexShader,
       }),
       compositeMaterial = new THREE.ShaderMaterial({
-        depthTest: false, depthWrite: false,
-        uniforms: {colorMap: {value: beauty.texture}, aoMap: {value: occlusion.texture},
-          depthMap: {value: beauty.depthTexture}, texel: {value: new THREE.Vector2(1, 1)}},
-        vertexShader,
+        depthTest: false,
+        depthWrite: false,
         fragmentShader: [
           "varying vec2 vUv; uniform sampler2D colorMap,aoMap,depthMap; uniform vec2 texel;",
           "void main() {",
@@ -2335,6 +2399,13 @@
           " #include <colorspace_fragment>",
           "}",
         ].join("\n"),
+        uniforms: {
+          aoMap: { value: occlusion.texture },
+          colorMap: { value: beauty.texture },
+          depthMap: { value: beauty.depthTexture },
+          texel: { value: new THREE.Vector2(1, 1) },
+        },
+        vertexShader,
       }),
       quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), aoMaterial),
       size = new THREE.Vector2();
@@ -2343,7 +2414,6 @@
     return function renderDetail() {
       if ($("renderQuality").value !== "high") {
         if (allocated) {
-          // Release large attachments when returning to a cheaper quality mode.
           beauty.dispose();
           occlusion.dispose();
           allocated = false;
@@ -2360,9 +2430,9 @@
         allocated = true;
       }
       const target = renderer.getRenderTarget(),
-        overrideMaterial = scene.overrideMaterial,
-        background = scene.background,
-        autoClearDepth = renderer.autoClearDepth,
+        { overrideMaterial } = scene,
+        { background } = scene,
+        { autoClearDepth } = renderer,
         shadowsEnabled = renderer.shadowMap.enabled,
         hidden = [];
       for (const node of scene.children) {
@@ -2372,8 +2442,11 @@
         }
       }
       sceneRoot.traverseVisible((node) => {
-        if (node.isLine || node.userData.contact ||
-          (node.isMesh && [node.material].flat().some((m) => m.transparent && m.opacity < 0.98))) {
+        if (
+          node.isLine ||
+          node.userData.contact ||
+          (node.isMesh && [node.material].flat().some((m) => m.transparent && m.opacity < 0.98))
+        ) {
           hidden.push(node);
           node.visible = false;
         }
@@ -2382,13 +2455,15 @@
         renderer.setRenderTarget(beauty);
         renderer.clear();
         scene.overrideMaterial = depthMaterial;
-        scene.background = null;
+        scene.background = undefined;
         renderer.shadowMap.enabled = false;
         renderer.render(scene, camera);
         scene.overrideMaterial = overrideMaterial;
         scene.background = background;
         renderer.shadowMap.enabled = shadowsEnabled;
-        hidden.forEach((node) => { node.visible = true; });
+        hidden.forEach((node) => {
+          node.visible = true;
+        });
         renderBeauty();
         renderer.autoClearDepth = autoClearDepth;
         aoMaterial.uniforms.projectionScale.value = camera.projectionMatrix.elements[5] * 0.5;
@@ -2403,7 +2478,9 @@
         scene.background = background;
         renderer.shadowMap.enabled = shadowsEnabled;
         renderer.autoClearDepth = autoClearDepth;
-        hidden.forEach((node) => { node.visible = true; });
+        hidden.forEach((node) => {
+          node.visible = true;
+        });
         renderer.setRenderTarget(target);
       }
     };
@@ -4705,8 +4782,6 @@
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  // A small shared, prefiltered reflection probe gives metal, glass and varnish
-  // readable highlights without six extra scene renders whenever the layout changes.
   const reflectionRoom = new RoomEnvironment(),
     reflectionGenerator = new THREE.PMREMGenerator(renderer),
     reflectionTarget = reflectionGenerator.fromScene(reflectionRoom, 0.04, 0.1, 100);
@@ -4817,8 +4892,8 @@
     updateIndoorLights();
   });
   const qualityProfiles = {
-    fast: { pixels: 1_000_000, ratio: 1, shadow: 1024 },
     balanced: { pixels: 2_000_000, ratio: 1.5, shadow: 2048 },
+    fast: { pixels: 1_000_000, ratio: 1, shadow: 1024 },
     high: { pixels: 4_000_000, ratio: 2, shadow: 4096 },
   };
   $("renderQuality").addEventListener("change", () => {
@@ -4826,7 +4901,7 @@
       shadowSize = Math.min(profile.shadow, renderer.capabilities.maxTextureSize);
     if (sunlight.shadow.mapSize.x !== shadowSize) {
       sunlight.shadow.map?.dispose();
-      sunlight.shadow.map = null;
+      sunlight.shadow.map = undefined;
       sunlight.shadow.mapSize.set(shadowSize, shadowSize);
       renderer.shadowMap.needsUpdate = true;
     }
@@ -5019,7 +5094,10 @@
                     grain * 4 +
                     Math.sin((y / 256) * Math.PI * 146 + Math.sin(phase) * 4) * 2 +
                     noise * 5
-                  : 232 + 5 * Math.sin(x * Math.PI / 2) + 5 * Math.sin(y * Math.PI / 2) + noise * 8,
+                  : 232 +
+                    5 * Math.sin((x * Math.PI) / 2) +
+                    5 * Math.sin((y * Math.PI) / 2) +
+                    noise * 8,
           offset = (y * 256 + x) * 4;
         pixels.data[offset] = value;
         pixels.data[offset + 1] = value;
@@ -5038,16 +5116,14 @@
     weaveTexture = surfaceTexture("fabric"),
     colors = {
       amber: "#edb956",
+      brass: "#bca46b",
       cabinetGlass: "#b9c5bb",
       ceiling: "#f5f2eb",
       clay: "#b97861",
-      earthenware: "#a8623f",
       concrete: "#b5bab6",
       cream: "#e7d5ba",
       curtain: "#e5dac6",
-      leather: "#a83f2b",
-      brass: "#bca46b",
-      porcelain: "#f4f0e7",
+      earthenware: "#a8623f",
       fabric: "#8fa7a0",
       fabricDark: "#627f79",
       flagstone: "#9c9b8b",
@@ -5059,12 +5135,14 @@
       kilim: "#ffffff",
       lavender: "#82749a",
       leafLight: "#78934e",
+      leather: "#a83f2b",
       linen: "#a49d8e",
       metal: "#586873",
       ochre: "#c96a16",
       olive: "#5d7045",
       opal: "#f3eddf",
       plaster: "#f1ede3",
+      porcelain: "#f4f0e7",
       rug: "#aa7055",
       screen: "#16232b",
       slate: "#655f54",
@@ -5125,7 +5203,9 @@
     for (let x = 0; x < 256; x += 1) {
       const over = (Math.floor(x / 16) + Math.floor(y / 16)) % 2,
         across = (over ? x : y) % 16,
-        edge = THREE.MathUtils.smoothstep(across, 0, 3) * (1 - THREE.MathUtils.smoothstep(across, 13, 16)),
+        edge =
+          THREE.MathUtils.smoothstep(across, 0, 3) *
+          (1 - THREE.MathUtils.smoothstep(across, 13, 16)),
         value = 145 + edge * 96 + Math.sin((over ? y : x) * 2) * 3,
         offset = (y * 256 + x) * 4;
       reedPixels.data[offset] = value;
@@ -5204,7 +5284,12 @@
     kilim.fillRect(x, 213, 3, 15);
   }
   for (const center of [105, 256, 407]) {
-    for (const [radius, color] of [[11, "#5b6657"], [8, "#e2d6bd"], [5, "#5b6657"], [2, "#e2d6bd"]]) {
+    for (const [radius, color] of [
+      [11, "#5b6657"],
+      [8, "#e2d6bd"],
+      [5, "#5b6657"],
+      [2, "#e2d6bd"],
+    ]) {
       kilim.fillStyle = color;
       for (let row = -radius; row <= radius; row += 1) {
         const half = radius - Math.abs(row);
@@ -5217,7 +5302,6 @@
       kilim.fillRect(center + step * 12 - 2, 174 - Math.abs(step) * 6, 4, 10);
     }
   }
-  // Thread flecks stay in the texture, so the rug remains one batched surface.
   for (let y = 0; y < 256; y += 3) {
     kilim.fillStyle = y % 2 ? "#ffffff09" : "#00000007";
     kilim.fillRect(0, y, 512, 1);
@@ -5235,8 +5319,6 @@
     material[key].roughness = key === "stone" ? 0.48 : 0.82;
     material[key].color.set(key === "stone" ? "#eee9df" : "#ffffff");
   }
-  // Toroidal Voronoi paving: irregular fitted stones with a seamless repeat.
-  // Color and relief share one modest texture instead of many stone meshes.
   const pavingCanvas = document.createElement("canvas");
   pavingCanvas.width = 512;
   pavingCanvas.height = 512;
@@ -5250,21 +5332,26 @@
   };
   for (let row = 0; row < 5; row += 1) {
     for (let col = 0; col < 5; col += 1) {
-      pavingSites.push({x: (col + 0.15 + pavingRandom() * 0.7) / 5,
+      pavingSites.push({
+        shade: 146 + pavingRandom() * 48,
+        x: (col + 0.15 + pavingRandom() * 0.7) / 5,
         y: (row + 0.15 + pavingRandom() * 0.7) / 5,
-        shade: 146 + pavingRandom() * 48});
+      });
     }
   }
   for (let y = 0; y < 512; y += 1) {
     for (let x = 0; x < 512; x += 1) {
-      let closest = Infinity, second = Infinity, shade = 0;
+      let closest = Infinity,
+        second = Infinity,
+        shade = 0;
       for (const site of pavingSites) {
-        const dx = Math.abs(x / 512 - site.x), dy = Math.abs(y / 512 - site.y),
+        const dx = Math.abs(x / 512 - site.x),
+          dy = Math.abs(y / 512 - site.y),
           distance = Math.hypot(Math.min(dx, 1 - dx), Math.min(dy, 1 - dy));
         if (distance < closest) {
           second = closest;
           closest = distance;
-          shade = site.shade;
+          ({ shade } = site);
         } else if (distance < second) {
           second = distance;
         }
@@ -5356,12 +5443,30 @@
   contactContext.fillRect(0, 0, 64, 64);
   const contactTexture = new THREE.CanvasTexture(contactCanvas),
     contactMaterial = new THREE.MeshBasicMaterial({
-      alphaMap: contactTexture, color: "#000000", depthWrite: false,
-      opacity: 0.18, polygonOffset: true, polygonOffsetFactor: -1,
-      transparent: true, toneMapped: false,
+      alphaMap: contactTexture,
+      color: "#000000",
+      depthWrite: false,
+      opacity: 0.18,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      toneMapped: false,
+      transparent: true,
     }),
-    contactAssets = new Set(["sofa", "sofa_bed", "armchair", "accent_chair", "bed", "canopy_bed",
-      "kitchenette", "retro_fridge", "dresser", "sideboard", "wardrobe", "vanity", "terracotta_pot"]);
+    contactAssets = new Set([
+      "sofa",
+      "sofa_bed",
+      "armchair",
+      "accent_chair",
+      "bed",
+      "canopy_bed",
+      "kitchenette",
+      "retro_fridge",
+      "dresser",
+      "sideboard",
+      "wardrobe",
+      "vanity",
+      "terracotta_pot",
+    ]);
   sharedMaterials.add(contactMaterial);
   function addContact(group, token) {
     if (!contactAssets.has(token.name)) {
@@ -5369,7 +5474,6 @@
     }
     const [w, d] = token.dimensions,
       footprint = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.2, d * 1.2), contactMaterial);
-    // This is a floor-space footprint, so it must not inherit model resizing twice.
     footprint.rotation.x = -Math.PI / 2;
     footprint.position.set(group.position.x, group.position.y - 0.018, group.position.z);
     footprint.rotation.z = -group.rotation.y;
@@ -5400,8 +5504,15 @@
         const verticalGrain = m.userData.woodGrain && h > Math.max(w, d);
         uv.setXY(
           i,
-          (verticalGrain ? positions.getY(i) : nx > 0.7 ? positions.getZ(i) : positions.getX(i)) / scale,
-          (verticalGrain ? nx > 0.7 ? positions.getZ(i) : positions.getX(i) : ny > 0.7 ? positions.getZ(i) : positions.getY(i)) / scale,
+          (verticalGrain ? positions.getY(i) : nx > 0.7 ? positions.getZ(i) : positions.getX(i)) /
+            scale,
+          (verticalGrain
+            ? nx > 0.7
+              ? positions.getZ(i)
+              : positions.getX(i)
+            : ny > 0.7
+              ? positions.getZ(i)
+              : positions.getY(i)) / scale,
         );
       }
     }
@@ -5420,8 +5531,6 @@
     parent.add(mesh);
     return mesh;
   }
-  // Soft objects use a low-resolution superellipsoid: curved silhouettes and
-  // small deterministic folds, with no external mesh downloads or physics.
   function cushion(parent, w, h, d, x, y, z, finish) {
     const geometry = new THREE.SphereGeometry(1, 20, 12),
       positions = geometry.attributes.position,
@@ -5450,9 +5559,18 @@
     return mesh;
   }
   function insetBasin(parent, w, d, x, y, z, finish = material.metal) {
-    const profile = [[0.5, 0], [0.49, -0.02], [0.43, -0.1], [0.3, -0.14], [0.06, -0.145]],
+    const profile = [
+        [0.5, 0],
+        [0.49, -0.02],
+        [0.43, -0.1],
+        [0.3, -0.14],
+        [0.06, -0.145],
+      ],
       bowl = new THREE.Mesh(
-        new THREE.LatheGeometry(profile.map(([r, height]) => new THREE.Vector2(r, height)), 24),
+        new THREE.LatheGeometry(
+          profile.map(([r, height]) => new THREE.Vector2(r, height)),
+          24,
+        ),
         finish,
       );
     bowl.scale.set(w, 1, d);
@@ -5460,8 +5578,17 @@
     bowl.receiveShadow = true;
     parent.add(bowl);
     cylinder(parent, 0.029, 0.029, 0.006, x, y - 0.14, z, material.screen, 16);
-    curvedRod(parent, [[x, y, z - d * 0.63], [x, y + 0.2, z - d * 0.63],
-      [x, y + 0.28, z - d * 0.4], [x, y + 0.22, z - d * 0.15]], 0.013, material.metal);
+    curvedRod(
+      parent,
+      [
+        [x, y, z - d * 0.63],
+        [x, y + 0.2, z - d * 0.63],
+        [x, y + 0.28, z - d * 0.4],
+        [x, y + 0.22, z - d * 0.15],
+      ],
+      0.013,
+      material.metal,
+    );
     cylinder(parent, 0.023, 0.023, 0.025, x, y + 0.013, z - d * 0.63, material.metal, 16);
     box(parent, 0.08, 0.012, 0.018, x + 0.035, y + 0.055, z - d * 0.63, material.metal);
   }
@@ -5473,8 +5600,12 @@
         pz = positions.getY(i),
         overhang = Math.max(0, Math.abs(px) - w / 2),
         ripple = (0.004 + overhang * 0.12) * Math.sin(pz * 32 + px * 14);
-      positions.setXYZ(i, Math.sign(px) * Math.min(Math.abs(px), w / 2 + 0.012),
-        -overhang * 1.8 + ripple, pz);
+      positions.setXYZ(
+        i,
+        Math.sign(px) * Math.min(Math.abs(px), w / 2 + 0.012),
+        -overhang * 1.8 + ripple,
+        pz,
+      );
     }
     geometry.computeVertexNormals();
     const cover = new THREE.Mesh(geometry, finish);
@@ -5521,13 +5652,17 @@
     group.add(seam);
   }
   const gardenLeafGeometry = new THREE.BufferGeometry();
-  gardenLeafGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-    -0.13, 0, 0, -0.04, 0.012, -0.055, 0.13, 0, 0,
-    0.04, -0.01, 0.055, 0, 0.025, 0,
-  ], 3));
-  gardenLeafGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-    0, 0.5, 0.3, 0, 1, 0.5, 0.7, 1, 0.5, 0.5,
-  ], 2));
+  gardenLeafGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(
+      [-0.13, 0, 0, -0.04, 0.012, -0.055, 0.13, 0, 0, 0.04, -0.01, 0.055, 0, 0.025, 0],
+      3,
+    ),
+  );
+  gardenLeafGeometry.setAttribute(
+    "uv",
+    new THREE.Float32BufferAttribute([0, 0.5, 0.3, 0, 1, 0.5, 0.7, 1, 0.5, 0.5], 2),
+  );
   gardenLeafGeometry.setIndex([0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
   gardenLeafGeometry.computeVertexNormals();
   for (const key of ["foliage", "olive", "leafLight"]) {
@@ -5584,7 +5719,7 @@
       ) {
         continue;
       }
-      const attributes = Object.keys(child.geometry.attributes).sort().join(","),
+      const attributes = Object.keys(child.geometry.attributes).toSorted().join(","),
         key = `${child.material.uuid}:${child.castShadow}:${child.receiveShadow}:${attributes}`;
       if (!batches.has(key)) {
         batches.set(key, []);
@@ -6049,8 +6184,17 @@
             );
             back.rotation.x = -0.1;
           }
-          const cushion = box(group, 0.27, 0.27, 0.12, -cw * 0.25, 0.62, -0.08, material.cream);
-          cushion.rotation.set(-0.15, 0.1, 0.18);
+          const scatterCushion = box(
+            group,
+            0.27,
+            0.27,
+            0.12,
+            -cw * 0.25,
+            0.62,
+            -0.08,
+            material.cream,
+          );
+          scatterCushion.rotation.set(-0.15, 0.1, 0.18);
           legs(group, cw, cd, 0.17);
           break;
         }
@@ -6259,9 +6403,25 @@
           break;
         }
         case "toilet": {
-          const profile = [[0.1, 0.02], [0.115, 0.07], [0.105, 0.2], [0.17, 0.32],
-              [0.205, 0.39], [0.205, 0.41], [0.185, 0.41], [0.16, 0.34], [0.09, 0.25], [0.035, 0.24]],
-            bowl = new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), 28), material.porcelain);
+          const profile = [
+              [0.1, 0.02],
+              [0.115, 0.07],
+              [0.105, 0.2],
+              [0.17, 0.32],
+              [0.205, 0.39],
+              [0.205, 0.41],
+              [0.185, 0.41],
+              [0.16, 0.34],
+              [0.09, 0.25],
+              [0.035, 0.24],
+            ],
+            bowl = new THREE.Mesh(
+              new THREE.LatheGeometry(
+                profile.map(([r, y]) => new THREE.Vector2(r, y)),
+                28,
+              ),
+              material.porcelain,
+            );
           bowl.scale.z = 1.25;
           bowl.position.z = 0.08;
           bowl.castShadow = true;
@@ -6289,7 +6449,6 @@
             box(group, cw - 0.035, ch * 0.34, 0.025, 0, y, cd / 2, material.white);
             box(group, cw * 0.64, 0.015, 0.035, 0, y + ch * 0.12, cd / 2 + 0.023, material.metal);
           }
-          // The ceramic lip stands above the cabinet, with an open bowl rather than a disk.
           for (const side of [-1, 1]) {
             box(group, 0.15, 0.05, cd + 0.02, side * (cw / 2 - 0.065), ch, 0, material.porcelain);
             box(group, cw - 0.26, 0.05, 0.09, 0, ch, side * (cd / 2 - 0.035), material.porcelain);
@@ -6622,8 +6781,6 @@
       if (!lightAssets.includes(name)) {
         batchFurniture(group);
       }
-      // Cache the canonical model, never its placement, selection or room shader.
-      // The finite catalog bounds this cache; scene rebuilds retain these GPU assets.
       if (!lightAssets.includes(name) && !group.children.some((child) => child.isLight)) {
         furnitureTemplates.set(name, group.clone(true));
         group.traverse((node) => {
@@ -7654,7 +7811,9 @@
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     const profile = qualityProfiles[$("renderQuality").value];
-    renderer.setPixelRatio(Math.min(devicePixelRatio, profile.ratio, Math.sqrt(profile.pixels / (w * h))));
+    renderer.setPixelRatio(
+      Math.min(devicePixelRatio, profile.ratio, Math.sqrt(profile.pixels / (w * h))),
+    );
     renderer.setSize(w, h, false);
   }
   new ResizeObserver(resize).observe(viewport);
@@ -8354,36 +8513,85 @@
     0.55,
     [
       {
-        name: "photo_kitchen", cols: 7, rows: 10, x: 0, z: 0,
-        style: "mediterranean", surface: "tile", height: 2.7,
-        walls: ["north", "east", "south", "west"], doors: ["south"], windows: ["west"],
-        items: [[6, 3, "kitchenette(baskets_on_top)~east"], [6, 0, "retro_fridge~east"],
-          [6, 8, "fireplace[1.15x0.55x2.7]~east"], [0, 5, "sofa_bed@90~west"],
-          [2, 7, "woven_chair@-25"], [0, 9, "side_table(books_on_top)"],
-          [5, 3, "kilim_rug@90"], [1, 1, "breakfast_bar[1.2x0.4x1.05](tea_on_top)~west"],
-          [2, 1, "woven_chair@90[0.55x0.6x0.85]"], [1, 8, "accent_chair@25[0.6x0.7x0.86]"],
-          [3, 9, "curtain_pair@180[1.9x0.18x2.5]"]],
-        mounts: [["east", 8, "wall_tv"], ["west", 2, "botanical_print"], ["west", 7, "wall_shelf"]],
+        cols: 7,
+        doors: ["south"],
+        height: 2.7,
+        items: [
+          [6, 4, "kitchenette(baskets_on_top)~east"],
+          [6, 1, "retro_fridge~east"],
+          [6, 8, "fireplace[1.15x0.55x2.7]~east"],
+          [0, 5, "sofa_bed~west"],
+          [2, 7, "woven_chair@-25"],
+          [0, 9, "side_table(books_on_top)"],
+          [5, 4, "kilim_rug@90"],
+          [1, 1, "breakfast_bar[1.2x0.4x1.05](tea_on_top)~west"],
+          [2, 1, "woven_chair@90[0.55x0.6x0.85]"],
+          [1, 8, "accent_chair@25[0.6x0.7x0.86]"],
+          [3, 9, "curtain_pair@180[1.9x0.18x2.5]"],
+        ],
+        mounts: [
+          ["east", 8, "wall_tv"],
+          ["west", 2, "botanical_print"],
+          ["west", 7, "wall_shelf"],
+        ],
+        name: "photo_kitchen",
+        rows: 10,
+        style: "mediterranean",
+        surface: "tile",
+        walls: ["north", "east", "south", "west"],
+        windows: ["west"],
+        x: 0,
+        z: 0,
       },
       {
-        name: "photo_terrace", cols: 7, rows: 5, x: 0, z: 10, kind: "balcony",
-        style: "mediterranean", surface: "stone", walls: [], rails: ["west", "east"],
-        items: [[3, 1, "awning[3.65x2.5x2.65]"], [3, 2, "dining_table[1.35x0.75x0.75](tea_on_top)"],
-          [2, 1, "patio_chair"], [4, 1, "patio_chair"], [2, 3, "patio_chair@180"],
-          [4, 3, "patio_chair@180"], [3, 4, "archway[3.65x0.25x2.7]"],
-          [0, 4, "terracotta_pot"], [6, 4, "terracotta_pot"]],
+        cols: 7,
+        items: [
+          [3, 1, "awning[3.65x2.5x2.65]"],
+          [3, 2, "dining_table[1.35x0.75x0.75](tea_on_top)"],
+          [2, 1, "patio_chair"],
+          [4, 1, "patio_chair"],
+          [2, 3, "patio_chair@180"],
+          [4, 3, "patio_chair@180"],
+          [3, 4, "archway[3.65x0.25x2.7]"],
+          [0, 4, "terracotta_pot"],
+          [6, 4, "terracotta_pot"],
+        ],
+        kind: "balcony",
+        name: "photo_terrace",
+        rails: ["west", "east"],
+        rows: 5,
+        style: "mediterranean",
+        surface: "stone",
+        walls: [],
+        x: 0,
+        z: 10,
       },
       {
-        name: "photo_garden", cols: 7, rows: 8, x: 0, z: 15, kind: "garden",
-        style: "mediterranean", surface: "grass", walls: [], rails: [],
-        items: [[1, 2, "cypress[0.9x0.9x3]"], [5, 3, "citrus_tree[1.6x1.6x2.5]"],
-          [1, 6, "olive_tree[1.6x1.6x2.5]"], [3, 4, "stone_path[0.8x4x0.04]"],
-          [0, 4, "hedge[0.35x4.4x1.3]"], [6, 4, "hedge[0.35x4.4x1.3]"],
-          [2, 1, "flower_border[1.1x0.4x0.55]"], [5, 6, "flower_border[1.1x0.4x0.55]"],
-          [2, 4, "globe_lamp[0.35x0.35x1.1]"], [4, 6, "globe_lamp[0.35x0.35x1.1]"]],
+        cols: 7,
+        items: [
+          [1, 2, "cypress[0.9x0.9x3]"],
+          [5, 3, "citrus_tree[1.6x1.6x2.5]"],
+          [1, 6, "olive_tree[1.6x1.6x2.5]"],
+          [3, 4, "stone_path[0.8x4x0.04]"],
+          [0, 4, "hedge[0.35x4.4x1.3]"],
+          [6, 4, "hedge[0.35x4.4x1.3]"],
+          [2, 1, "flower_border[1.1x0.4x0.55]"],
+          [5, 6, "flower_border[1.1x0.4x0.55]"],
+          [2, 4, "globe_lamp[0.35x0.35x1.1]"],
+          [4, 6, "globe_lamp[0.35x0.35x1.1]"],
+        ],
+        kind: "garden",
+        name: "photo_garden",
+        rails: [],
+        rows: 8,
+        style: "mediterranean",
+        surface: "grass",
+        walls: [],
+        x: 0,
+        z: 15,
       },
     ],
-    {baskets: ["wicker_basket | wicker_basket"], books: ["book_stack"], tea: ["cafe_setting"]},
+    { baskets: ["wicker_basket | wicker_basket"], books: ["book_stack"], tea: ["cafe_setting"] },
   );
   examples["Mediterranean asset study"] = buildExample(
     "Reusable details from the photo references. Hover an object to find its source token.\n# Rotate with @degrees; resize with [widthxdepthxheight]; append ~north/east/south/west to attach to a wall.\n# HEIGHT changes room clearance; sleeping_loft is a visual assembly, not a navigable floor.",
@@ -8626,9 +8834,7 @@
   });
   function syncCeilingButton() {
     const button = $("ceilingsButton");
-    button.title = ceilingsCollapsed
-      ? "Restore all ceilings"
-      : "Collapse all ceilings";
+    button.title = ceilingsCollapsed ? "Restore all ceilings" : "Collapse all ceilings";
     button.setAttribute("aria-label", button.title);
     button.classList.toggle("active", ceilingsCollapsed);
     button.setAttribute("aria-pressed", String(ceilingsCollapsed));
@@ -8662,8 +8868,6 @@
     resetCamera();
   });
   $("saveViewButton").addEventListener("click", () => {
-    // Draw immediately before copying; preserveDrawingBuffer stays disabled for
-    // normal navigation so exporting does not permanently cost GPU bandwidth.
     camera.updateMatrixWorld();
     renderer.info.reset();
     renderDetail();
@@ -8672,7 +8876,8 @@
         showStatus("Could not save this view", "error");
         return;
       }
-      const link = document.createElement("a"), url = URL.createObjectURL(blob);
+      const link = document.createElement("a"),
+        url = URL.createObjectURL(blob);
       link.href = url;
       link.download = "interior-view.png";
       link.click();
