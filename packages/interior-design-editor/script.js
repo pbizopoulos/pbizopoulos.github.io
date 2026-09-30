@@ -2193,6 +2193,7 @@
       }
       const saved = {
           autoClear: renderer.autoClear,
+          autoClearDepth: renderer.autoClearDepth,
           environmentIntensity: scene.environmentIntensity,
           background: scene.background,
           clearAlpha: renderer.getClearAlpha(),
@@ -2207,6 +2208,7 @@
           .filter((m) => !m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial && m.colorWrite)
           .map((m) => [m, m.colorWrite]);
       try {
+        renderer.autoClearDepth = true;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0, 1);
         renderer.setRenderTarget(sumTarget);
@@ -2240,6 +2242,7 @@
         renderer.setRenderTarget(saved.target);
         renderer.autoClear = true;
         quad.material = outputMaterial;
+        renderer.autoClearDepth = !saved.target?.depthTexture;
         renderer.render(quadScene, quadCamera);
       } finally {
         lights.forEach((light) => {
@@ -2257,8 +2260,151 @@
         scene.background = saved.background;
         renderer.toneMapping = saved.toneMapping;
         renderer.autoClear = saved.autoClear;
+        renderer.autoClearDepth = saved.autoClearDepth;
         renderer.setClearColor(saved.clearColor, saved.clearAlpha);
         renderer.setRenderTarget(saved.target);
+      }
+    };
+  }
+  function createDetailRenderer(renderer, scene, sceneRoot, camera, renderBeauty) {
+    // Opt-in screen-space AO uses one depth prepass and a half-resolution AO
+    // target. No ray tracing, per-room cubemap captures, or temporal accumulation.
+    const beauty = new THREE.WebGLRenderTarget(1, 1, {
+        type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(1, 1),
+        samples: Math.min(2, renderer.capabilities.maxSamples),
+      }),
+      occlusion = new THREE.WebGLRenderTarget(1, 1, {depthBuffer: false}),
+      depthMaterial = new THREE.MeshDepthMaterial(),
+      screen = new THREE.Scene(),
+      screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+      vertexShader = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+      aoMaterial = new THREE.ShaderMaterial({
+        depthTest: false, depthWrite: false, toneMapped: false,
+        uniforms: {depthMap: {value: beauty.depthTexture}, projectionInverse: {value: camera.projectionMatrixInverse},
+          projectionScale: {value: 1}, resolution: {value: new THREE.Vector2(1, 1)}},
+        vertexShader,
+        fragmentShader: [
+          "varying vec2 vUv; uniform sampler2D depthMap; uniform mat4 projectionInverse;",
+          "uniform vec2 resolution; uniform float projectionScale;",
+          "vec3 positionAt(vec2 uv) {",
+          " vec4 p = projectionInverse * vec4(uv * 2.0 - 1.0, texture2D(depthMap,uv).r * 2.0 - 1.0, 1.0);",
+          " return p.xyz / p.w;",
+          "}",
+          "void main() {",
+          " float depth = texture2D(depthMap,vUv).r;",
+          " if (depth >= 0.99999) { gl_FragColor = vec4(1.0); return; }",
+          " vec3 origin = positionAt(vUv);",
+          " vec3 normal = normalize(cross(dFdx(origin),dFdy(origin)));",
+          " if (normal.z < 0.0) normal = -normal;",
+          " float radius = 0.4;",
+          " float screenRadius = clamp(radius * projectionScale / max(-origin.z, 0.1), 0.002, 0.08);",
+          " float phase = fract(sin(dot(floor(vUv*resolution),vec2(12.9898,78.233)))*43758.5453)*6.283185;",
+          " float blocked = 0.0;",
+          " for (int i = 0; i < 12; i++) {",
+          "   float angle = float(i) * 2.399963 + phase;",
+          "   vec2 offset = vec2(cos(angle) * resolution.y/resolution.x, sin(angle)) * screenRadius * sqrt((float(i)+0.5)/12.0);",
+          "   vec2 uv = vUv + offset;",
+          "   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 || texture2D(depthMap,uv).r >= 0.99999) continue;",
+          "   vec3 delta = positionAt(uv) - origin;",
+          "   float distanceToSample = length(delta);",
+          "   float horizon = max(0.0, dot(normal,delta) / max(distanceToSample,0.001) - 0.12);",
+          "   blocked += horizon * (1.0 - smoothstep(0.03,radius,distanceToSample));",
+          " }",
+          " gl_FragColor = vec4(vec3(clamp(1.0-blocked*1.6/12.0,0.55,1.0)),1.0);",
+          "}",
+        ].join("\n"),
+      }),
+      compositeMaterial = new THREE.ShaderMaterial({
+        depthTest: false, depthWrite: false,
+        uniforms: {colorMap: {value: beauty.texture}, aoMap: {value: occlusion.texture},
+          depthMap: {value: beauty.depthTexture}, texel: {value: new THREE.Vector2(1, 1)}},
+        vertexShader,
+        fragmentShader: [
+          "varying vec2 vUv; uniform sampler2D colorMap,aoMap,depthMap; uniform vec2 texel;",
+          "void main() {",
+          " float centerDepth = texture2D(depthMap,vUv).r;",
+          " float ao = texture2D(aoMap,vUv).r; float weightSum = 1.0;",
+          " for (int x = -1; x <= 1; x++) { for (int y = -1; y <= 1; y++) {",
+          "   if (x == 0 && y == 0) continue;",
+          "   vec2 uv = vUv + vec2(float(x),float(y)) * texel;",
+          "   float weight = exp(-abs(texture2D(depthMap,uv).r-centerDepth)*3000.0);",
+          "   ao += texture2D(aoMap,uv).r * weight; weightSum += weight;",
+          " }}",
+          " gl_FragColor = vec4(texture2D(colorMap,vUv).rgb * (ao/weightSum),1.0);",
+          " #include <tonemapping_fragment>",
+          " #include <colorspace_fragment>",
+          "}",
+        ].join("\n"),
+      }),
+      quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), aoMaterial),
+      size = new THREE.Vector2();
+    screen.add(quad);
+    let allocated = false;
+    return function renderDetail() {
+      if ($("renderQuality").value !== "high") {
+        if (allocated) {
+          // Release large attachments when returning to a cheaper quality mode.
+          beauty.dispose();
+          occlusion.dispose();
+          allocated = false;
+        }
+        renderBeauty();
+        return;
+      }
+      renderer.getDrawingBufferSize(size);
+      if (!allocated || beauty.width !== size.x || beauty.height !== size.y) {
+        beauty.setSize(size.x, size.y);
+        occlusion.setSize(Math.ceil(size.x / 2), Math.ceil(size.y / 2));
+        aoMaterial.uniforms.resolution.value.copy(size);
+        compositeMaterial.uniforms.texel.value.set(2 / size.x, 2 / size.y);
+        allocated = true;
+      }
+      const target = renderer.getRenderTarget(),
+        overrideMaterial = scene.overrideMaterial,
+        background = scene.background,
+        autoClearDepth = renderer.autoClearDepth,
+        shadowsEnabled = renderer.shadowMap.enabled,
+        hidden = [];
+      for (const node of scene.children) {
+        if (node !== sceneRoot && node.visible && (node.isMesh || node.isGroup)) {
+          hidden.push(node);
+          node.visible = false;
+        }
+      }
+      sceneRoot.traverseVisible((node) => {
+        if (node.isLine || node.userData.contact ||
+          (node.isMesh && [node.material].flat().some((m) => m.transparent && m.opacity < 0.98))) {
+          hidden.push(node);
+          node.visible = false;
+        }
+      });
+      try {
+        renderer.setRenderTarget(beauty);
+        renderer.clear();
+        scene.overrideMaterial = depthMaterial;
+        scene.background = null;
+        renderer.shadowMap.enabled = false;
+        renderer.render(scene, camera);
+        scene.overrideMaterial = overrideMaterial;
+        scene.background = background;
+        renderer.shadowMap.enabled = shadowsEnabled;
+        hidden.forEach((node) => { node.visible = true; });
+        renderBeauty();
+        renderer.autoClearDepth = autoClearDepth;
+        aoMaterial.uniforms.projectionScale.value = camera.projectionMatrix.elements[5] * 0.5;
+        renderer.setRenderTarget(occlusion);
+        quad.material = aoMaterial;
+        renderer.render(screen, screenCamera);
+        renderer.setRenderTarget(target);
+        quad.material = compositeMaterial;
+        renderer.render(screen, screenCamera);
+      } finally {
+        scene.overrideMaterial = overrideMaterial;
+        scene.background = background;
+        renderer.shadowMap.enabled = shadowsEnabled;
+        renderer.autoClearDepth = autoClearDepth;
+        hidden.forEach((node) => { node.visible = true; });
+        renderer.setRenderTarget(target);
       }
     };
   }
@@ -3767,6 +3913,7 @@
     wallRoots = [],
     ceilingRoots = [],
     ceilingsCollapsed = true,
+    orbitCeilingsCollapsed = true,
     gridHelper,
     gridVisible = false,
     hoverOutline,
@@ -4601,7 +4748,8 @@
     renderDirty = true,
     lastBuildTime = 0;
   const lastView = new THREE.Matrix4(),
-    renderFixtures = createFixtureRenderer(renderer, scene, camera, sunlight);
+    renderFixtures = createFixtureRenderer(renderer, scene, camera, sunlight),
+    renderDetail = createDetailRenderer(renderer, scene, sceneRoot, camera, renderFixtures);
   function requestRender() {
     renderDirty = true;
   }
@@ -7213,6 +7361,16 @@
       return;
     }
     firstPerson = enabled;
+    camera.fov = enabled ? 60 : 45;
+    camera.updateProjectionMatrix();
+    if (enabled) {
+      orbitCeilingsCollapsed = ceilingsCollapsed;
+      ceilingsCollapsed = false;
+    } else {
+      ceilingsCollapsed = orbitCeilingsCollapsed;
+    }
+    syncCeilingButton();
+    requestRender();
     lookControls.enabled = enabled;
     looking = false;
     if (!enabled && document.pointerLockElement === renderer.domElement) {
@@ -8181,7 +8339,7 @@
     if (renderDirty) {
       renderer.info.reset();
       const renderStarted = performance.now();
-      renderFixtures();
+      renderDetail();
       const stats = $("renderStats");
       stats.textContent = `${renderer.info.render.calls.toLocaleString()} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles · ${lastBuildTime.toFixed(0)} ms build`;
       stats.title = `${renderer.info.memory.geometries} geometries · ${renderer.info.memory.textures} textures · ${(performance.now() - renderStarted).toFixed(1)} ms CPU submission (not GPU frame time)`;
@@ -8191,6 +8349,42 @@
   animate();
   examples["Decor gallery"] = decorationExample;
   examples["Mediterranean three-level apartment"] = referenceApartment();
+  examples["Mediterranean kitchen photo study"] = buildExample(
+    "A compact kitchen and shaded garden terrace, staged from 367513251 and 367513499.\n# Estimated proportions: 3.85 x 5.5 m kitchen, not a surveyed reconstruction.\n# First person restores the ceiling; High adds contact occlusion. Use Save view to export a clean PNG.",
+    0.55,
+    [
+      {
+        name: "photo_kitchen", cols: 7, rows: 10, x: 0, z: 0,
+        style: "mediterranean", surface: "tile", height: 2.7,
+        walls: ["north", "east", "south", "west"], doors: ["south"], windows: ["west"],
+        items: [[6, 3, "kitchenette(baskets_on_top)~east"], [6, 0, "retro_fridge~east"],
+          [6, 8, "fireplace[1.15x0.55x2.7]~east"], [0, 5, "sofa_bed@90~west"],
+          [2, 7, "woven_chair@-25"], [0, 9, "side_table(books_on_top)"],
+          [5, 3, "kilim_rug@90"], [1, 1, "breakfast_bar[1.2x0.4x1.05](tea_on_top)~west"],
+          [2, 1, "woven_chair@90[0.55x0.6x0.85]"], [1, 8, "accent_chair@25[0.6x0.7x0.86]"],
+          [3, 9, "curtain_pair@180[1.9x0.18x2.5]"]],
+        mounts: [["east", 8, "wall_tv"], ["west", 2, "botanical_print"], ["west", 7, "wall_shelf"]],
+      },
+      {
+        name: "photo_terrace", cols: 7, rows: 5, x: 0, z: 10, kind: "balcony",
+        style: "mediterranean", surface: "stone", walls: [], rails: ["west", "east"],
+        items: [[3, 1, "awning[3.65x2.5x2.65]"], [3, 2, "dining_table[1.35x0.75x0.75](tea_on_top)"],
+          [2, 1, "patio_chair"], [4, 1, "patio_chair"], [2, 3, "patio_chair@180"],
+          [4, 3, "patio_chair@180"], [3, 4, "archway[3.65x0.25x2.7]"],
+          [0, 4, "terracotta_pot"], [6, 4, "terracotta_pot"]],
+      },
+      {
+        name: "photo_garden", cols: 7, rows: 8, x: 0, z: 15, kind: "garden",
+        style: "mediterranean", surface: "grass", walls: [], rails: [],
+        items: [[1, 2, "cypress[0.9x0.9x3]"], [5, 3, "citrus_tree[1.6x1.6x2.5]"],
+          [1, 6, "olive_tree[1.6x1.6x2.5]"], [3, 4, "stone_path[0.8x4x0.04]"],
+          [0, 4, "hedge[0.35x4.4x1.3]"], [6, 4, "hedge[0.35x4.4x1.3]"],
+          [2, 1, "flower_border[1.1x0.4x0.55]"], [5, 6, "flower_border[1.1x0.4x0.55]"],
+          [2, 4, "globe_lamp[0.35x0.35x1.1]"], [4, 6, "globe_lamp[0.35x0.35x1.1]"]],
+      },
+    ],
+    {baskets: ["wicker_basket | wicker_basket"], books: ["book_stack"], tea: ["cafe_setting"]},
+  );
   examples["Mediterranean asset study"] = buildExample(
     "Reusable details from the photo references. Hover an object to find its source token.\n# Rotate with @degrees; resize with [widthxdepthxheight]; append ~north/east/south/west to attach to a wall.\n# HEIGHT changes room clearance; sleeping_loft is a visual assembly, not a navigable floor.",
     1,
@@ -8276,6 +8470,7 @@
     "Outdoor areas": ["Balcony garden", "Rooftop Riviera"],
     "Single rooms": [
       "Mediterranean asset study",
+      "Mediterranean kitchen photo study",
       "Decor gallery",
       "Living room",
       "Bedroom",
@@ -8429,15 +8624,20 @@
     event.currentTarget.classList.toggle("active", wallsCollapsed);
     event.currentTarget.setAttribute("aria-pressed", wallsCollapsed);
   });
-  $("ceilingsButton").addEventListener("click", (event) => {
-    ceilingsCollapsed = !ceilingsCollapsed;
-    clearHover();
-    event.currentTarget.title = ceilingsCollapsed
+  function syncCeilingButton() {
+    const button = $("ceilingsButton");
+    button.title = ceilingsCollapsed
       ? "Restore all ceilings"
       : "Collapse all ceilings";
-    event.currentTarget.setAttribute("aria-label", event.currentTarget.title);
-    event.currentTarget.classList.toggle("active", ceilingsCollapsed);
-    event.currentTarget.setAttribute("aria-pressed", ceilingsCollapsed);
+    button.setAttribute("aria-label", button.title);
+    button.classList.toggle("active", ceilingsCollapsed);
+    button.setAttribute("aria-pressed", String(ceilingsCollapsed));
+  }
+  $("ceilingsButton").addEventListener("click", () => {
+    ceilingsCollapsed = !ceilingsCollapsed;
+    clearHover();
+    syncCeilingButton();
+    requestRender();
   });
   $("topButton").addEventListener("click", () => resetCamera(true));
   $("firstPersonButton").addEventListener("click", () => setFirstPerson(!firstPerson));
@@ -8460,6 +8660,25 @@
     focusFloor = undefined;
     updateFloorVisibility();
     resetCamera();
+  });
+  $("saveViewButton").addEventListener("click", () => {
+    // Draw immediately before copying; preserveDrawingBuffer stays disabled for
+    // normal navigation so exporting does not permanently cost GPU bandwidth.
+    camera.updateMatrixWorld();
+    renderer.info.reset();
+    renderDetail();
+    renderer.domElement.toBlob((blob) => {
+      if (!blob) {
+        showStatus("Could not save this view", "error");
+        return;
+      }
+      const link = document.createElement("a"), url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = "interior-view.png";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      showStatus("View saved as PNG");
+    }, "image/png");
   });
   $("fullscreenButton").addEventListener("click", () =>
     document.fullscreenElement ? document.exitFullscreen() : viewport.requestFullscreen(),
