@@ -78,9 +78,10 @@
       return;
     }
     const [w, d, h] = referenceCatalog[name],
-      b = (width, height, depth, x, y, z, finish = m.wood) =>
+      timber = ["slatted_table", "folding_chair"].includes(name) ? m.woodDark : m.wood,
+      b = (width, height, depth, x, y, z, finish = timber) =>
         box(group, width, height, depth, x, y, z, finish),
-      rod = (startPoint, endPoint, radius = 0.018, finish = m.wood) => {
+      rod = (startPoint, endPoint, radius = 0.018, finish = timber) => {
         const start = new THREE.Vector3(...startPoint),
           end = new THREE.Vector3(...endPoint),
           part = cylinder(group, radius, radius, start.distanceTo(end), 0, 0, 0, finish, 12);
@@ -430,19 +431,24 @@
     } else if (name === "curtain_pair") {
       rod([-w / 2, h - 0.025, 0], [w / 2, h - 0.025, 0], 0.018, m.woodDark);
       for (const side of [-1, 1]) {
-        const geometry = new THREE.PlaneGeometry(w * 0.23, h - 0.09, 16, 8),
+        const geometry = new THREE.PlaneGeometry(w * 0.16, h - 0.09, 16, 8),
           positions = geometry.attributes.position;
         for (let i = 0; i < positions.count; i += 1) {
           const x = positions.getX(i),
             y = positions.getY(i);
           positions.setZ(
             i,
-            Math.cos((x / (w * 0.23)) * Math.PI * 12) * 0.035 + 0.012 * Math.sin(y * 3),
+            Math.cos((x / (w * 0.16)) * Math.PI * 8) * 0.035 + 0.012 * Math.sin(y * 3),
+          );
+          geometry.attributes.uv.setXY(
+            i,
+            x / m.curtain.userData.textureScale,
+            y / m.curtain.userData.textureScale,
           );
         }
         geometry.computeVertexNormals();
         const panel = new THREE.Mesh(geometry, m.curtain);
-        panel.position.set(side * w * 0.36, (h - 0.09) / 2 + 0.025, 0.025);
+        panel.position.set(side * w * 0.42, (h - 0.09) / 2 + 0.025, 0.025);
         panel.castShadow = true;
         panel.receiveShadow = true;
         group.add(panel);
@@ -1431,11 +1437,11 @@
           0,
           14,
           [
-            [2, 3, "topiary_tree"],
+            [2, 3, "topiary_tree[3.6x3.6x5.8]"],
             [2, 8, "palm"],
-            [10, 4, "citrus_tree"],
-            [10, 9, "topiary_tree"],
-            [7, 9, "cypress"],
+            [10, 4, "citrus_tree[3.6x3.6x5.8]"],
+            [10, 9, "topiary_tree[3.4x3.4x5.2]"],
+            [7, 9, "cypress[1.2x1.2x5.8]"],
             [6, 5, "stone_path[1.2x7.5x0.04]"],
             [5, 10, "stone_path[8x1x0.04]"],
             [2, 0, "terracotta_pot"],
@@ -1451,7 +1457,7 @@
             [10, 1, "flower_border"],
             [1, 5, "flower_border@90"],
             [11, 7, "flower_border@90"],
-            [4, 6, "olive_tree[2x2x2.8]"],
+            [4, 6, "olive_tree[3.4x3.4x5.4]"],
             [1, 10, "terracotta_pot"],
             [11, 10, "terracotta_pot"],
           ],
@@ -4855,6 +4861,24 @@
     });
     assetStudio.object = undefined;
   }
+  function fitAssetPreview(studio) {
+    if (!studio.corners) {
+      return;
+    }
+    studio.framing = true;
+    for (let pass = 0; pass < 3; pass += 1) {
+      studio.camera.updateMatrixWorld();
+      const extent = Math.max(
+        ...studio.corners.map((corner) => {
+          const projected = corner.clone().project(studio.camera);
+          return Math.max(Math.abs(projected.x), Math.abs(projected.y));
+        }),
+      );
+      studio.camera.position.multiplyScalar(extent / 0.8);
+      studio.controls.update();
+    }
+    studio.framing = false;
+  }
   function previewAsset(name) {
     if (!name || !assetBrowser.open) {
       return;
@@ -4868,7 +4892,12 @@
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.15;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      scene.environment = reflectionTarget.texture;
+      const environmentRoom = new RoomEnvironment(),
+        environmentGenerator = new THREE.PMREMGenerator(renderer),
+        environment = environmentGenerator.fromScene(environmentRoom, 0.04, 0.1, 100);
+      environmentRoom.dispose();
+      environmentGenerator.dispose();
+      scene.environment = environment.texture;
       scene.environmentIntensity = 0.8;
       scene.add(new THREE.HemisphereLight("#fff9ec", "#95856c", 2.4));
       const key = new THREE.DirectionalLight("#ffffff", 2.6);
@@ -4887,7 +4916,11 @@
       shadow.rotation.x = -Math.PI / 2;
       scene.add(shadow);
       controls.enablePan = false;
-      controls.addEventListener("change", () => renderer.render(scene, camera));
+      controls.addEventListener("change", () => {
+        if (!assetStudio?.framing) {
+          renderer.render(scene, camera);
+        }
+      });
       $("assetPreview").replaceChildren(renderer.domElement);
       const observer = new ResizeObserver(() => {
         if (!assetStudio || !assetBrowser.open) {
@@ -4900,10 +4933,11 @@
         }
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        fitAssetPreview(assetStudio);
         renderer.setSize(width, height, false);
         renderer.render(scene, camera);
       });
-      assetStudio = { camera, controls, observer, renderer, scene, shadow };
+      assetStudio = { camera, controls, environment, observer, renderer, scene, shadow };
       observer.observe($("assetPreview"));
     }
     clearAssetPreview();
@@ -4911,6 +4945,9 @@
       object = makeFurniture({ dimensions: catalog[name], name, yaw: 0 });
     selectableGroups.length = count;
     object.traverse((node) => {
+      if (node.geometry && templateGeometries.has(node.geometry)) {
+        node.geometry = node.geometry.clone();
+      }
       if (node.isLight) {
         node.visible = false;
       }
@@ -4935,6 +4972,16 @@
     studio.controls.minDistance = radius * 1.1;
     studio.controls.maxDistance = distance * 3;
     studio.controls.update();
+    const corners = [];
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) {
+          corners.push(new THREE.Vector3(x, y, z).sub(center));
+        }
+      }
+    }
+    studio.corners = corners;
+    fitAssetPreview(studio);
     studio.renderer.setSize(width, height, false);
     studio.renderer.render(studio.scene, studio.camera);
     $("assetPreview").setAttribute(
@@ -4949,6 +4996,7 @@
       assetStudio.observer.disconnect();
       assetStudio.shadow.geometry.dispose();
       assetStudio.shadow.material.dispose();
+      assetStudio.environment.dispose();
       assetStudio.renderer.dispose();
       assetStudio.renderer.forceContextLoss();
       assetStudio = undefined;
@@ -5298,6 +5346,7 @@
             doors: [],
             elevation: floor * 3,
             floor,
+            garden: statement.areaKind === "garden",
             height: 2.75,
             kind: areaKind,
             lights: [],
@@ -6094,6 +6143,7 @@
     material[key].bumpScale = 0.002;
     material[key].userData.textureScale = 0.22;
   }
+  material.curtain.side = THREE.DoubleSide;
   const stripeCanvas = document.createElement("canvas");
   stripeCanvas.width = 128;
   stripeCanvas.height = 128;
@@ -6163,12 +6213,12 @@
         context.fillStyle = `hsl(${terracotta ? 23 : 42} ${terracotta ? 37 : 9}% ${value}%)`;
         context.fillRect(col * 128 + 0.7, row * tileHeight + 0.7, 126.6, tileHeight - 1.4);
         for (let i = 0; i < 650; i += 1) {
-          context.fillStyle = `rgba(${random() > 0.5 ? "255,255,255" : "75,65,50"},0.035)`;
+          context.fillStyle = `rgba(${random() > 0.5 ? "255,255,255" : "75,65,50"},0.025)`;
           context.fillRect(
             col * 128 + 2 + random() * 123,
             row * tileHeight + 2 + random() * (tileHeight - 4),
-            2 + random() * 6,
-            1,
+            1 + random() * 2,
+            1 + random() * 2,
           );
         }
       }
@@ -6236,10 +6286,10 @@
   for (const key of ["stone", "terracotta"]) {
     material[key].map = key === "stone" ? tileTexture : clayTexture;
     material[key].bumpMap = material[key].map;
-    material[key].bumpScale = 0.002;
+    material[key].bumpScale = key === "stone" ? 0.0008 : 0.002;
     material[key].userData.textureScale = key === "stone" ? 2.4 : 1.2;
     material[key].roughness = key === "stone" ? 0.48 : 0.82;
-    material[key].color.set(key === "stone" ? "#eee9df" : "#ffffff");
+    material[key].color.set(key === "stone" ? "#eee9df" : "#e4c7b5");
   }
   const pavingCanvas = document.createElement("canvas");
   pavingCanvas.width = 512;
@@ -6370,6 +6420,16 @@
   material.opal.emissive.set("#ffe4ba");
   material.opal.emissiveIntensity = 0.6;
   async function loadSurfaceScans() {
+    await new Promise((resolve) => {
+      const waitForScene = () => {
+        if (sceneBuilding || renderDirty) {
+          setTimeout(waitForScene, 200);
+        } else {
+          resolve();
+        }
+      };
+      waitForScene();
+    });
     const sources = [
         { fallback: grainTexture, path: "./prm/assets/wood-grain-height.jpg" },
         { fallback: weaveTexture, path: "./prm/assets/linen-weave-height.jpg" },
@@ -8800,6 +8860,7 @@
       resetCamera();
       renderer.domElement.style.cursor = "";
     }
+    updateFloorVisibility();
   }
   $("walkLens").addEventListener("change", () => {
     if (firstPerson) {
@@ -8812,6 +8873,9 @@
     renderDirty = true;
     renderer.shadowMap.needsUpdate = true;
     clearHover();
+    const gardens = new Set(
+      currentProgram?.rooms.filter((room) => room.garden).map((room) => room.name),
+    );
     for (const group of sceneRoot.children) {
       if (group.userData.terrain) {
         group.visible = !terrainCutaway && !(focusFloor < 0);
@@ -8820,7 +8884,10 @@
       if (group.userData.floor === undefined) {
         continue;
       }
-      group.visible = focusFloor === undefined || group.userData.floor === focusFloor;
+      group.visible =
+        focusFloor === undefined ||
+        group.userData.floor === focusFloor ||
+        (firstPerson && focusFloor >= 0 && gardens.has(group.userData.token?.room));
     }
     gridHelper.position.y = (focusFloor || 0) * 3 + 0.002;
     $("floorFocus").value = focusFloor === undefined ? "" : String(focusFloor);

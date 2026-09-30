@@ -28,7 +28,9 @@ when scenes change.
 [Discussion feedback](https://news.ycombinator.com/item?id=41180504) informed
 visible sample scenes, labelled walking/view controls, natural camera framing,
 scene-first mobile layout and an asset browser with category filters and rotatable
-previews. Floor-plan import and billing are outside this visual-quality change.
+previews. Garden scenery remains visible from upper-floor walking views; Top and
+3D views still isolate the selected floor. Floor-plan import and billing are outside
+this visual-quality change.
 
 ## Performance
 
@@ -37,10 +39,11 @@ previews. Floor-plan import and billing are outside this visual-quality change.
 - Rounded silhouettes and curved textile meshes are concentrated on visible hero
   objects. Foliage uses reusable low-poly leaves and merged geometry.
 - Render resolution follows the existing quality budgets and drops during movement.
-  The scene renderer sleeps when idle. Asset previews render only on changes and
-  release controls, observers, geometry and their WebGL context on close.
-- Two local CC0 surface relief maps add about 102 KiB. They load after initial scene
-  construction, time out after five seconds, and retain procedural fallbacks.
+  The scene renderer sleeps when idle. Asset previews render only on changes,
+  release mesh buffers when selection changes, and dispose their own environment
+  target, controls, observer and WebGL context on close.
+- Two local CC0 surface relief maps add about 102 KiB. They load after the initial
+  render settles, time out after five seconds, and retain procedural fallbacks.
   Provenance is in [assets/ATTRIBUTION.md](assets/ATTRIBUTION.md).
 
 ## Validation
