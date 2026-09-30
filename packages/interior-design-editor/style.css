@@ -530,7 +530,7 @@ button svg {
 .walk-lens {
   position: absolute;
   z-index: 2;
-  bottom: 54px;
+  bottom: calc(var(--navigation-hint-height, 30px) + 24px);
   left: 12px;
 }
 .walk-lens[hidden],
@@ -589,5 +589,124 @@ button svg {
   }
   .room-focus {
     max-width: 145px;
+  }
+}
+.scene-options {
+  position: relative;
+}
+.scene-options > summary {
+  width: auto;
+  list-style: none;
+  gap: 8px;
+}
+.scene-options > summary::after {
+  content: "⌄";
+}
+.scene-options[open] > summary {
+  background: #edf5ee;
+  border-color: #81a18c;
+}
+.scene-options summary::-webkit-details-marker {
+  display: none;
+}
+.scene-option-tools {
+  position: absolute;
+  z-index: 3;
+  top: 40px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #d7dfd8;
+  border-radius: 6px;
+  background: #fffffff5;
+  box-shadow: 0 4px 16px #25362b12;
+}
+.scene-option-tools .sun-settings {
+  left: auto;
+  right: 0;
+  width: min(340px, calc(100vw - 24px));
+  top: 50px;
+}
+@media (max-width: 560px) {
+  .primary-tools {
+    gap: 4px;
+  }
+  .quality-control {
+    padding: 2px 6px;
+    gap: 4px;
+  }
+  .secondary-tools {
+    gap: 4px;
+  }
+  .secondary-tools .room-focus {
+    max-width: 126px;
+    padding: 7px 4px;
+  }
+  .secondary-tools #photoView {
+    max-width: 145px;
+  }
+}
+.touch-navigation {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: calc(var(--navigation-hint-height, 30px) + 24px);
+  grid-template-columns: repeat(3, 38px);
+  gap: 4px;
+  touch-action: none;
+}
+.touch-navigation button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d7dfd8;
+  border-radius: 5px;
+  background: #fffffff0;
+  color: #42684f;
+  font-size: 20px;
+  user-select: none;
+  touch-action: none;
+}
+.touch-navigation button:first-child {
+  grid-column: 2;
+}
+.touch-navigation button:nth-child(2) {
+  grid-column: 1;
+}
+.touch-navigation button:active {
+  background: #dcebdd;
+}
+@media (pointer: coarse) {
+  .touch-navigation:not([hidden]) {
+    display: grid;
+  }
+  .walk-lens {
+    max-width: calc(100% - 150px);
+  }
+  .walk-lens select {
+    min-width: 0;
+    max-width: 135px;
+  }
+  .axis-cue {
+    display: none;
+  }
+}
+.tool-button[hidden] {
+  display: none;
+}
+.scene-option-tools .sun-settings {
+  max-height: max(
+    100px,
+    calc(var(--viewport-height, 100dvh) - var(--preview-tools-height, 84px) - 80px)
+  );
+}
+@media (max-width: 560px) {
+  .scene-options {
+    position: static;
+  }
+  .scene-option-tools {
+    top: calc(var(--preview-tools-height, 140px) + 6px);
   }
 }

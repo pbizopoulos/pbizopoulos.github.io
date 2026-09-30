@@ -164,8 +164,8 @@
                     light. Use first person to view interiors. All fixtures switch on when the sun
                     is below the horizon and off during daylight, regardless of camera position.
                     Fast, Balanced, and High cap the image at 1, 2, and 4 million pixels and adjust
-                    sun shadow detail. High adds screen-space contact shading. Idle scenes pause
-                    rendering. Large scenes take longer.
+                    sun shadow detail. Balanced and High add contact shading when the camera
+                    settles. Idle scenes pause rendering. Large scenes take longer.
                   </p>
                 </form>
               </details>
@@ -178,6 +178,12 @@
               >
                 Cutaway
               </button>
+              <select
+                id="photoView"
+                class="room-focus"
+                aria-label="Photo viewpoint"
+                hidden
+              ></select>
               <select id="roomFocus" class="room-focus" aria-label="Focus room" hidden></select
               ><button
                 id="gridButton"
@@ -288,6 +294,18 @@
                 <option value="75" selected>Wide · 75°</option>
                 <option value="90">Ultra wide · 90°</option>
               </select>
+            </div>
+            <div
+              id="touchNavigation"
+              class="touch-navigation"
+              role="group"
+              aria-label="Walk movement"
+              hidden
+            >
+              <button type="button" data-walk-key="w" aria-label="Move forward">↑</button>
+              <button type="button" data-walk-key="a" aria-label="Move left">←</button>
+              <button type="button" data-walk-key="s" aria-label="Move backward">↓</button>
+              <button type="button" data-walk-key="d" aria-label="Move right">→</button>
             </div>
             <div id="selectionCard" class="selection-card" hidden></div>
             <div class="axis-cue" aria-hidden="true">
