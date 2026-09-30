@@ -8871,19 +8871,17 @@
     camera.updateMatrixWorld();
     renderer.info.reset();
     renderDetail();
-    renderer.domElement.toBlob((blob) => {
-      if (!blob) {
-        showStatus("Could not save this view", "error");
-        return;
-      }
-      const link = document.createElement("a"),
-        url = URL.createObjectURL(blob);
-      link.href = url;
+    try {
+      const link = document.createElement("a");
+      link.href = renderer.domElement.toDataURL("image/png");
       link.download = "interior-view.png";
+      document.body.append(link);
       link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      link.remove();
       showStatus("View saved as PNG");
-    }, "image/png");
+    } catch {
+      showStatus("Could not save this view", "error");
+    }
   });
   $("fullscreenButton").addEventListener("click", () =>
     document.fullscreenElement ? document.exitFullscreen() : viewport.requestFullscreen(),
