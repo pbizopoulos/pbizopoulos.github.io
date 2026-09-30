@@ -966,6 +966,7 @@
     { LRParser } = await import("@lezer/lr"),
     { default: TinyQueue } = await import("tinyqueue"),
     { RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"),
+    { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js"),
     { EditorState, StateEffect, StateField } = await import("@codemirror/state"),
     { EditorView, Decoration, keymap, lineNumbers, drawSelection } =
       await import("@codemirror/view"),
@@ -2092,6 +2093,7 @@
       }
       const saved = {
           autoClear: renderer.autoClear,
+          environmentIntensity: scene.environmentIntensity,
           background: scene.background,
           clearAlpha: renderer.getClearAlpha(),
           clearColor: renderer.getClearColor(new THREE.Color()),
@@ -2117,6 +2119,7 @@
             scene.background = black;
             sunlight.visible = false;
             daylightPass.value = 0;
+            scene.environmentIntensity = 0;
             emission.forEach(([material]) => {
               material.emissiveIntensity = 0;
             });
@@ -2150,6 +2153,7 @@
         });
         sunlight.visible = saved.sunVisible;
         daylightPass.value = 1;
+        scene.environmentIntensity = saved.environmentIntensity;
         scene.background = saved.background;
         renderer.toneMapping = saved.toneMapping;
         renderer.autoClear = saved.autoClear;
@@ -4453,6 +4457,15 @@
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  // A small shared, prefiltered reflection probe gives metal, glass and varnish
+  // readable highlights without six extra scene renders whenever the layout changes.
+  const reflectionRoom = new RoomEnvironment(),
+    reflectionGenerator = new THREE.PMREMGenerator(renderer),
+    reflectionTarget = reflectionGenerator.fromScene(reflectionRoom, 0.04, 0.1, 100);
+  scene.environment = reflectionTarget.texture;
+  scene.environmentIntensity = 0.22;
+  reflectionRoom.dispose();
+  reflectionGenerator.dispose();
   viewport.prepend(renderer.domElement);
   const controls = new OrbitControls(camera, renderer.domElement),
     lookControls = new PointerLockControls(camera, renderer.domElement);
@@ -4678,6 +4691,7 @@
       .add(sunlight.target.position);
     renderer.toneMappingExposure = 1.05 * 2 ** $("sunExposure").valueAsNumber;
     daylightStrength.value = Math.min(1, daylight * 4);
+    scene.environmentIntensity = daylightStrength.value * 0.22;
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
     sunlight.castShadow = altitude > 0;
     if (previousDaylight !== altitude > 0) {
@@ -4811,6 +4825,8 @@
       ]),
     ),
     sharedMaterials = new Set(Object.values(material)),
+    furnitureTemplates = new Map(),
+    templateGeometries = new Set(),
     woodPlanks = ["#a58a69", "#aa9070", "#a38968", "#b09576"].map((color) => mat(color, 0.76));
   woodPlanks.forEach((item) => sharedMaterials.add(item));
   material.ceiling.userData.enclosure = true;
@@ -4850,7 +4866,7 @@
     };
     for (let row = 0; row < 4; row += 1) {
       for (let col = 0; col < 4; col += 1) {
-        const value = 77 + random() * 9;
+        const value = (terracotta ? 46 : 77) + random() * (terracotta ? 11 : 5);
         context.fillStyle = `hsl(${terracotta ? 23 : 42} ${terracotta ? 37 : 9}% ${value}%)`;
         context.fillRect(col * 128 + 1, row * 128 + 1, 125, 125);
         for (let i = 0; i < 650; i += 1) {
@@ -4920,7 +4936,8 @@
     material[key].bumpMap = material[key].map;
     material[key].bumpScale = 0.002;
     material[key].userData.textureScale = key === "stone" ? 2.4 : 1.2;
-    material[key].roughness = 0.72;
+    material[key].roughness = key === "stone" ? 0.48 : 0.82;
+    material[key].color.set(key === "stone" ? "#eee9df" : "#ffffff");
   }
   const pavingCanvas = document.createElement("canvas");
   pavingCanvas.width = 256;
@@ -4982,7 +4999,7 @@
   material.grass.bumpScale = 0.015;
   material.grass.userData.textureScale = 1.5;
   material.curtain.side = THREE.DoubleSide;
-  material.white.roughness = 0.3;
+  material.white.roughness = 0.38;
   material.cabinetGlass.transparent = true;
   material.cabinetGlass.opacity = 0.25;
   material.cabinetGlass.depthWrite = false;
@@ -4990,6 +5007,7 @@
   material.metal.metalness = 0.85;
   material.metal.roughness = 0.27;
   material.screen.roughness = 0.16;
+  material.screen.metalness = 0.18;
   material.water.roughness = 0.12;
   material.water.metalness = 0.35;
   material.glow.emissive.set("#a0f8da");
@@ -5115,6 +5133,8 @@
     for (const child of group.children) {
       if (
         !child.isMesh ||
+        child.userData.terrain ||
+        child.userData.floor !== undefined ||
         child.children.length > 0 ||
         Array.isArray(child.material) ||
         child.material.transparent
@@ -5176,6 +5196,13 @@
     } else {
       group.userData.detailed = true;
       const [cw, cd, ch] = catalog[name];
+      if (furnitureTemplates.has(name)) {
+        const cached = furnitureTemplates.get(name).clone(true);
+        cached.scale.set(w / cw, h / ch, d / cd);
+        cached.userData.token = token;
+        selectableGroups.push(cached);
+        return cached;
+      }
       switch (name) {
         case "pool":
         case "hot_tub": {
@@ -6125,6 +6152,19 @@
       if (!lightAssets.includes(name)) {
         batchFurniture(group);
       }
+      // Cache the canonical model, never its placement, selection or room shader.
+      // The finite catalog bounds this cache; scene rebuilds retain these GPU assets.
+      if (!lightAssets.includes(name) && !group.children.some((child) => child.isLight)) {
+        furnitureTemplates.set(name, group.clone(true));
+        group.traverse((node) => {
+          if (node.geometry) {
+            templateGeometries.add(node.geometry);
+          }
+          for (const finish of [node.material].flat().filter(Boolean)) {
+            sharedMaterials.add(finish);
+          }
+        });
+      }
       group.scale.set(w / cw, h / ch, d / cd);
     }
     group.userData.token = token;
@@ -6965,7 +7005,7 @@
     });
     const disposed = new Set();
     sceneRoot.traverse((node) => {
-      if (node.geometry && !disposed.has(node.geometry)) {
+      if (node.geometry && !templateGeometries.has(node.geometry) && !disposed.has(node.geometry)) {
         node.geometry.dispose();
         disposed.add(node.geometry);
       }
@@ -7021,6 +7061,11 @@
     camera.updateProjectionMatrix();
     addArchitecture(program);
     addExterior(program, sceneRoot, ceilingRoots, box);
+    for (const child of sceneRoot.children) {
+      if (child.isGroup) {
+        batchFurniture(child);
+      }
+    }
     updateShadowEnclosure();
     updateSun();
     if (!program.rooms.some((room) => room.name === focusRoom)) {
