@@ -153,6 +153,7 @@
                       <option value="high">High</option>
                     </select>
                   </label>
+                  <output id="renderStats" title="Scene rendering workload">Preparing scene…</output>
                   <p>
                     Default location: Athens. The sky and sun follow the date, local time,
                     coordinates, and building orientation. The moon uses an approximate orbit and
@@ -162,7 +163,7 @@
                     to direct light from all fixtures. Exposure brightens the image without adding
                     light. Use first person to view interiors. All fixtures switch on when the sun
                     is below the horizon and off during daylight, regardless of camera position.
-                    Fast quality reduces rendering resolution. Large scenes take longer.
+                    Fast, Balanced, and High cap the image at 1, 2, and 4 million pixels and adjust sun shadow detail. Idle scenes pause rendering. Large scenes take longer.
                   </p>
                 </form>
               </details>
