@@ -65,6 +65,15 @@
                 <path d="m8 3 4 4 4-4M4 12h16m-12 9 4-4 4 4" />
               </svg></button
             ><span id="editorState">READY TO EDIT</span>
+            <button
+              id="layoutToggle"
+              class="text-button"
+              type="button"
+              aria-expanded="true"
+              aria-controls="editor"
+            >
+              Hide layout
+            </button>
           </div>
           <div class="editor-wrap"><div id="editor"></div></div>
           <div id="message" class="message" role="status" aria-live="polite" hidden>
@@ -286,8 +295,8 @@
             <div id="walkLensControl" class="walk-lens" hidden>
               <label for="walkLens">Lens</label>
               <select id="walkLens" aria-label="Walk camera lens">
-                <option value="60">Natural · 60°</option>
-                <option value="75" selected>Wide · 75°</option>
+                <option value="60" selected>Natural · 60°</option>
+                <option value="75">Wide · 75°</option>
                 <option value="90">Ultra wide · 90°</option>
               </select>
             </div>
@@ -329,9 +338,30 @@
           autocomplete="off"
         />
       </label>
+      <label class="asset-category"
+        >Category
+        <select id="assetCategory" aria-label="Asset category">
+          <option value="all">All assets</option>
+          <option value="seating">Seating</option>
+          <option value="bedroom">Bedroom &amp; storage</option>
+          <option value="tables">Tables &amp; desks</option>
+          <option value="kitchen">Kitchen &amp; dining</option>
+          <option value="bathroom">Bathroom</option>
+          <option value="lighting">Lighting</option>
+          <option value="garden">Garden &amp; terrace</option>
+          <option value="decor">Decor &amp; architecture</option>
+        </select>
+      </label>
       <output id="assetCount" aria-live="polite"></output>
       <div id="assetResults" class="asset-results" aria-label="Available assets"></div>
       <div class="asset-detail">
+        <div
+          id="assetPreview"
+          class="asset-preview"
+          role="img"
+          aria-label="Selected furniture preview"
+        ></div>
+        <p class="asset-preview-hint">Drag to rotate · Scroll to zoom</p>
         <strong id="assetName"></strong>
         <p id="assetDimensions"></p>
         <code id="assetToken"></code>

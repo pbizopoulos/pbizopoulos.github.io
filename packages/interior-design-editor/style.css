@@ -166,14 +166,14 @@ h2 {
   font-size: 11px;
   white-space: nowrap;
 }
-.editor-toolbar > span:last-child {
+.editor-toolbar #editorState {
   font:
     11px ui-monospace,
     SFMono-Regular,
     Menlo,
     monospace;
 }
-.editor-toolbar > span:last-child {
+.editor-toolbar #editorState {
   margin-left: auto;
   color: #8b9790;
   font-size: 9px;
@@ -435,7 +435,7 @@ h2 {
   }
 }
 @media (max-width: 560px) {
-  .editor-toolbar > span:last-child {
+  .editor-toolbar #editorState {
     display: none;
   }
   .preview-tools {
@@ -817,5 +817,99 @@ button svg {
   .sun-settings select {
     font-size: 16px;
     min-height: 40px;
+  }
+}
+.workspace.scene-first {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.scene-first .editor-wrap,
+.scene-first .editor-panel > .message {
+  display: none;
+}
+.scene-first .editor-panel {
+  border-bottom: 1px solid #e1e5df;
+}
+#layoutToggle {
+  flex-shrink: 0;
+  width: auto;
+  white-space: nowrap;
+  padding-inline: 8px;
+}
+.asset-category {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.asset-category select {
+  min-width: 0;
+  flex: 1;
+  padding: 7px;
+  border: 1px solid #d5dcd6;
+  border-radius: 5px;
+  background: #fff;
+}
+.asset-preview {
+  height: 200px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: radial-gradient(ellipse at 50% 35%, #e5e5df, #bdc3ba);
+}
+.asset-preview canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.asset-preview-hint {
+  color: #657369;
+  text-align: center;
+}
+@media (min-width: 901px) {
+  .asset-browser[open] {
+    display: grid;
+    width: min(740px, calc(100vw - 40px));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 18px;
+  }
+  .asset-browser header,
+  .asset-search,
+  .asset-category,
+  #assetCount {
+    grid-column: 1 / -1;
+  }
+  .asset-results {
+    max-height: 420px;
+    grid-column: 1;
+  }
+  .asset-detail {
+    grid-column: 2;
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+@media (max-width: 560px) {
+  .asset-preview {
+    height: 170px;
+  }
+  .editor-toolbar {
+    gap: 3px;
+  }
+  #exampleSelect {
+    max-width: 160px;
+  }
+  .editor-toolbar #editorState {
+    display: none;
+  }
+}
+.scene-first .editor-panel > .message.error:not([hidden]),
+.scene-first .editor-panel > .message.warn:not([hidden]) {
+  display: block;
+}
+@media (max-width: 1150px) {
+  .editor-toolbar #editorState {
+    display: none;
   }
 }
