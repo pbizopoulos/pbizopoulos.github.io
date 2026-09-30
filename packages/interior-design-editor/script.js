@@ -4420,6 +4420,120 @@
     });
   }
   const editor = new EditorView({ parent: editorHost, state: editorState("") });
+  const assetBrowser = $("assetBrowser"),
+    assetNames = Object.keys(catalog).toSorted();
+  let selectedAsset, assetTarget, assetSourceDoc, assetStatements;
+  function assetCell(range = editor.state.selection.main) {
+    const line = editor.state.doc.lineAt(range.from);
+    if (range.to > line.to) {
+      return;
+    }
+    try {
+      if (assetSourceDoc !== editor.state.doc) {
+        assetStatements = readLayout(editor.state.doc.toString());
+        assetSourceDoc = editor.state.doc;
+      }
+      let inLayout = false;
+      for (const statement of assetStatements) {
+        if (statement.kind === "Layout") {
+          inLayout = true;
+        } else if (statement.kind === "End") {
+          inLayout = false;
+        }
+        if (inLayout && statement.line === line.number) {
+          const token = statement.tokens.find(
+            (item) => range.from >= line.from + item.start && range.to <= line.from + item.end,
+          );
+          if (token) {
+            return {
+              from: line.from + token.start,
+              line: line.number,
+              name: aliases[token.name] || token.name?.toLowerCase(),
+              text: token.text,
+              to: line.from + token.end,
+            };
+          }
+        }
+      }
+    } catch {
+      return false;
+    }
+  }
+  function chooseAsset(name) {
+    selectedAsset = name;
+    for (const button of $("assetResults").children) {
+      button.setAttribute("aria-pressed", String(button.dataset.asset === name));
+    }
+    $("assetName").textContent = name.replaceAll("_", " ");
+    $("assetDimensions").textContent = `Width × depth × height: ${catalog[name].join(" × ")} m`;
+    $("assetToken").textContent = name;
+    $("assetContext").textContent = assetTarget
+      ? `Replace the entire cell “${assetTarget.text}” on line ${assetTarget.line} with “${name}”. Uses the default size and orientation.`
+      : "To place an asset, select a furniture cell or an empty cell (.) in a LAYOUT before opening Assets. You can also copy its token.";
+    $("insertAsset").disabled = !assetTarget;
+  }
+  function filterAssets() {
+    const words = $("assetSearch").value.toLowerCase().trim().split(/\s+/u),
+      names = assetNames.filter((name) =>
+        words.every((word) => name.replaceAll("_", " ").includes(word.replaceAll("_", " "))),
+      );
+    $("assetCount").textContent = `${names.length} of ${assetNames.length} assets`;
+    $("assetResults").replaceChildren(
+      ...names.map((name) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "asset-option";
+        button.dataset.asset = name;
+        button.textContent = name.replaceAll("_", " ");
+        button.addEventListener("click", () => chooseAsset(name));
+        return button;
+      }),
+    );
+    $("assetBrowser").querySelector(".asset-detail").hidden = names.length === 0;
+    if (names.length > 0) {
+      chooseAsset(names.includes(selectedAsset) ? selectedAsset : names[0]);
+    }
+  }
+  function openAssets(target = assetCell()) {
+    pressedKeys.clear();
+    stopWalkthrough();
+    assetTarget = target;
+    if (catalog[target?.name]) {
+      selectedAsset = target.name;
+      $("assetSearch").value = "";
+    }
+    filterAssets();
+    assetBrowser.showModal();
+    $("assetSearch").focus();
+    $("assetResults").querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest" });
+  }
+  $("assetsButton").disabled = false;
+  $("assetsButton").addEventListener("click", () => openAssets());
+  $("closeAssets").addEventListener("click", () => assetBrowser.close());
+  $("assetSearch").addEventListener("input", filterAssets);
+  $("insertAsset").addEventListener("click", () => {
+    if (
+      !assetTarget ||
+      editor.state.doc.sliceString(assetTarget.from, assetTarget.to) !== assetTarget.text
+    ) {
+      return;
+    }
+    editor.dispatch({
+      changes: { from: assetTarget.from, insert: selectedAsset, to: assetTarget.to },
+      selection: { anchor: assetTarget.from + selectedAsset.length },
+    });
+    assetBrowser.close();
+    editor.focus();
+  });
+  $("copyAsset").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(selectedAsset);
+      $("assetContext").textContent = `Copied ${selectedAsset}. Paste it into a layout cell.`;
+    } catch {
+      $("assetContext").textContent =
+        "Could not copy. Select the token above and copy it manually.";
+    }
+  });
   function highlightSource(lineNumber, reveal) {
     const line = editor.state.doc.line(lineNumber),
       effects = [];
@@ -4498,6 +4612,19 @@
     const source = document.createElement("span");
     source.textContent = `${token.room.replaceAll("_", " ")} · line ${token.line}`;
     selectionCard.append(title, dimensions, source);
+    const sourceLine = editor.state.doc.line(token.line),
+      cell =
+        Number.isInteger(token.start) && Number.isInteger(token.end)
+          ? assetCell({ from: sourceLine.from + token.start, to: sourceLine.from + token.end })
+          : undefined;
+    if (cell) {
+      const change = document.createElement("button");
+      change.className = "text-button change-asset";
+      change.type = "button";
+      change.textContent = "Change asset…";
+      change.addEventListener("click", () => openAssets(cell));
+      selectionCard.append(change);
+    }
     if (token.url) {
       const link = document.createElement("a");
       link.href = token.url;
@@ -8054,7 +8181,7 @@
       camera.position.x = standing.x;
       camera.position.z = standing.z;
       camera.rotation.order = "YXZ";
-      camera.lookAt(room.centerX, room.elevation + 1.4, room.centerZ);
+      aimInsideRoom(room);
       renderer.domElement.style.cursor = "crosshair";
     } else if (currentProgram) {
       resetCamera();
@@ -8506,6 +8633,48 @@
     return positions.toSorted(
       (a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z),
     )[0];
+  }
+  function aimInsideRoom(room) {
+    const centered =
+      Math.hypot(camera.position.x - room.centerX, camera.position.z - room.centerZ) < 0.25;
+    camera.lookAt(room.centerX, room.elevation + 1.5, room.centerZ - (centered ? 1 : 0));
+  }
+  function focusCamera() {
+    stopWalkthrough();
+    if (!firstPerson) {
+      updateFloorVisibility();
+      resetCamera($("topButton").getAttribute("aria-pressed") === "true");
+      return;
+    }
+    pressedKeys.clear();
+    const cameraFloor = Math.round((camera.position.y - 1.65) / 3),
+      rooms = currentProgram.rooms.filter(
+        (room) =>
+          (!focusRoom || room.name === focusRoom) && room.floor === (focusFloor ?? cameraFloor),
+      );
+    if (!focusRoom && (focusFloor === undefined || focusFloor === cameraFloor)) {
+      updateFloorVisibility();
+      return;
+    }
+    for (const room of rooms) {
+      const standing = findStandingPosition(
+        room,
+        room.centerX,
+        room.centerZ + Math.min(room.rows * currentProgram.grid * 0.3, 2),
+      );
+      if (standing) {
+        camera.position.set(standing.x, room.elevation + 1.65, standing.z);
+        camera.rotation.order = "YXZ";
+        aimInsideRoom(room);
+        updateFloorVisibility();
+        return;
+      }
+    }
+    focusRoom = undefined;
+    focusFloor = cameraFloor;
+    $("roomFocus").value = "";
+    updateFloorVisibility();
+    showStatus("No clear standing space in this area. Choose another room or use 3D view.", "warn");
   }
   function stopWalkthrough(message) {
     walkthroughRun += 1;
@@ -9431,15 +9600,13 @@
   $("roomFocus").addEventListener("change", (event) => {
     focusRoom = event.target.value || undefined;
     focusFloor = currentProgram.rooms.find((room) => room.name === focusRoom)?.floor;
-    updateFloorVisibility();
-    resetCamera();
+    focusCamera();
   });
   $("floorFocus").addEventListener("change", (event) => {
     focusFloor = event.target.value === "" ? undefined : Number(event.target.value);
     focusRoom = undefined;
     $("roomFocus").value = "";
-    updateFloorVisibility();
-    resetCamera();
+    focusCamera();
   });
   $("resetButton").addEventListener("click", () => {
     focusRoom = undefined;

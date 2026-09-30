@@ -383,6 +383,11 @@ h2 {
     Menlo,
     monospace;
 }
+.selection-card .change-asset {
+  min-height: 36px;
+  padding: 0;
+  text-align: left;
+}
 .axis-cue {
   position: absolute;
   right: 24px;
@@ -692,6 +697,103 @@ button svg {
   .axis-cue {
     display: none;
   }
+}
+.asset-browser {
+  width: min(540px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid #d5dcd6;
+  border-radius: 10px;
+  background: #f7f9f6;
+  color: #2e3933;
+  box-shadow: 0 12px 50px #17282033;
+}
+.asset-browser[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.asset-browser::backdrop {
+  background: #17282066;
+}
+.asset-browser header,
+.asset-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.asset-browser h2 {
+  font-size: 18px;
+}
+.asset-search {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.asset-search input {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d5dcd6;
+  border-radius: 5px;
+  font-size: 16px;
+}
+.asset-browser output,
+.asset-detail p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.asset-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+  max-height: min(30dvh, 260px);
+  min-height: 40px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.asset-option {
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid #d5dcd6;
+  border-radius: 5px;
+  background: #fff;
+  color: #2e3933;
+  font-size: 12px;
+  text-align: left;
+}
+.asset-option[aria-pressed="true"] {
+  border-color: #598d7d;
+  background: #e5eee7;
+}
+.asset-detail {
+  border-top: 1px solid #d5dcd6;
+  padding-top: 12px;
+}
+.asset-detail p {
+  margin: 6px 0;
+}
+.asset-detail code {
+  display: block;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.asset-actions {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+.asset-actions button {
+  width: auto;
+  min-width: 96px;
+  min-height: 40px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.asset-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .tool-button[hidden] {
   display: none;

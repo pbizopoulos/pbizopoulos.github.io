@@ -31,6 +31,8 @@
         <section class="editor-panel" aria-label="Interior design editor">
           <div class="editor-toolbar">
             <select id="exampleSelect" aria-label="Example scene"></select
+            ><button id="assetsButton" class="text-button" aria-haspopup="dialog" disabled>
+              Assets</button
             ><button
               id="copyButton"
               class="text-button"
@@ -312,6 +314,33 @@
         </section>
       </main>
     </div>
+    <dialog id="assetBrowser" class="asset-browser" aria-labelledby="assetBrowserTitle">
+      <header>
+        <h2 id="assetBrowserTitle">Furniture &amp; assets</h2>
+        <button id="closeAssets" class="text-button" type="button">Close</button>
+      </header>
+      <label class="asset-search"
+        >Search assets
+        <input
+          id="assetSearch"
+          type="search"
+          placeholder="Try sofa, canopy, shower, or plant"
+          autocomplete="off"
+        />
+      </label>
+      <output id="assetCount" aria-live="polite"></output>
+      <div id="assetResults" class="asset-results" aria-label="Available assets"></div>
+      <div class="asset-detail">
+        <strong id="assetName"></strong>
+        <p id="assetDimensions"></p>
+        <code id="assetToken"></code>
+        <p id="assetContext" role="status" aria-live="polite"></p>
+        <div class="asset-actions">
+          <button id="insertAsset" class="tool-button" type="button">Replace cell</button>
+          <button id="copyAsset" class="tool-button" type="button">Copy token</button>
+        </div>
+      </div>
+    </dialog>
     <script src="./script.js"></script>
   </body>
 </html>
