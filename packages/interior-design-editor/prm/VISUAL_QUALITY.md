@@ -175,3 +175,25 @@ Standard doors use approximately 2.1 m leaves with complete headers; French
 doors retain taller glazed leaves. Door picking, frames and daylight openings
 use the same opening height. Default columns, archways and the fireplace hood
 also fit the standard ceiling rather than protruding into it.
+
+
+## Finished edges and exterior sightlines
+
+Broad thin wood, enamel and white furniture surfaces receive a 2.5 mm bevel,
+using Three.js RoundedBoxGeometry. Narrow slats, legs, handles and structural
+parts keep inexpensive boxes. Hard solid corners use 12 mm radii; upholstered
+forms retain their softer treatment. The initial broad bevel scope exceeded the
+geometry budget and was narrowed before shipping.
+
+Grass-site perimeter trees follow exterior openings, with a site-size/storey
+budget of four to eight trees. Height and canopy width are independent: upper
+floors get taller trunks rather than giant crowns. Smaller asymmetric clusters,
+visible branches and double-sided leaf tufts break up silhouettes. Two shared
+leaf finishes and bark are merged into three meshes, adding only one draw over
+the previous two-material planting. Window glass is less heavily tinted.
+
+The final representative Fast-view comparison added one draw per scene. Bedroom
+used 20,646 triangles (previously 17,286); the showcase used 103,646 (97,742);
+the three-level overview used 318,210 (298,326). No collision warnings or browser
+errors occurred, and the renderer returned to sleep after settling. These are
+software-GPU workload measurements, not hardware frame-rate measurements.

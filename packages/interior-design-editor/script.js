@@ -2408,47 +2408,109 @@
       );
       if (program.margin >= 3 && program.site === "grass") {
         const bark = finish("#6c5843"),
-          leaves = finish("#405e37");
-        for (const xSign of [-1, 1]) {
-          for (const zSign of [-1, 1]) {
-            const x = xSign * (width / 2 + program.margin - 1.4),
-              z = zSign * (depth / 2 + program.margin - 1.4);
-            cylinder(group, 0.12, 0.18, 1.8, x, 0.7, z, bark, 6);
-            for (let i = 0; i < 5; i += 1) {
-              const angle = i * 2.4,
-                crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), leaves);
-              crown.position.set(
-                x + Math.cos(angle) * 0.62,
-                1.95 + (i % 3) * 0.28,
-                z + Math.sin(angle) * 0.62,
-              );
-              crown.scale.set(0.66 + (i % 2) * 0.12, 0.73 + (i % 3) * 0.1, 0.7);
-              crown.rotation.y = angle;
-              crown.castShadow = true;
-              crown.receiveShadow = true;
-              group.add(crown);
-              for (let j = 0; j < 8; j += 1) {
-                const latitude = Math.acos(1 - (2 * (j + 0.5)) / 8),
-                  tuft = new THREE.Mesh(gardenLeafGeometry.clone(), leaves),
-                  turn = j * 2.4;
-                tuft.position
-                  .copy(crown.position)
-                  .add(
-                    new THREE.Vector3(
-                      Math.sin(latitude) * Math.cos(turn) * crown.scale.x,
-                      Math.cos(latitude) * crown.scale.y,
-                      Math.sin(latitude) * Math.sin(turn) * crown.scale.z,
-                    ),
-                  );
-                tuft.scale.set(0.9, 1.3, 0.8);
-                tuft.rotation.set(turn, latitude, angle);
-                tuft.castShadow = true;
-                tuft.receiveShadow = true;
-                group.add(tuft);
-              }
+          leaves = [finish("#4c653d"), finish("#60774b")],
+          trees = [],
+          treeLimit = Math.min(
+            8,
+            Math.max(
+              4,
+              Math.ceil((width * depth) / 70) + program.floors.filter((floor) => floor >= 0).length,
+            ),
+          ),
+          setback = program.margin - 1.5,
+          canopyHeight = Math.min(
+            8,
+            4 + Math.max(0, ...program.rooms.map((room) => room.elevation)) * 0.6,
+          ),
+          placeTree = (x, z) => {
+            if (
+              trees.length < treeLimit &&
+              !trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < 2.3)
+            ) {
+              trees.push({ x, z });
             }
+          };
+        const sightlineRooms = program.rooms.toSorted(
+          (a, b) =>
+            Number(b.kind === "balcony") - Number(a.kind === "balcony") ||
+            b.elevation - a.elevation,
+        );
+        for (const room of sightlineRooms) {
+          if (room.floor < 0) {
+            continue;
+          }
+          for (const opening of room.daylightOpenings || []) {
+            if (opening.shared) {
+              continue;
+            }
+            const vertical = opening.dir === "east" || opening.dir === "west",
+              sign = opening.dir === "east" || opening.dir === "south" ? 1 : -1;
+            placeTree(
+              vertical ? sign * (width / 2 + setback) : opening.x,
+              vertical ? opening.z : sign * (depth / 2 + setback),
+            );
           }
         }
+        for (const xSign of [-1, 1]) {
+          for (const zSign of [-1, 1]) {
+            placeTree(xSign * (width / 2 + setback), zSign * (depth / 2 + setback));
+          }
+        }
+        leaves.forEach((leaf) => {
+          leaf.side = THREE.DoubleSide;
+        });
+        trees.forEach(({ x, z }, index) => {
+          const treeHeight = canopyHeight * (0.82 + (index % 3) * 0.12),
+            spread = 1 + (index % 3) * 0.08,
+            turn = index * 1.7;
+          cylinder(group, 0.1, 0.17, treeHeight - 1, x, (treeHeight - 1) / 2 - 0.2, z, bark, 6);
+          for (let i = 0; i < 6; i += 1) {
+            const angle = i * 2.4 + turn,
+              foliageFinish = leaves[(i + index) % 3 ? 0 : 1],
+              crown = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), foliageFinish);
+            crown.position.set(
+              x + Math.cos(angle) * (0.48 + (i % 3) * 0.1) * spread,
+              treeHeight - 0.85 + ((i % 3) - 1) * 0.32,
+              z + Math.sin(angle) * (0.55 + (i % 2) * 0.12) * spread,
+            );
+            crown.scale.set(
+              (0.4 + (i % 2) * 0.09) * spread,
+              0.54 + (i % 3) * 0.08,
+              (0.38 + (i % 3) * 0.05) * spread,
+            );
+            crown.rotation.y = angle;
+            crown.castShadow = true;
+            crown.receiveShadow = true;
+            group.add(crown);
+            const branchPath = new THREE.LineCurve3(
+                new THREE.Vector3(x, treeHeight - 1.6, z),
+                crown.position,
+              ),
+              branch = new THREE.Mesh(new THREE.TubeGeometry(branchPath, 1, 0.025, 5, false), bark);
+            branch.castShadow = true;
+            branch.receiveShadow = true;
+            group.add(branch);
+            for (let j = 0; j < 12; j += 1) {
+              const latitude = Math.acos(1 - (2 * (j + 0.5)) / 12),
+                tuft = new THREE.Mesh(gardenLeafGeometry.clone(), foliageFinish),
+                leafTurn = j * 2.4 + turn;
+              tuft.position
+                .copy(crown.position)
+                .add(
+                  new THREE.Vector3(
+                    Math.sin(latitude) * Math.cos(leafTurn) * crown.scale.x,
+                    Math.cos(latitude) * crown.scale.y,
+                    Math.sin(latitude) * Math.sin(leafTurn) * crown.scale.z,
+                  ),
+                );
+              tuft.scale.set(1.25 * spread, 1.4 * spread, 0.95 * spread);
+              tuft.rotation.set(leafTurn, latitude, angle);
+              tuft.castShadow = true;
+              tuft.receiveShadow = true;
+              group.add(tuft);
+            }
+          }
+        });
         batchFurniture(group);
       }
       for (const sign of [-1, 1]) {
@@ -7127,9 +7189,16 @@
         material.cream,
         material.linen,
       ].includes(m),
-      radius = Math.min(upholstered ? 0.065 : 0.018, Math.min(w, h, d) * 0.24),
+      thickness = Math.min(w, h, d),
+      thinFinish =
+        thickness >= 0.018 &&
+        thickness <= 0.06 &&
+        [w, h, d].toSorted((a, b) => a - b)[1] >= 0.28 &&
+        Math.max(w, h, d) >= 0.45 &&
+        (m.userData.woodGrain || [material.white, material.enamel, material.chrome].includes(m)),
+      radius = Math.min(upholstered ? 0.065 : thickness <= 0.06 ? 0.0025 : 0.012, thickness * 0.24),
       geometry =
-        parent.userData.detailed && Math.min(w, h, d) > 0.06
+        parent.userData.detailed && (thickness > 0.06 || thinFinish)
           ? new RoundedBoxGeometry(w, h, d, upholstered ? 2 : 1, radius)
           : new THREE.BoxGeometry(w, h, d);
     if (m.userData.textureScale) {
@@ -9062,7 +9131,7 @@
             opening.add(leaf);
             const glass = mat("#cedcda", 0.15);
             glass.transparent = true;
-            glass.opacity = 0.22;
+            glass.opacity = 0.12;
             glass.depthWrite = false;
             glass.userData.windowPane = true;
             for (const x of [-leafLength / 2 + 0.03, leafLength / 2 - 0.03]) {
@@ -9160,7 +9229,7 @@
             z: vertical ? center : fixed,
           });
           glass.transparent = true;
-          glass.opacity = 0.34;
+          glass.opacity = 0.16;
           glass.depthWrite = false;
           glass.side = THREE.DoubleSide;
           if (vertical) {
