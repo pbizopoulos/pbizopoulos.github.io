@@ -487,7 +487,7 @@
     } else if (["cypress", "citrus_tree", "olive_tree", "topiary_tree"].includes(name)) {
       cylinder(group, 0.07, 0.13, h * 0.62, 0, h * 0.31, 0, m.woodDark);
       const leaf = (x, y, z, sx, sy, sz, finish) => {
-        const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), finish);
+        const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), finish);
         mesh.position.set(x, y, z);
         mesh.scale.set(sx * 0.78, sy * 0.8, sz * 0.78);
         mesh.castShadow = true;
@@ -496,9 +496,9 @@
         if (sx < 0.1) {
           return;
         }
-        for (let i = 0; i < 72; i += 1) {
+        for (let i = 0; i < 48; i += 1) {
           const angle = i * 2.4,
-            latitude = Math.acos(1 - (2 * (i + 0.5)) / 72),
+            latitude = Math.acos(1 - (2 * (i + 0.5)) / 48),
             tuft = new THREE.Mesh(gardenLeafGeometry.clone(), i % 5 ? finish : m.leafLight);
           tuft.position.set(
             x + sx * 0.8 * Math.sin(latitude) * Math.cos(angle),
@@ -1046,6 +1046,18 @@
         cylinder(group, 0.065, 0.06, 0.12, x, h - 0.36, -0.1, m.white);
       }
       b(0.53, 0.018, 0.48, 0.86, 0.94, 0, m.screen);
+      for (const [x, z, radius] of [
+        [0.73, -0.12, 0.075],
+        [0.98, -0.12, 0.08],
+        [0.73, 0.12, 0.07],
+        [0.98, 0.12, 0.065],
+      ]) {
+        const burner = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.002, 4, 24), m.metal);
+        burner.rotation.x = Math.PI / 2;
+        burner.position.set(x, 0.95, z);
+        group.add(burner);
+      }
+      b(0.5, 0.49, 0.014, 0.9, 0.47, d / 2 + 0.045, m.chrome);
       b(0.47, 0.46, 0.015, 0.9, 0.47, d / 2 + 0.055, m.screen);
       b(0.36, 0.025, 0.035, 0.9, 0.72, d / 2 + 0.075, m.metal);
       for (const x of [0.73, 0.9, 1.07]) {
@@ -1482,6 +1494,7 @@
       { default: TinyQueue },
       { RoundedBoxGeometry },
       { RoomEnvironment },
+      { Reflector },
       { EditorState, StateEffect, StateField },
       { EditorView, Decoration, keymap, lineNumbers, drawSelection },
       {
@@ -1510,6 +1523,7 @@
       import("tinyqueue"),
       import("three/addons/geometries/RoundedBoxGeometry.js"),
       import("three/addons/environments/RoomEnvironment.js"),
+      import("three/addons/objects/Reflector.js"),
       import("@codemirror/state"),
       import("@codemirror/view"),
       import("@codemirror/language"),
@@ -2320,6 +2334,45 @@
       "coastal_print",
       "wall_spot_pair",
     ];
+  let reflectingMirror = false;
+  function addMirrorSurface(group, w, d, h, silver) {
+    const fallback = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.05, h - 0.05), silver),
+      surface = new Reflector(new THREE.PlaneGeometry(w - 0.05, h - 0.05), {
+        clipBias: 0.003,
+        color: "#eeeae3",
+        multisample: 0,
+        textureHeight: 512,
+        textureWidth: 512,
+      });
+    surface.position.set(0, h / 2, d / 2 + 0.006);
+    fallback.position.copy(surface.position);
+    fallback.userData.mirrorFallback = true;
+    fallback.receiveShadow = true;
+    surface.visible = false;
+    group.add(fallback, surface);
+    const capture = surface.onBeforeRender;
+    surface.onBeforeRender = function onBeforeRender(...args) {
+      if (reflectingMirror || args[1].overrideMaterial) {
+        return;
+      }
+      reflectingMirror = true;
+      try {
+        capture.apply(surface, args);
+      } finally {
+        reflectingMirror = false;
+      }
+    };
+  }
+  function updateMirrors(root, reflective) {
+    root.traverse((node) => {
+      if (node.isReflector) {
+        node.visible = reflective;
+      }
+      if (node.userData.mirrorFallback) {
+        node.visible = !reflective;
+      }
+    });
+  }
   function addDecoration(group, name, addBox) {
     if (!decorCatalog[name]) {
       return;
@@ -2405,7 +2458,7 @@
           metalness: 0.92,
           roughness: 0.08,
         });
-        addBox(group, w - 0.05, h - 0.05, 0.004, 0, h / 2, d / 2 + 0.002, silver);
+        addMirrorSurface(group, w, d, h, silver);
       } else {
         addBox(group, w - 0.025, h - 0.025, 0.003, 0, h / 2, d / 2 + 0.002, paper);
         addBox(group, w * 0.62, h * 0.3, 0.003, -w * 0.07, h * 0.35, d / 2 + 0.006, ink);
@@ -2751,7 +2804,7 @@
           " vec3 origin = positionAt(vUv);",
           " vec3 normal = normalize(cross(dFdx(origin),dFdy(origin)));",
           " if (normal.z < 0.0) normal = -normal;",
-          " float radius = 0.55;",
+          " float radius = 0.35;",
           " float screenRadius = clamp(radius * projectionScale / max(-origin.z, 0.1), 0.002, 0.08);",
           " float phase = fract(sin(dot(floor(vUv*resolution),vec2(12.9898,78.233)))*43758.5453)*6.283185;",
           " float blocked = 0.0;",
@@ -2765,7 +2818,7 @@
           "   float horizon = max(0.0, dot(normal,delta) / max(distanceToSample,0.001) - 0.12);",
           "   blocked += horizon * (1.0 - smoothstep(0.03,radius,distanceToSample));",
           " }",
-          " gl_FragColor = vec4(vec3(clamp(1.0-blocked*3.0/12.0,0.55,1.0)),1.0);",
+          " gl_FragColor = vec4(vec3(clamp(1.0-blocked*2.4/12.0,0.55,1.0)),1.0);",
           "}",
         ].join("\n"),
         toneMapped: false,
@@ -2809,6 +2862,7 @@
     screen.add(quad);
     let allocated = false;
     return function renderDetail(detail = $("renderQuality").value !== "fast") {
+      updateMirrors(sceneRoot, detail && $("renderQuality").value === "high");
       if (!detail || $("renderQuality").value === "fast") {
         if (allocated && $("renderQuality").value === "fast") {
           beauty.dispose();
@@ -4787,6 +4841,9 @@
     }
     assetStudio.scene.remove(assetStudio.object);
     assetStudio.object.traverse((node) => {
+      if (node.isReflector) {
+        node.getRenderTarget().dispose();
+      }
       if (node.geometry && !templateGeometries.has(node.geometry)) {
         node.geometry.dispose();
       }
@@ -4817,10 +4874,37 @@
       const key = new THREE.DirectionalLight("#ffffff", 2.6);
       key.position.set(3, 5, 4);
       scene.add(key);
+      const shadow = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({
+          alphaMap: contactTexture,
+          color: "#45503d",
+          depthWrite: false,
+          opacity: 0.3,
+          transparent: true,
+        }),
+      );
+      shadow.rotation.x = -Math.PI / 2;
+      scene.add(shadow);
       controls.enablePan = false;
       controls.addEventListener("change", () => renderer.render(scene, camera));
       $("assetPreview").replaceChildren(renderer.domElement);
-      assetStudio = { camera, controls, renderer, scene };
+      const observer = new ResizeObserver(() => {
+        if (!assetStudio || !assetBrowser.open) {
+          return;
+        }
+        const width = $("assetPreview").clientWidth,
+          height = $("assetPreview").clientHeight;
+        if (!width || !height) {
+          return;
+        }
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+        renderer.render(scene, camera);
+      });
+      assetStudio = { camera, controls, observer, renderer, scene, shadow };
+      observer.observe($("assetPreview"));
     }
     clearAssetPreview();
     const count = selectableGroups.length,
@@ -4840,6 +4924,8 @@
     object.position.sub(center);
     studio.object = object;
     studio.scene.add(object);
+    studio.shadow.scale.set(Math.max(size.x, 0.2) * 1.35, Math.max(size.z, 0.2) * 1.35, 1);
+    studio.shadow.position.y = -size.y / 2 + 0.002;
     studio.camera.aspect = width / height;
     studio.camera.updateProjectionMatrix();
     const radius = Math.max(size.x, size.y, size.z) / 2,
@@ -4860,6 +4946,9 @@
     clearAssetPreview();
     if (assetStudio) {
       assetStudio.controls.dispose();
+      assetStudio.observer.disconnect();
+      assetStudio.shadow.geometry.dispose();
+      assetStudio.shadow.material.dispose();
       assetStudio.renderer.dispose();
       assetStudio.renderer.forceContextLoss();
       assetStudio = undefined;
@@ -6023,6 +6112,7 @@
   stripeTexture.colorSpace = THREE.SRGBColorSpace;
   stripeTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   material.stripedLinen.map = stripeTexture;
+  material.stripedLinen.userData.textureScale = 0.22;
   material.stripedLinen.bumpMap = weaveTexture;
   material.stripedLinen.bumpScale = 0.0015;
   const reedCanvas = document.createElement("canvas");
@@ -6066,7 +6156,7 @@
       seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
       return seed / 4_294_967_296;
     };
-    const tileHeight = terracotta ? 128 : 256;
+    const tileHeight = 128;
     for (let row = 0; row < 512 / tileHeight; row += 1) {
       for (let col = 0; col < 4; col += 1) {
         const value = (terracotta ? 46 : 73) + random() * (terracotta ? 11 : 5);
@@ -6279,6 +6369,59 @@
   material.opal.roughness = 0.62;
   material.opal.emissive.set("#ffe4ba");
   material.opal.emissiveIntensity = 0.6;
+  async function loadSurfaceScans() {
+    const sources = [
+        { fallback: grainTexture, path: "./prm/assets/wood-grain-height.jpg" },
+        { fallback: weaveTexture, path: "./prm/assets/linen-weave-height.jpg" },
+      ],
+      results = await Promise.allSettled(
+        sources.map(async ({ path }) => {
+          const controller = new AbortController(),
+            timeout = setTimeout(() => controller.abort(), 5000);
+          try {
+            const response = await fetch(new URL(path, document.baseURI), {
+              signal: controller.signal,
+            });
+            if (!response.ok) {
+              throw new Error("Surface scan unavailable");
+            }
+            const url = URL.createObjectURL(await response.blob());
+            try {
+              const texture = await new THREE.TextureLoader().loadAsync(url);
+              texture.wrapS = THREE.RepeatWrapping;
+              texture.wrapT = THREE.RepeatWrapping;
+              texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+              return texture;
+            } finally {
+              URL.revokeObjectURL(url);
+            }
+          } finally {
+            clearTimeout(timeout);
+          }
+        }),
+      );
+    const finishes = new Set([...sharedMaterials, ...daylightSourceMaterials]);
+    sceneRoot.traverse((node) =>
+      [node.material]
+        .flat()
+        .filter(Boolean)
+        .forEach((finish) => finishes.add(finish)),
+    );
+    results.forEach((result, index) => {
+      if (result.status !== "fulfilled") {
+        return;
+      }
+      for (const finish of finishes) {
+        if (finish.bumpMap === sources[index].fallback) {
+          finish.bumpMap = result.value;
+        }
+      }
+    });
+    requestRender();
+    if (assetStudio) {
+      assetStudio.renderer.render(assetStudio.scene, assetStudio.camera);
+    }
+  }
   const contactCanvas = document.createElement("canvas");
   contactCanvas.width = 64;
   contactCanvas.height = 64;
@@ -6408,7 +6551,16 @@
     return mesh;
   }
   function cylinder(parent, r1, r2, h, x, y, z, m, segments = 16) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, segments), m);
+    const geometry = new THREE.CylinderGeometry(r1, r2, h, segments);
+    if (m.userData.textureScale) {
+      const { uv } = geometry.attributes,
+        circumference = Math.PI * (r1 + r2),
+        scale = m.userData.textureScale;
+      for (let i = 0; i < uv.count; i += 1) {
+        uv.setXY(i, (uv.getX(i) * circumference) / scale, (uv.getY(i) * h) / scale);
+      }
+    }
+    const mesh = new THREE.Mesh(geometry, m);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -6431,8 +6583,10 @@
     for (let i = 0; i < positions.count; i += 1) {
       uv.setXY(
         i,
-        positions.getX(i) / w + 0.5,
-        Math.abs(normal.getY(i)) > 0.5 ? positions.getZ(i) / d + 0.5 : positions.getY(i) / h + 0.5,
+        positions.getX(i) / (finish.userData.textureScale || 0.22) + 0.5,
+        (Math.abs(normal.getY(i)) > 0.5 ? positions.getZ(i) : positions.getY(i)) /
+          (finish.userData.textureScale || 0.22) +
+          0.5,
       );
     }
     const mesh = new THREE.Mesh(geometry, finish);
@@ -6547,6 +6701,11 @@
         pz = positions.getY(i),
         overhang = Math.max(0, Math.abs(px) - w / 2),
         ripple = (0.004 + overhang * 0.12) * Math.sin(pz * 32 + px * 14);
+      geometry.attributes.uv.setXY(
+        i,
+        px / (finish.userData.textureScale || 0.22),
+        pz / (finish.userData.textureScale || 0.22),
+      );
       positions.setXYZ(
         i,
         Math.sign(px) * Math.min(Math.abs(px), w / 2 + 0.012),
@@ -6665,7 +6824,14 @@
     const inverse = group.matrixWorld.clone().invert(),
       descendants = [];
     group.traverse((node) => {
-      if (node !== group && node.isMesh && node.parent !== group && node.children.length === 0) {
+      if (
+        node !== group &&
+        node.isMesh &&
+        node.parent !== group &&
+        node.children.length === 0 &&
+        !node.isReflector &&
+        !node.userData.mirrorFallback
+      ) {
         let ancestor = node.parent;
         while (
           ancestor !== group &&
@@ -6695,6 +6861,8 @@
         child.userData.contact ||
         child.userData.floor !== undefined ||
         child.userData.openDoorLeaf ||
+        child.isReflector ||
+        child.userData.mirrorFallback ||
         child.children.length > 0 ||
         Array.isArray(child.material) ||
         child.material.transparent
@@ -7378,32 +7546,56 @@
           break;
         }
         case "bathtub": {
-          box(group, cw, 0.08, cd, 0, 0.04, 0, material.white);
-          for (const x of [-1, 1]) {
-            box(
+          const profile = [
+              [0.3, 0.035],
+              [0.4, 0.06],
+              [0.47, 0.15],
+              [0.5, ch - 0.06],
+              [0.49, ch - 0.02],
+              [0.46, ch],
+              [0.43, ch - 0.025],
+              [0.425, ch - 0.085],
+              [0.39, 0.24],
+              [0.31, 0.13],
+              [0.2, 0.12],
+              [0, 0.12],
+            ],
+            basin = new THREE.Mesh(
+              new THREE.LatheGeometry(
+                profile.map(([r, y]) => new THREE.Vector2(r, y)),
+                40,
+              ),
+              material.porcelain,
+            );
+          basin.scale.set(cw, 1, cd);
+          basin.castShadow = true;
+          basin.receiveShadow = true;
+          group.add(basin);
+          cylinder(group, 0.025, 0.025, 0.004, -cw * 0.27, 0.124, 0, material.chrome, 16);
+          curvedRod(
+            group,
+            [
+              [-cw * 0.32, ch - 0.08, -cd * 0.36],
+              [-cw * 0.32, ch - 0.015, -cd * 0.36],
+              [-cw * 0.32, ch - 0.015, -cd * 0.2],
+            ],
+            0.014,
+            material.chrome,
+            12,
+          );
+          for (const offset of [-0.055, 0.055]) {
+            cylinder(
               group,
-              0.075,
-              ch - 0.08,
-              cd,
-              x * (cw / 2 - 0.037),
-              ch / 2 + 0.04,
-              0,
-              material.white,
+              0.019,
+              0.019,
+              0.025,
+              -cw * 0.32 + offset,
+              ch - 0.038,
+              -cd * 0.36,
+              material.chrome,
+              12,
             );
           }
-          for (const z of [-1, 1]) {
-            box(
-              group,
-              cw,
-              ch - 0.08,
-              0.075,
-              0,
-              ch / 2 + 0.04,
-              z * (cd / 2 - 0.037),
-              material.white,
-            );
-          }
-          box(group, cw - 0.17, 0.018, cd - 0.17, 0, 0.17, 0, mat("#afcbd0", 0.25));
           break;
         }
         case "toilet": {
@@ -7786,7 +7978,11 @@
       if (!lightAssets.includes(name)) {
         batchFurniture(group);
       }
-      if (!lightAssets.includes(name) && !group.children.some((child) => child.isLight)) {
+      if (
+        name !== "mirror" &&
+        !lightAssets.includes(name) &&
+        !group.children.some((child) => child.isLight)
+      ) {
         furnitureTemplates.set(name, group.clone(true));
         group.traverse((node) => {
           if (node.geometry) {
@@ -8674,6 +8870,9 @@
     }
     shadowRoot.clear();
     sceneRoot.traverse((node) => {
+      if (node.isReflector) {
+        node.getRenderTarget().dispose();
+      }
       if (node.isLight) {
         node.shadow?.dispose();
       }
@@ -10202,6 +10401,7 @@
     select.value = "custom";
     compile(true);
   }
+  loadSurfaceScans();
 })().catch((_error) => {
   document.querySelector("#renderProgress")?.setAttribute("hidden", "");
   document.querySelector("#viewport")?.setAttribute("aria-busy", "false");
