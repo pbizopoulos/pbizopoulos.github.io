@@ -131,3 +131,47 @@ same treatment applies to standard sofas/armchairs, pillows, beds, benches,
 poufs and tufted/convertible sofas. Living/dining presets stand farther back to
 fit the featured furniture groups, and the showcase living room uses timber
 rather than outdoor-style irregular stone flooring.
+
+## Surface scale and textile silhouettes
+
+Timber floors share an oak board field with staggered joints and varied grain
+strips, using the existing CC0 scans. The three optional local floor maps add
+about 98 KiB; procedural maps remain available if a scan fails. Roughness uses
+256 square pixels, while color/height use 512. Replaced fallback GPU textures
+are disposed once no material references them. Floors use one surface mesh per
+stair-opening fragment instead of hundreds of modeled plank boxes. Horizontal
+UVs share world coordinates so boards/grout stay continuous around stair holes.
+
+Stone and terracotta now use separate color, shallow grout-height and roughness
+maps. Restrained tile brightness and broad mineral variation reduce checkerboard
+repetition. These are shared 512-pixel procedural textures; no per-tile geometry
+or extra render pass is required. Kitchen/bathroom automatic floors use the tile
+material instead of a flat fill.
+
+Curtains have varying fold phase/amplitude, a gentle taper, an uneven hem and
+small hanging rings. Bedding has broader diagonal creases and asymmetric side
+hang, baked into its static mesh. Contact footprints also cover the new seating,
+bed, dining and bench assets. The critic reviewed all reference views and found
+no blocking visual issues.
+
+Before/after Fast-view workload checks at 960×640 showed Bedroom dropping from
+152 to 148 draws and 20,550 to 17,262 triangles. The two-room showcase retained
+331 draws; the three-floor overview added two draws and approximately 1.5%
+triangles. These measurements include the renderer's passes and use a software
+GPU; they are not hardware FPS claims. Optional-map failure, color spaces,
+collision warnings and idle sleep are checked separately.
+
+## Human scale
+
+Indoor rooms default to 2.6 m ceiling clearance. Explicit HEIGHT directives
+remain authoritative, including the taller 3.8 m loft. Walk, photo-view, tour,
+room-focus and floor-transition cameras share a 1.80 m eye-height constant;
+floor detection subtracts the same value before choosing a storey. Storeys
+remain 3 m apart, leaving space for slabs/services above a standard ceiling.
+
+Ceiling fixtures now offset from their own declared model height, removing the
+previous 5 cm mounting gap and keeping them attached when HEIGHT changes.
+Standard doors use approximately 2.1 m leaves with complete headers; French
+doors retain taller glazed leaves. Door picking, frames and daylight openings
+use the same opening height. Default columns, archways and the fireplace hood
+also fit the standard ceiling rather than protruding into it.

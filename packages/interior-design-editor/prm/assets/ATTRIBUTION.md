@@ -34,3 +34,15 @@ so new catalog entries do not shift existing thumbnails. The 161 previews add
 approximately 134 KiB and load only when opening Assets. They require no live
 renderers per card. Rebuild with `prm/generate-thumbnails.cjs` after changing
 furniture silhouettes or materials; see the script header for prerequisites.
+
+## Oak floor boards
+
+`oak-planks-color.webp`, `oak-planks-height.webp`, and
+`oak-planks-roughness.webp` combine the same CC0 Wood Table 001 scans into a
+2.4 m repeating field of staggered 0.2 m × 1.2 m boards. Each board samples a
+different grain strip with restrained tint variation. Color/height maps are
+512 square pixels; the roughness map is 256 square pixels. The three maps add
+approximately 98 KiB. Height and roughness use linear color space; color uses
+sRGB. Board joints are lower in the height map and rougher than the timber.
+Rebuild using `prm/generate-surfaces.cjs`; it uses the editor's deterministic
+canvas recipe and the attributed scans rather than generating new source imagery.

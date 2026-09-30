@@ -1,9 +1,11 @@
 /* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
+  const defaultRoomHeight = 2.6,
+    walkEyeHeight = 1.8;
   const referenceCatalog = {
     ac_condenser: [0.82, 0.36, 0.62],
     accent_chair: [0.72, 0.8, 0.86],
     arched_mirror: [0.7, 0.045, 1.1],
-    archway: [3.6, 0.3, 2.7],
+    archway: [3.6, 0.3, defaultRoomHeight],
     awning: [3.6, 1.8, 2.65],
     bathroom_vanity: [0.62, 0.5, 0.85],
     bbq: [0.85, 0.55, 0.95],
@@ -24,7 +26,7 @@
     curtain_pair: [1.8, 0.18, 2.5],
     cypress: [1.2, 1.2, 3.5],
     dumbbells: [0.85, 0.48, 0.32],
-    fireplace: [1.35, 0.65, 2.7],
+    fireplace: [1.35, 0.65, defaultRoomHeight],
     floor_drain: [0.18, 0.18, 0.015],
     flower_border: [2.4, 0.65, 0.65],
     folding_chair: [0.5, 0.58, 0.88],
@@ -624,14 +626,20 @@
     } else if (name === "curtain_pair") {
       rod([-w / 2, h - 0.025, 0], [w / 2, h - 0.025, 0], 0.018, m.woodDark);
       for (const side of [-1, 1]) {
-        const geometry = new THREE.PlaneGeometry(w * 0.12, h - 0.09, 16, 8),
+        const geometry = new THREE.PlaneGeometry(w * 0.12, h - 0.09, 24, 10),
           positions = geometry.attributes.position;
         for (let i = 0; i < positions.count; i += 1) {
           const x = positions.getX(i),
             y = positions.getY(i);
-          positions.setZ(
+          const drop = ((h - 0.09) / 2 - y) / (h - 0.09),
+            phase =
+              (x / (w * 0.12)) * Math.PI * 8 + side * 0.65 + drop * 0.4 + Math.sin(y * 1.7) * 0.13,
+            amplitude = 0.025 + drop * 0.016;
+          positions.setXYZ(
             i,
-            Math.cos((x / (w * 0.12)) * Math.PI * 8) * 0.035 + 0.012 * Math.sin(y * 3),
+            x * (0.85 + drop * 0.18) + side * 0.008 * Math.sin(drop * Math.PI),
+            y + drop ** 8 * 0.009 * Math.sin(x * 22 + side),
+            Math.cos(phase) * amplitude + 0.009 * Math.sin(y * 2.2 + side) * drop,
           );
           geometry.attributes.uv.setXY(
             i,
@@ -645,6 +653,11 @@
         panel.castShadow = true;
         panel.receiveShadow = true;
         group.add(panel);
+        for (const offset of [-0.035, 0, 0.035]) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.023, 0.004, 4, 12), m.woodDark);
+          ring.position.set(side * w * 0.44 + offset, h - 0.04, 0.01);
+          group.add(ring);
+        }
       }
     } else if (name === "towel_rail") {
       rod([-0.29, h - 0.025, 0.06], [0.29, h - 0.025, 0.06], 0.013, m.metal);
@@ -1128,10 +1141,13 @@
         }
       }
       b(w + 0.13, 0.07, d + 0.07, 0, 1.17, 0, m.woodDark);
-      const hood = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.68, 1.46, 4, 1), m.plaster);
+      const hood = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.68, h - 1.24, 4, 1),
+        m.plaster,
+      );
       hood.rotation.y = Math.PI / 4;
       hood.scale.z = 0.6;
-      hood.position.set(0, 1.97, -0.02);
+      hood.position.set(0, (h + 1.24) / 2, -0.02);
       hood.castShadow = true;
       hood.receiveShadow = true;
       group.add(hood);
@@ -4581,7 +4597,7 @@
       coat_rack: [0.6, 0.6, 1.75],
       coffee_maker: [0.25, 0.3, 0.35],
       coffee_table: [1.08, 0.64, 0.43],
-      column: [0.55, 0.55, 2.7],
+      column: [0.55, 0.55, defaultRoomHeight],
       console_table: [1.1, 0.35, 0.8],
       desk: [1.35, 0.7, 0.75],
       dining_table: [1.55, 0.9, 0.75],
@@ -4783,7 +4799,7 @@
     if (!firstPerson) {
       setFirstPerson(true, standing);
     }
-    camera.position.set(standing.x, room.elevation + 1.65, standing.z);
+    camera.position.set(standing.x, room.elevation + walkEyeHeight, standing.z);
     camera.rotation.set(preset.pitch ?? -0.06, THREE.MathUtils.degToRad(preset.yaw), 0);
     $("walkLens").value = String(preset.lens || 60);
     camera.fov = Number($("walkLens").value);
@@ -5763,7 +5779,7 @@
             elevation: floor * 3,
             floor,
             garden: statement.areaKind === "garden",
-            height: 2.75,
+            height: areaKind === "room" ? defaultRoomHeight : 2.75,
             kind: areaKind,
             lights: [],
             line,
@@ -6530,11 +6546,9 @@
     ),
     sharedMaterials = new Set(Object.values(material)),
     furnitureTemplates = new Map(),
-    templateGeometries = new Set(),
-    woodPlanks = ["#a58a69", "#aa9070", "#a38968", "#b09576"].map((color) => mat(color, 0.76));
-  woodPlanks.forEach((item) => sharedMaterials.add(item));
+    templateGeometries = new Set();
   material.ceiling.userData.enclosure = true;
-  for (const item of [material.wood, material.woodDark, material.floor, ...woodPlanks]) {
+  for (const item of [material.wood, material.woodDark]) {
     item.map = grainTexture;
     item.bumpMap = grainTexture;
     item.bumpScale = 0.001;
@@ -6543,6 +6557,16 @@
     item.userData.textureScale = 0.6;
     item.userData.woodGrain = true;
   }
+  const floorTextures = makePlankSurfaces(
+    grainTexture.image,
+    grainTexture.image,
+    grainTexture.image,
+  );
+  Object.assign(material.floor, floorTextures);
+  material.floor.color.set("#b2916d");
+  material.floor.roughness = 0.78;
+  material.floor.bumpScale = 0.002;
+  material.floor.userData.textureScale = 2.4;
   for (const key of [
     "ash",
     "mustard",
@@ -6611,41 +6635,119 @@
   material.wicker.bumpMap = reedTexture;
   material.wicker.bumpScale = 0.0015;
   material.wicker.userData.textureScale = 0.3;
+  function makePlankSurfaces(colorSource, heightSource, roughnessSource) {
+    const surfaces = {};
+    let seed = 127;
+    const random = () => {
+      seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+      return seed / 4_294_967_296;
+    };
+    const boards = Array.from({ length: 12 }, (_, index) => ({
+      offset: (index % 3) / 6,
+      sourceWidth: 0.12 + random() * 0.17,
+      sourceX: random() * 0.65,
+      tint: 0.96 + random() * 0.08,
+    }));
+    for (const [slot, source] of [
+      ["map", colorSource],
+      ["bumpMap", heightSource],
+      ["roughnessMap", roughnessSource],
+    ]) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+      const context = canvas.getContext("2d"),
+        width = 512 / boards.length;
+      context.fillStyle = slot === "map" ? "#b0a99d" : slot === "bumpMap" ? "#303030" : "#eeeeee";
+      context.fillRect(0, 0, 512, 512);
+      for (const [index, board] of boards.entries()) {
+        for (let row = -1; row < 3; row += 1) {
+          const y = (row / 2 + board.offset) * 512;
+          context.save();
+          context.beginPath();
+          context.rect(index * width + 0.5, y + 0.5, width - 1, 255);
+          context.clip();
+          context.filter = `brightness(${slot === "map" ? board.tint : slot === "roughnessMap" ? 1.08 : 1})`;
+          context.drawImage(
+            source,
+            board.sourceX * source.width,
+            0,
+            board.sourceWidth * source.width,
+            source.height,
+            index * width,
+            y,
+            width,
+            256,
+          );
+          context.restore();
+        }
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = slot === "map" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      surfaces[slot] = texture;
+    }
+    return surfaces;
+  }
   function tiledSurface(terracotta = false) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const context = canvas.getContext("2d");
-    context.fillStyle = terracotta ? "#9f8c75" : "#bdb9ae";
-    context.fillRect(0, 0, 512, 512);
+    const surfaces = {},
+      canvases = [],
+      pixels = [],
+      size = 512,
+      tiles = [];
     let seed = 93;
     const random = () => {
       seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
       return seed / 4_294_967_296;
     };
-    const tileHeight = 128;
-    for (let row = 0; row < 512 / tileHeight; row += 1) {
-      for (let col = 0; col < 4; col += 1) {
-        const value = (terracotta ? 33 : 73) + random() * (terracotta ? 9 : 5);
-        context.fillStyle = `hsl(${terracotta ? 23 : 42} ${terracotta ? 44 : 9}% ${value}%)`;
-        context.fillRect(col * 128 + 0.7, row * tileHeight + 0.7, 126.6, tileHeight - 1.4);
-        for (let i = 0; i < 650; i += 1) {
-          context.fillStyle = `rgba(${random() > 0.5 ? "255,255,255" : "75,65,50"},0.025)`;
-          context.fillRect(
-            col * 128 + 2 + random() * 123,
-            row * tileHeight + 2 + random() * (tileHeight - 4),
-            1 + random() * 2,
-            1 + random() * 2,
-          );
+    for (let i = 0; i < 16; i += 1) {
+      tiles.push((terracotta ? 140 : 224) + (random() - 0.5) * (terracotta ? 14 : 7));
+    }
+    for (const slot of ["map", "bumpMap", "roughnessMap"]) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d"),
+        texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = slot === "map" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      surfaces[slot] = texture;
+      canvases.push(context);
+      pixels.push(context.createImageData(size, size));
+    }
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        const edge = Math.min(
+            (x % 128) + 0.5,
+            127.5 - (x % 128),
+            (y % 128) + 0.5,
+            127.5 - (y % 128),
+          ),
+          grout = Math.max(0, 1 - edge / (terracotta ? 1.25 : 0.9)),
+          noise = random() - 0.5,
+          mineral =
+            Math.sin(x * 0.065 + Math.sin(y * 0.037) * 1.5) * 1.4 + Math.sin((x + y) * 0.019) * 0.7,
+          base = tiles[Math.floor(y / 128) * 4 + Math.floor(x / 128)] + mineral + noise * 1.5,
+          values = [
+            base * (1 - grout) + (terracotta ? 100 : 166) * grout,
+            235 - grout * 95 + noise * 2,
+            211 + grout * 35 + mineral * 2,
+          ],
+          offset = (y * size + x) * 4;
+        for (let index = 0; index < 3; index += 1) {
+          pixels[index].data[offset] = values[index];
+          pixels[index].data[offset + 1] = values[index] * (index === 0 && terracotta ? 0.69 : 1);
+          pixels[index].data[offset + 2] = values[index] * (index === 0 && terracotta ? 0.48 : 1);
+          pixels[index].data[offset + 3] = 255;
         }
       }
     }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-    return texture;
+    canvases.forEach((context, index) => context.putImageData(pixels[index], 0, 0));
+    return surfaces;
   }
   const plasterTexture = surfaceTexture("plaster"),
     tileTexture = tiledSurface(),
@@ -6701,11 +6803,10 @@
   material.kilim.bumpMap = weaveTexture;
   material.kilim.bumpScale = 0.001;
   for (const key of ["stone", "terracotta"]) {
-    material[key].map = key === "stone" ? tileTexture : clayTexture;
-    material[key].bumpMap = material[key].map;
-    material[key].bumpScale = key === "stone" ? 0.0008 : 0.002;
+    Object.assign(material[key], key === "stone" ? tileTexture : clayTexture);
+    material[key].bumpScale = key === "stone" ? 0.0015 : 0.002;
     material[key].userData.textureScale = key === "stone" ? 2.4 : 1.2;
-    material[key].roughness = key === "stone" ? 0.48 : 0.82;
+    material[key].roughness = key === "stone" ? 0.72 : 0.98;
     material[key].color.set(key === "stone" ? "#eee9df" : "#efe5d6");
   }
   const pavingCanvas = document.createElement("canvas");
@@ -6851,6 +6952,17 @@
         { fallback: grainTexture, path: "./prm/assets/wood-grain-height.jpg", slot: "bumpMap" },
         { fallback: weaveTexture, path: "./prm/assets/linen-weave-height.jpg", slot: "bumpMap" },
         { fallback: grainTexture, path: "./prm/assets/wood-grain-color.jpg", slot: "map" },
+        { fallback: floorTextures.map, path: "./prm/assets/oak-planks-color.webp", slot: "map" },
+        {
+          fallback: floorTextures.bumpMap,
+          path: "./prm/assets/oak-planks-height.webp",
+          slot: "bumpMap",
+        },
+        {
+          fallback: floorTextures.roughnessMap,
+          path: "./prm/assets/oak-planks-roughness.webp",
+          slot: "roughnessMap",
+        },
         {
           fallback: grainTexture,
           path: "./prm/assets/wood-grain-roughness.jpg",
@@ -6902,6 +7014,15 @@
         }
       }
     });
+    for (const fallback of new Set(sources.map((source) => source.fallback))) {
+      if (
+        ![...finishes].some((finish) =>
+          [finish.map, finish.bumpMap, finish.roughnessMap].includes(fallback),
+        )
+      ) {
+        fallback.dispose();
+      }
+    }
     requestRender();
     if (assetStudio) {
       assetStudio.renderer.render(assetStudio.scene, assetStudio.camera);
@@ -6937,6 +7058,12 @@
       "accent_chair",
       "bed",
       "canopy_bed",
+      "upholstered_bed",
+      "modular_sofa",
+      "wishbone_chair",
+      "round_dining_table",
+      "linen_bench",
+      "linen_pouf",
       "kitchenette",
       "dining_table",
       "coffee_table",
@@ -7222,16 +7349,21 @@
     cylinder(parent, 0.021, 0.021, 0.003, x, y - 0.111, z, material.metal, 12);
   }
   function drapedCover(parent, w, d, x, y, z, finish) {
-    const geometry = new THREE.PlaneGeometry(w + 0.24, d, 20, 18),
+    const geometry = new THREE.PlaneGeometry(w + 0.24, d, 24, 20),
       positions = geometry.attributes.position;
     for (let i = 0; i < positions.count; i += 1) {
       const px = positions.getX(i),
         pz = positions.getY(i),
         overhang = Math.max(0, Math.abs(px) - w / 2),
+        crease = pz + px * 0.24 + Math.sin(px * 2.4) * 0.045 + d * 0.1,
+        broadFold =
+          0.022 * Math.exp(-crease * crease * 34) +
+          0.009 * Math.sin(pz * 4.5 - px * 2.8) * Math.exp(-Math.abs(pz) / Math.max(d, 0.1)),
         ripple =
-          0.006 * Math.sin(pz * 8 + px * 6) +
-          0.004 * Math.sin(pz * 17 - px * 13) +
-          overhang * 0.08 * Math.sin(pz * 23 + px * 9);
+          broadFold +
+          0.004 * Math.sin(pz * 8 + px * 6) +
+          0.003 * Math.sin(pz * 17 - px * 13) +
+          overhang * 0.06 * Math.sin(pz * 23 + px * 9);
       geometry.attributes.uv.setXY(
         i,
         px / (finish.userData.textureScale || 0.22),
@@ -7240,8 +7372,10 @@
       positions.setXYZ(
         i,
         Math.sign(px) * Math.min(Math.abs(px), w / 2 + 0.012),
-        -overhang * 1.8 + ripple,
-        pz,
+        -overhang * (px < 0 ? 1.65 : 2.05) + ripple,
+        pz +
+          (0.009 * Math.sin(px * 7 + 0.5) + 0.004 * Math.sin(px * 13)) *
+            (Math.abs(pz) / (d / 2)) ** 6,
       );
     }
     geometry.computeVertexNormals();
@@ -8544,10 +8678,7 @@
   }
   function addArchitecture(program) {
     const outsideFinish = facadeMaterial(program.facade),
-      trim = mat("#886f60"),
-      largeScene =
-        program.rooms.reduce((area, room) => area + room.cols * room.rows * program.grid ** 2, 0) >
-        1200;
+      trim = mat("#886f60");
     wallRoots = [];
     ceilingRoots = [];
     material.ceiling.transparent = true;
@@ -8609,9 +8740,9 @@
                     : room.kind === "balcony"
                       ? mat("#b9aa95")
                       : /(bath|wash)/u.test(room.name)
-                        ? mat("#d6e0db")
+                        ? material.stone
                         : /(kitchen)/u.test(room.name)
-                          ? mat("#ccc7b9")
+                          ? material.stone
                           : material.floor
             : material[
                 {
@@ -8651,7 +8782,7 @@
             });
           }
           for (const part of parts) {
-            box(
+            const surface = box(
               parent,
               part.x2 - part.x1,
               h,
@@ -8661,6 +8792,19 @@
               (part.z1 + part.z2) / 2,
               finish,
             );
+            if (finish.userData.textureScale) {
+              const { position, normal, uv } = surface.geometry.attributes,
+                scale = finish.userData.textureScale;
+              for (let vertex = 0; vertex < position.count; vertex += 1) {
+                if (Math.abs(normal.getY(vertex)) > 0.7) {
+                  uv.setXY(
+                    vertex,
+                    (position.getX(vertex) + surface.position.x) / scale,
+                    (position.getZ(vertex) + surface.position.z) / scale,
+                  );
+                }
+              }
+            }
           }
         };
       floorPart(width + 0.02, 0.17, depth + 0.02, centerX, -0.105, centerZ, floorMaterial);
@@ -8688,35 +8832,6 @@
           ceiling,
           ceilingOpenings,
         );
-      }
-      if (
-        !largeScene &&
-        room.surface === "auto" &&
-        !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
-        room.kind !== "balcony" &&
-        !/(bath|wash|kitchen)/u.test(room.name)
-      ) {
-        let plank = 0;
-        for (let z = -depth / 2 + 0.018; z < depth / 2 - 0.018; z += 0.24) {
-          const boardDepth = Math.min(0.234, depth / 2 - 0.018 - z);
-          for (let x = -width / 2 - (plank % 3) * 0.48; x < width / 2 - 0.018; x += 1.44) {
-            const start = Math.max(x, -width / 2 + 0.018),
-              end = Math.min(x + 1.434, width / 2 - 0.018);
-            if (end <= start) {
-              continue;
-            }
-            floorPart(
-              end - start,
-              0.012,
-              boardDepth,
-              centerX + (start + end) / 2,
-              -0.012,
-              centerZ + z + boardDepth / 2,
-              woodPlanks[(plank + Math.floor((x + width) / 1.44)) % woodPlanks.length],
-            );
-          }
-          plank += 1;
-        }
       }
       const wallMaterial =
         room.style === "mediterranean"
@@ -8824,6 +8939,7 @@
           sharedEdge = program.rooms.some((other) => sharedWall(room, other, dir)),
           glazed = glazedDoor(program, room, dir),
           doorGap = doorwayWidth(program, room, dir, length),
+          doorHeight = Math.min(glazed ? 2.3 : 2.16, wallHeight - 0.15),
           hasWindow =
             room.windows === undefined
               ? !hasDoor && !sharedEdge && length > 2.2
@@ -8856,7 +8972,7 @@
             dimensions: [
               hasDoor ? doorGap : Math.min(2.1, length * 0.48),
               thickness + 0.04,
-              hasDoor ? 2.29 : 1.05,
+              hasDoor ? doorHeight : 1.05,
             ],
             end: start === -1 ? source.length : start + dir.length,
             floor: room.floor,
@@ -8872,7 +8988,7 @@
           const gap = doorGap,
             segmentLength = (length - gap) / 2;
           room.daylightOpenings.push({
-            area: gap * 2.29,
+            area: gap * doorHeight,
             dir,
             shared: sharedEdge,
             span: gap,
@@ -8892,7 +9008,7 @@
               trim,
             );
           }
-          addWallPart(0, gap, wallHeight - 2.29, (wallHeight + 2.29) / 2);
+          addWallPart(0, gap, wallHeight - doorHeight, (wallHeight + doorHeight) / 2);
           const pickMaterial = new THREE.MeshBasicMaterial({
             depthWrite: false,
             opacity: 0,
@@ -8902,10 +9018,10 @@
           box(
             opening,
             vertical ? 0.02 : gap,
-            2.29,
+            doorHeight,
             vertical ? gap : 0.02,
             vertical ? fixed : middle,
-            1.145,
+            doorHeight / 2,
             vertical ? middle : fixed,
             pickMaterial,
           ).castShadow = false;
@@ -8913,15 +9029,26 @@
             box(
               opening,
               vertical ? thickness + 0.02 : 0.055,
-              2.28,
+              doorHeight,
               vertical ? 0.055 : thickness + 0.02,
               vertical ? fixed : middle + offset,
-              1.14,
+              doorHeight / 2,
               vertical ? middle + offset : fixed,
               room.style === "mediterranean" ? material.wood : material.white,
             );
           }
-          const leafLength = glazed ? (gap - 0.12) / 2 : gap - 0.1,
+          box(
+            opening,
+            vertical ? thickness + 0.02 : gap + 0.055,
+            0.055,
+            vertical ? gap + 0.055 : thickness + 0.02,
+            vertical ? fixed : middle,
+            doorHeight - 0.0275,
+            vertical ? middle : fixed,
+            room.style === "mediterranean" ? material.wood : material.white,
+          );
+          const leafHeight = doorHeight - 0.07,
+            leafLength = glazed ? (gap - 0.12) / 2 : gap - 0.1,
             outward = { east: 1, north: -1, south: 1, west: -1 }[dir];
           if (glazed) {
             const leaf = new THREE.Group();
@@ -8939,14 +9066,14 @@
             glass.depthWrite = false;
             glass.userData.windowPane = true;
             for (const x of [-leafLength / 2 + 0.03, leafLength / 2 - 0.03]) {
-              box(leaf, 0.06, 2.12, 0.06, x, 1.06, 0, material.wood);
+              box(leaf, 0.06, leafHeight, 0.06, x, leafHeight / 2, 0, material.wood);
             }
-            for (const y of [0.045, 0.68, 2.085]) {
+            for (const y of [0.045, 0.68, leafHeight - 0.035]) {
               box(leaf, leafLength, 0.07, 0.06, 0, y, 0, material.wood);
             }
             for (const [y, height] of [
               [0.36, 0.56],
-              [1.38, 1.32],
+              [(0.72 + leafHeight - 0.08) / 2, leafHeight - 0.8],
             ]) {
               box(leaf, leafLength - 0.12, height, 0.018, 0, y, 0, glass).castShadow = false;
             }
@@ -8985,10 +9112,10 @@
             const leaf = box(
               opening,
               vertical ? leafLength : 0.055,
-              2.12,
+              leafHeight,
               vertical ? 0.055 : leafLength,
               vertical ? fixed + (outward * leafLength) / 2 : middle - gap / 2 + 0.055,
-              1.06,
+              leafHeight / 2,
               vertical ? middle - gap / 2 + 0.055 : fixed + (outward * leafLength) / 2,
               material.wood,
             );
@@ -9200,7 +9327,7 @@
         group.userData.floor = room.floor;
         const ceilingOffset =
           isRoot && [...overheadLights, "ceiling_fan"].includes(token.name)
-            ? room.height - 2.75
+            ? room.height - token.dimensions[2]
             : 0;
         group.position.set(
           x,
@@ -9323,7 +9450,7 @@
         currentProgram.rooms[0];
       camera.position.set(
         room.centerX,
-        room.elevation + 1.65,
+        room.elevation + walkEyeHeight,
         room.centerZ +
           (room.kind === "balcony" ? -1 : 1) * Math.min(room.rows * currentProgram.grid * 0.3, 2),
       );
@@ -9345,6 +9472,9 @@
     }
     updateFloorVisibility();
   }
+  $("walkLensControl").title = `Camera eye height: ${walkEyeHeight.toFixed(2)} m`;
+  $("firstPersonButton").title = `Walk at ${walkEyeHeight.toFixed(2)} m camera height`;
+  $("walkthroughButton").title = `Tour rooms at ${walkEyeHeight.toFixed(2)} m camera height`;
   $("walkLens").addEventListener("change", () => {
     if (firstPerson) {
       camera.fov = Number($("walkLens").value);
@@ -9376,7 +9506,7 @@
     $("floorFocus").value = focusFloor === undefined ? "" : String(focusFloor);
   }
   function useConnector(down = false) {
-    const floor = Math.round((camera.position.y - 1.65) / 3),
+    const floor = Math.round((camera.position.y - walkEyeHeight) / 3),
       nearby = currentProgram.connectors.filter((item) => {
         const x = (item.x - currentProgram.cols / 2) * currentProgram.grid,
           z = (item.z - currentProgram.rows / 2) * currentProgram.grid;
@@ -9406,7 +9536,7 @@
       showStatus("The destination has no clear landing", "warn");
       return;
     }
-    camera.position.set(standing.x, destination.elevation + 1.65, standing.z);
+    camera.position.set(standing.x, destination.elevation + walkEyeHeight, standing.z);
     focusRoom = destination.name;
     focusFloor = destination.floor;
     $("roomFocus").value = focusRoom;
@@ -9577,7 +9707,8 @@
             z = room.centerZ + (fixture.z - (room.rows - 1) / 2) * program.grid;
           group.position.set(
             x,
-            room.elevation + (overheadLights.includes(fixture.name) ? room.height - 2.75 : 0),
+            room.elevation +
+              (overheadLights.includes(fixture.name) ? room.height - token.dimensions[2] : 0),
             z,
           );
           group.userData.floor = room.floor;
@@ -9624,7 +9755,11 @@
       resetCamera();
     } else if (
       firstPerson &&
-      !canStandAt(camera.position.x, camera.position.z, Math.round((camera.position.y - 1.65) / 3))
+      !canStandAt(
+        camera.position.x,
+        camera.position.z,
+        Math.round((camera.position.y - walkEyeHeight) / 3),
+      )
     ) {
       setFirstPerson(false);
       setFirstPerson(true);
@@ -9801,7 +9936,7 @@
     return true;
   }
   function moveFirstPerson(direction, distance) {
-    const floor = Math.round((camera.position.y - 1.65) / 3),
+    const floor = Math.round((camera.position.y - walkEyeHeight) / 3),
       steps = Math.max(1, Math.ceil(Math.abs(distance) / 0.08));
     for (let i = 0; i < steps; i += 1) {
       const x = camera.position.x + (direction.x * distance) / steps,
@@ -9835,7 +9970,11 @@
   function aimInsideRoom(room) {
     const centered =
       Math.hypot(camera.position.x - room.centerX, camera.position.z - room.centerZ) < 0.25;
-    camera.lookAt(room.centerX, room.elevation + 1.5, room.centerZ - (centered ? 1 : 0));
+    camera.lookAt(
+      room.centerX,
+      room.elevation + walkEyeHeight - 0.12,
+      room.centerZ - (centered ? 1 : 0),
+    );
   }
   function focusCamera() {
     stopWalkthrough();
@@ -9845,7 +9984,7 @@
       return;
     }
     pressedKeys.clear();
-    const cameraFloor = Math.round((camera.position.y - 1.65) / 3),
+    const cameraFloor = Math.round((camera.position.y - walkEyeHeight) / 3),
       rooms = currentProgram.rooms.filter(
         (room) =>
           (!focusRoom || room.name === focusRoom) && room.floor === (focusFloor ?? cameraFloor),
@@ -9861,7 +10000,7 @@
         room.centerZ + Math.min(room.rows * currentProgram.grid * 0.3, 2),
       );
       if (standing) {
-        camera.position.set(standing.x, room.elevation + 1.65, standing.z);
+        camera.position.set(standing.x, room.elevation + walkEyeHeight, standing.z);
         camera.rotation.order = "YXZ";
         aimInsideRoom(room);
         updateFloorVisibility();
@@ -9948,7 +10087,7 @@
           throw new Error("Walkthrough cancelled");
         }
       },
-      eye = (node) => ({ x: node.x, y: node.floor * 3 + 1.65, z: node.z }),
+      eye = (node) => ({ x: node.x, y: node.floor * 3 + walkEyeHeight, z: node.z }),
       connect = (a, b, via) => {
         const points = via || [eye(a), eye(b)],
           distance = points
@@ -10068,7 +10207,7 @@
         stops.find((stop) => stop.room.name === focusRoom && stop.node) ||
         stops.find((stop) => stop.room.floor === (focusFloor ?? 0) && stop.node) ||
         stops.find((stop) => stop.node),
-      startFloor = Math.round((camera.position.y - 1.65) / 3),
+      startFloor = Math.round((camera.position.y - walkEyeHeight) / 3),
       standing = firstPerson
         ? nodes
             .filter(
@@ -10259,7 +10398,7 @@
           Math.abs(room.centerZ - plan.start.z) < (room.rows * currentProgram.grid) / 2,
       )?.name;
       setFirstPerson(true, plan.start);
-      camera.position.set(plan.start.x, plan.start.floor * 3 + 1.65, plan.start.z);
+      camera.position.set(plan.start.x, plan.start.floor * 3 + walkEyeHeight, plan.start.z);
       focusRoom = undefined;
       focusFloor = undefined;
       $("roomFocus").value = "";
