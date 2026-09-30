@@ -4215,7 +4215,7 @@
   qualityControl.innerHTML =
     'Quality <select id="renderQuality" aria-label="Render quality"><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select>';
   qualityControl.title =
-    "Fast: lower resolution · Balanced: everyday editing · High: contact shading and sharper shadows";
+    "Fast: lower resolution · Balanced: contact shading at rest · High: sharper shadows and more resolution";
   primaryTools.append(
     document.querySelector(".view-buttons"),
     qualityControl,
@@ -4268,7 +4268,7 @@
     ],
     "Mediterranean three-level apartment": [
       { label: "Terrace → garden", room: "garden_terrace", x: 0.4, yaw: 180, z: 0.12 },
-      { label: "Garden → apartment", room: "mediterranean_garden", x: 0.5, yaw: 0, z: 0.82 },
+      { label: "Garden → apartment", room: "mediterranean_garden", x: 0.55, yaw: 0, z: 0.82 },
       { label: "Kitchen & fireplace", room: "living_kitchen", x: 0.2, yaw: -65, z: 0.78 },
       { label: "Canopy bedroom", room: "upper_bedroom", x: 0.4, yaw: 0, z: 0.9 },
       { label: "Guest suite", room: "guest_suite", x: 0.7, yaw: 30, z: 0.85 },
@@ -8249,7 +8249,13 @@
     const roomSelect = $("roomFocus");
     roomSelect.replaceChildren(
       new Option("All rooms", ""),
-      ...program.rooms.map((room) => new Option(room.name.replaceAll("_", " "), room.name)),
+      ...program.rooms.map(
+        (room) =>
+          new Option(
+            room.name === "mediterranean_garden" ? "Garden" : room.name.replaceAll("_", " "),
+            room.name,
+          ),
+      ),
     );
     roomSelect.hidden = program.rooms.length < 2;
     roomSelect.value = focusRoom || "";
@@ -8333,6 +8339,10 @@
       h = viewport.clientHeight;
     if (!w || !h) {
       return;
+    }
+    const actionTools = w < 560 ? secondaryTools : primaryTools;
+    if ($("saveViewButton").parentElement !== actionTools) {
+      actionTools.append($("saveViewButton"), $("fullscreenButton"));
     }
     viewport.style.setProperty("--viewport-height", `${h}px`);
     camera.aspect = w / h;
@@ -9047,7 +9057,7 @@
   examples["Decor gallery"] = decorationExample;
   examples["Mediterranean three-level apartment"] = referenceApartment();
   examples["Mediterranean kitchen photo study"] = buildExample(
-    "A compact kitchen and shaded garden terrace, staged from 367513251 and 367513499.\n# Estimated proportions: 3.85 x 5.5 m kitchen, not a surveyed reconstruction.\n# First person restores the ceiling; High adds contact occlusion. Use Save view to export a clean PNG.",
+    "A compact kitchen and shaded garden terrace, staged from 367513251 and 367513499.\n# Estimated proportions: 3.85 x 5.5 m kitchen, not a surveyed reconstruction.\n# First person restores the ceiling; Balanced and High add contact occlusion. Use Save view to export a clean PNG.",
     0.55,
     [
       {
@@ -9086,10 +9096,10 @@
         items: [
           [3, 1, "awning[3.65x2.5x2.65]"],
           [3, 2, "dining_table[1.35x0.75x0.75](tea_on_top)"],
-          [2, 1, "patio_chair"],
-          [4, 1, "patio_chair"],
-          [2, 3, "patio_chair@180"],
-          [4, 3, "patio_chair@180"],
+          [2, 0, "patio_chair"],
+          [4, 0, "patio_chair"],
+          [2, 4, "patio_chair@180"],
+          [4, 4, "patio_chair@180"],
           [3, 4, "archway[3.65x0.25x2.7]"],
           [0, 4, "terracotta_pot"],
           [6, 4, "terracotta_pot"],
@@ -9113,8 +9123,8 @@
           [3, 4, "stone_path[0.8x4x0.04]"],
           [0, 4, "hedge[0.35x4.4x1.3]"],
           [6, 4, "hedge[0.35x4.4x1.3]"],
-          [2, 1, "flower_border[1.1x0.4x0.55]"],
-          [5, 6, "flower_border[1.1x0.4x0.55]"],
+          [3, 1, "flower_border[1.1x0.4x0.55]"],
+          [4, 7, "flower_border[1.1x0.4x0.55]"],
           [2, 4, "globe_lamp[0.35x0.35x1.1]"],
           [4, 6, "globe_lamp[0.35x0.35x1.1]"],
         ],

@@ -266,7 +266,7 @@ h2 {
 }
 .preview-tools {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 12px;
   left: 12px;
   right: 12px;
@@ -423,7 +423,7 @@ h2 {
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 42%) minmax(0, 1fr);
   }
   .editor-panel {
     border-bottom: 1px solid #e1e5df;
@@ -708,5 +708,12 @@ button svg {
   }
   .scene-option-tools {
     top: calc(var(--preview-tools-height, 140px) + 6px);
+  }
+}
+@media (pointer: coarse) {
+  .sun-settings input,
+  .sun-settings select {
+    font-size: 16px;
+    min-height: 40px;
   }
 }
