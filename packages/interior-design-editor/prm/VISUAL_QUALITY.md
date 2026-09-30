@@ -95,3 +95,39 @@ still views stop drawing. The compositor keeps AO bounded to avoid black halos.
 Opaque batches that are entirely indexed preserve their vertex indices;
 heterogeneous batches retain the existing non-indexed compatibility path.
 This lowers repeated foliage vertex storage without changing the silhouette.
+
+## Editing and composition polish
+
+Furniture details include an undoable size/rotation form with the same 0–10 m
+bounds as the layout parser. Wall attachments retain their direction during
+resizing, and child layouts and product links remain intact. CodeMirror's undo
+and redo commands are available from the scene view as well as the source panel;
+text inputs retain their own editing shortcuts. Attached objects explain their
+locked direction. The details card scrolls within short/mobile viewports.
+
+Nested furniture positions use their parent's canonical model coordinates before
+parent scaling, so resizing a table no longer applies its height twice to objects
+on top. Upholstered beds and modular sofas expose their actual cushion support
+height instead of placing child objects above the back/headboard.
+
+A Warm modern apartment example combines the new dining, seating and bedroom
+assets. Its explicit woven pendant/downlight arrangements and three interior
+presets make the catalog easier to assess in context. The default orbit frames
+single rooms more tightly and uses a steeper view with a smaller scenery allowance
+for apartments. Reference photo presets retain their authored walking positions.
+
+Olive/citrus crowns and background scenery trees use irregular low-poly foliage
+clusters rather than a single sphere. These remain merged by finish and cast
+shadows without alpha-tested foliage textures. Pointer picking traverses visible
+meshes before raycasting, excluding hidden floors and reflection/contact helpers.
+
+The independent visual review caught wall-attachment rotation incompatibility,
+parser size-limit mismatches, clipped asset labels, a sofa platform silhouette,
+and details-card overflow; those findings were addressed before publishing.
+
+Upholstery piping follows the cushion mesh's own outline with a small clearance,
+instead of a separate rounded rectangle that intersects curved cushions. The
+same treatment applies to standard sofas/armchairs, pillows, beds, benches,
+poufs and tufted/convertible sofas. Living/dining presets stand farther back to
+fit the featured furniture groups, and the showcase living room uses timber
+rather than outdoor-style irregular stone flooring.

@@ -163,7 +163,7 @@
     } else if (name === "upholstered_bed") {
       legs(group, w, d, 0.12);
       b(w, 0.25, d - 0.08, 0, 0.225, 0.02, m.fabricDark);
-      cushion(group, w - 0.08, 0.23, d - 0.1, 0, 0.435, 0.035, m.cream);
+      cushion(group, w - 0.08, 0.23, d - 0.1, 0, 0.435, 0.035, m.cream, m.linen);
       cushion(group, w, 0.9, 0.16, 0, 0.6, -d / 2 + 0.08, m.fabricDark);
       for (const side of [-1, 1]) {
         cushion(group, 0.7, 0.15, 0.42, side * 0.41, 0.61, -0.64, m.cream).rotation.y = side * 0.06;
@@ -172,7 +172,6 @@
       }
       drapedCover(group, w - 0.06, d * 0.67, 0, 0.565, 0.23, m.linen);
       drapedCover(group, w - 0.06, 0.4, 0, 0.58, 0.69, m.fabric);
-      piping(group, w - 0.12, d - 0.14, 0, 0.45, 0.03, m.white);
     } else if (name === "modular_sofa") {
       for (let i = 0; i < 3; i += 1) {
         const x = (i - 1) * 0.88,
@@ -181,9 +180,8 @@
           z = chaise ? 0 : -0.3;
         b(0.85, 0.14, depth - 0.03, x, 0.13, z, m.woodDark);
         cushion(group, 0.86, 0.29, depth, x, 0.35, z, m.fabricDark);
-        cushion(group, 0.85, 0.18, depth - 0.025, x, 0.48, z + 0.015, m.fabric);
+        cushion(group, 0.85, 0.18, depth - 0.025, x, 0.48, z + 0.015, m.fabric, m.fabricDark);
         cushion(group, 0.86, 0.42, 0.22, x, 0.66, -0.61, m.fabric).rotation.x = -0.08;
-        piping(group, 0.81, depth - 0.08, x, 0.52, z + 0.015, m.fabricDark);
       }
       for (const side of [-1, 1]) {
         cushion(group, 0.16, 0.38, 0.9, side * (w / 2 - 0.08), 0.55, -0.28, m.fabricDark);
@@ -292,8 +290,7 @@
         }
       }
       b(w - 0.08, 0.09, d - 0.1, 0, 0.25, 0, m.woodDark);
-      cushion(group, w, 0.2, d - 0.04, 0, 0.38, 0.025, m.ash);
-      piping(group, w - 0.07, d - 0.13, 0, 0.42, 0.025, m.ash);
+      cushion(group, w, 0.2, d - 0.04, 0, 0.38, 0.025, m.ash, m.ash);
       const back = new THREE.Group();
       back.position.set(0, 0.64, -0.28);
       back.rotation.x = -0.13;
@@ -689,23 +686,41 @@
     } else if (["cypress", "citrus_tree", "olive_tree", "topiary_tree"].includes(name)) {
       cylinder(group, 0.07, 0.13, h * 0.62, 0, h * 0.31, 0, m.woodDark);
       const leaf = (x, y, z, sx, sy, sz, finish) => {
-        const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), finish);
-        mesh.position.set(x, y, z);
-        mesh.scale.set(sx * 0.78, sy * 0.8, sz * 0.78);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        group.add(mesh);
+        const loose = name === "olive_tree" || name === "citrus_tree",
+          pods = loose
+            ? Array.from({ length: 5 }, (_, index) => {
+                const angle = index * 2.4;
+                return {
+                  scale: 0.48 + (index % 3) * 0.07,
+                  x: Math.cos(angle) * sx * 0.4,
+                  y: ((index % 3) - 1) * sy * 0.28,
+                  z: Math.sin(angle) * sz * 0.4,
+                };
+              })
+            : [{ scale: 0.8, x: 0, y: 0, z: 0 }];
+        for (const pod of pods) {
+          const mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(1, loose ? 6 : 8, loose ? 4 : 6),
+            finish,
+          );
+          mesh.position.set(x + pod.x, y + pod.y, z + pod.z);
+          mesh.scale.set(sx * pod.scale * 0.85, sy * pod.scale, sz * pod.scale * 0.85);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          group.add(mesh);
+        }
         if (sx < 0.1) {
           return;
         }
         for (let i = 0; i < 48; i += 1) {
           const angle = i * 2.4,
             latitude = Math.acos(1 - (2 * (i + 0.5)) / 48),
+            pod = pods[i % pods.length],
             tuft = new THREE.Mesh(gardenLeafGeometry.clone(), i % 5 ? finish : m.leafLight);
           tuft.position.set(
-            x + sx * 0.8 * Math.sin(latitude) * Math.cos(angle),
-            y + sy * 0.8 * Math.cos(latitude),
-            z + sz * 0.8 * Math.sin(latitude) * Math.sin(angle),
+            x + pod.x + sx * pod.scale * Math.sin(latitude) * Math.cos(angle),
+            y + pod.y + sy * pod.scale * Math.cos(latitude),
+            z + pod.z + sz * pod.scale * Math.sin(latitude) * Math.sin(angle),
           );
           tuft.scale.set(0.48 + (i % 3) * 0.08, 0.7, name === "olive_tree" ? 0.5 : 1);
           tuft.rotation.set(angle, latitude, angle * 0.3);
@@ -1123,8 +1138,7 @@
       rod([-0.3, 0.32, 0.07], [0.3, 0.34, 0.12], 0.055, m.woodDark);
     } else if (name === "canopy_bed") {
       b(w, 0.2, d, 0, 0.22, 0);
-      cushion(group, w - 0.08, 0.22, d - 0.08, 0, 0.43, 0, m.cream);
-      piping(group, w - 0.12, d - 0.12, 0, 0.44, 0, m.white);
+      cushion(group, w - 0.08, 0.22, d - 0.08, 0, 0.43, 0, m.cream, m.linen);
       drapedCover(group, w - 0.04, d * 0.7, 0, 0.59, 0.25, m.linen);
       drapedCover(group, w - 0.04, 0.36, 0, 0.602, 0.57, m.cream);
       for (const side of [-1, 1]) {
@@ -1198,12 +1212,11 @@
         }
       }
       b(w - 0.02, 0.22, d - 0.03, 0, 0.31, 0, m.cream);
-      cushion(group, w - 0.035, 0.18, d - 0.07, 0, 0.45, 0.035, m.cream);
+      cushion(group, w - 0.035, 0.18, d - 0.07, 0, 0.45, 0.035, m.cream, m.linen);
       for (const side of [-1, 1]) {
         cushion(group, w / 2 - 0.03, 0.43, 0.19, (side * w) / 4, 0.65, -0.29, m.cream).rotation.x =
           -0.12;
       }
-      piping(group, w - 0.09, d - 0.14, 0, 0.48, 0.035, m.linen);
       const bolster = cylinder(group, 0.14, 0.14, 0.13, 0.64, 0.68, -0.13, m.linen, 24);
       bolster.rotation.x = Math.PI / 2;
       const button = cylinder(group, 0.016, 0.016, 0.012, 0.64, 0.68, -0.057, m.cream, 12);
@@ -1300,11 +1313,9 @@
     } else if (name === "linen_bench") {
       legs(group, w, d, 0.34, "wood");
       b(w, 0.08, d, 0, 0.34, 0);
-      cushion(group, w - 0.03, 0.18, d - 0.025, 0, 0.4, 0, m.linen);
-      piping(group, w - 0.06, d - 0.05, 0, 0.41, 0, m.cream);
+      cushion(group, w - 0.03, 0.18, d - 0.025, 0, 0.4, 0, m.linen, m.cream);
     } else if (name === "linen_pouf") {
-      cushion(group, w, h, d, 0, h / 2, 0, m.cream);
-      piping(group, w - 0.05, d - 0.05, 0, h * 0.62, 0, m.linen);
+      cushion(group, w, h, d, 0, h / 2, 0, m.cream, m.linen);
       cushion(group, w * 0.75, 0.055, d * 0.75, 0, h - 0.025, 0, m.linen);
     } else if (name === "bolster") {
       rolledLinen(group, w, h / 2, 0, h / 2, 0, m.stripedLinen).rotation.y = Math.PI / 2;
@@ -1713,7 +1724,7 @@
         foldedRanges,
         unfoldEffect,
       },
-      { defaultKeymap, history, historyKeymap, indentWithTab },
+      { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo },
     ] = await Promise.all([
       import("three"),
       import("three/addons/utils/BufferGeometryUtils.js"),
@@ -2387,12 +2398,39 @@
             const x = xSign * (width / 2 + program.margin - 1.4),
               z = zSign * (depth / 2 + program.margin - 1.4);
             cylinder(group, 0.12, 0.18, 1.8, x, 0.7, z, bark, 6);
-            const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 1), leaves);
-            crown.position.set(x, 2.1, z);
-            crown.scale.y = 1.25;
-            crown.castShadow = true;
-            crown.receiveShadow = true;
-            group.add(crown);
+            for (let i = 0; i < 5; i += 1) {
+              const angle = i * 2.4,
+                crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), leaves);
+              crown.position.set(
+                x + Math.cos(angle) * 0.62,
+                1.95 + (i % 3) * 0.28,
+                z + Math.sin(angle) * 0.62,
+              );
+              crown.scale.set(0.66 + (i % 2) * 0.12, 0.73 + (i % 3) * 0.1, 0.7);
+              crown.rotation.y = angle;
+              crown.castShadow = true;
+              crown.receiveShadow = true;
+              group.add(crown);
+              for (let j = 0; j < 8; j += 1) {
+                const latitude = Math.acos(1 - (2 * (j + 0.5)) / 8),
+                  tuft = new THREE.Mesh(gardenLeafGeometry.clone(), leaves),
+                  turn = j * 2.4;
+                tuft.position
+                  .copy(crown.position)
+                  .add(
+                    new THREE.Vector3(
+                      Math.sin(latitude) * Math.cos(turn) * crown.scale.x,
+                      Math.cos(latitude) * crown.scale.y,
+                      Math.sin(latitude) * Math.sin(turn) * crown.scale.z,
+                    ),
+                  );
+                tuft.scale.set(0.9, 1.3, 0.8);
+                tuft.rotation.set(turn, latitude, angle);
+                tuft.castShadow = true;
+                tuft.receiveShadow = true;
+                group.add(tuft);
+              }
+            }
           }
         }
         batchFurniture(group);
@@ -3286,6 +3324,9 @@
       if (room.style) {
         lines.push(`STYLE ${room.style}`);
       }
+      for (const light of room.lights || []) {
+        lines.push(`LIGHT ${light.name} AT ${light.x},${light.z} POWER ${light.power ?? 18}`);
+      }
       for (const [side, cell, name] of room.mounts || []) {
         lines.push(`MOUNT ${side} ${cell} ${name}`);
       }
@@ -3303,6 +3344,7 @@
       if (
         !["balcony", "garden"].includes(room.kind) &&
         room.windows?.length !== 0 &&
+        !room.lights?.length &&
         !["liminal", "industrial", "aquatic", "mediterranean"].includes(room.style) &&
         !room.items.some((item) => ["ceiling_light", "fluorescent_light"].includes(item[2]))
       ) {
@@ -4712,6 +4754,11 @@
         z: 0.82,
       },
     ],
+    "Warm modern apartment": [
+      { label: "Living seating", pitch: -0.2, room: "living_dining", x: 0.15, yaw: -30, z: 0.8 },
+      { label: "Timber dining", pitch: -0.19, room: "living_dining", x: 0.75, yaw: 170, z: 0.24 },
+      { label: "Soft bedroom", room: "soft_bedroom", x: 0.8, yaw: 30, z: 0.85 },
+    ],
   };
   $("photoView").addEventListener("change", () => {
     const preset = photoViews[select.value]?.[Number($("photoView").value)];
@@ -5325,7 +5372,13 @@
       ray = new THREE.Raycaster();
     ray.setFromCamera(mouse, camera);
     sceneRoot.updateMatrixWorld(true);
-    const hit = ray.intersectObjects(sceneRoot.children, true).find(({ object }) => {
+    const candidates = [];
+    sceneRoot.traverseVisible((node) => {
+      if (node.isMesh && !node.userData.contact && !node.isReflector) {
+        candidates.push(node);
+      }
+    });
+    const hit = ray.intersectObjects(candidates, false).find(({ object }) => {
       for (let node = object; node; node = node.parent) {
         if (!node.visible) {
           return false;
@@ -5386,6 +5439,77 @@
       selectionCard.append(editCell);
       change.addEventListener("click", () => openAssets(cell));
       selectionCard.append(change);
+      const adjustments = document.createElement("details"),
+        summary = document.createElement("summary"),
+        form = document.createElement("form"),
+        fields = [];
+      adjustments.className = "object-adjustments";
+      summary.textContent = "Size & rotation";
+      form.className = "object-dimensions";
+      for (const [index, label] of ["Width", "Depth", "Height", "Rotation"].entries()) {
+        const wrapper = document.createElement("label"),
+          input = document.createElement("input");
+        wrapper.textContent = index === 3 ? `${label} (°)` : `${label} (m)`;
+        input.type = "number";
+        input.required = true;
+        input.step = "any";
+        if (index < 3) {
+          input.min = "0.01";
+          input.max = "10";
+        }
+        input.disabled = index === 3 && Boolean(token.wall);
+        if (input.disabled) {
+          input.title = `Facing direction is set by the ${token.wall} wall`;
+        }
+        input.value = String(index === 3 ? token.yaw : token.dimensions[index]);
+        input.setAttribute(
+          "aria-label",
+          `${token.name.replaceAll("_", " ")} ${label.toLowerCase()}`,
+        );
+        wrapper.append(input);
+        form.append(wrapper);
+        fields.push(input);
+      }
+      const apply = document.createElement("button");
+      apply.type = "submit";
+      apply.className = "tool-button";
+      apply.textContent = "Apply";
+      form.append(apply);
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (
+          !form.checkValidity() ||
+          editor.state.doc.sliceString(cell.from, cell.to) !== cell.text
+        ) {
+          return;
+        }
+        const values = fields.map((input) => input.valueAsNumber);
+        if (!values.every((value) => Number.isFinite(value))) {
+          return;
+        }
+        const yaw = ((values[3] % 360) + 360) % 360,
+          prefix = cell.text.match(/^[\w]+(?:@[+-]?(?:\d+(?:\.\d+)?|\.\d+))?(?:\[[^\]]+\])?/u),
+          suffix = cell.text.slice(prefix?.[0].length || 0),
+          name = prefix?.[0].match(/^[\w]+/u)?.[0];
+        if (!name) {
+          return;
+        }
+        editor.dispatch({
+          changes: {
+            from: cell.from,
+            insert: `${name}${token.wall ? "" : `@${yaw}`}[${values.slice(0, 3).join("x")}]${suffix}`,
+            to: cell.to,
+          },
+        });
+        clearHover();
+      });
+      if (token.wall) {
+        const explanation = document.createElement("span");
+        explanation.textContent = `Facing direction follows the ${token.wall} wall.`;
+        form.append(explanation);
+      }
+      adjustments.append(summary, form);
+      selectionCard.append(adjustments);
     }
     if (token.url) {
       const link = document.createElement("a");
@@ -6928,7 +7052,7 @@
     parent.add(mesh);
     return mesh;
   }
-  function cushion(parent, w, h, d, x, y, z, finish) {
+  function cushion(parent, w, h, d, x, y, z, finish, seamFinish) {
     const geometry = new THREE.SphereGeometry(1, 20, 12),
       positions = geometry.attributes.position,
       soften = (value) => Math.sign(value) * Math.abs(value) ** 0.42;
@@ -6955,6 +7079,27 @@
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     parent.add(mesh);
+    if (seamFinish) {
+      const points = Array.from({ length: 20 }, (_, index) => {
+          const vertex = 6 * 21 + index;
+          return new THREE.Vector3(
+            positions.getX(vertex) * 1.012,
+            positions.getY(vertex),
+            positions.getZ(vertex) * 1.012,
+          );
+        }),
+        seam = new THREE.Mesh(
+          new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3(points, true, "catmullrom", 0),
+            80,
+            0.0025,
+            4,
+            true,
+          ),
+          seamFinish,
+        );
+      mesh.add(seam);
+    }
     return mesh;
   }
   function rolledLinen(parent, length, radius, x, y, z, finish) {
@@ -7728,8 +7873,17 @@
             seatWidth = (cw - 0.35) / seats;
           for (let i = 0; i < seats; i += 1) {
             const x = (i - (seats - 1) / 2) * seatWidth;
-            cushion(group, seatWidth - 0.014, 0.15, cd - 0.2, x, 0.44, 0.07, material.fabric);
-            piping(group, seatWidth - 0.04, cd - 0.23, x, 0.487, 0.07, material.fabricDark);
+            cushion(
+              group,
+              seatWidth - 0.014,
+              0.15,
+              cd - 0.2,
+              x,
+              0.44,
+              0.07,
+              material.fabric,
+              material.fabricDark,
+            );
             const back = cushion(
               group,
               seatWidth - 0.016,
@@ -7818,11 +7972,10 @@
         }
         case "bed": {
           box(group, cw, 0.22, cd, 0, 0.2, 0, material.woodDark);
-          box(group, cw - 0.08, 0.23, cd - 0.11, 0, 0.39, 0, material.cream);
+          cushion(group, cw - 0.08, 0.23, cd - 0.11, 0, 0.39, 0, material.cream, material.linen);
           box(group, cw, ch, 0.1, 0, ch / 2, -cd / 2 + 0.05, material.wood);
           drapedCover(group, cw - 0.1, cd * 0.64, 0, 0.55, cd * 0.12, material.linen);
           box(group, cw - 0.1, 0.018, cd * 0.26, 0, 0.554, cd * 0.27, material.fabric);
-          piping(group, cw - 0.14, cd - 0.17, 0, 0.44, 0, material.white);
           break;
         }
         case "tv_stand":
@@ -8350,15 +8503,21 @@
           break;
         }
         case "pillow": {
-          cushion(group, cw, ch, cd, 0, ch / 2, 0, material.cream);
-          piping(group, cw - 0.02, cd - 0.02, 0, ch / 2, 0, material.white);
+          cushion(group, cw, ch, cd, 0, ch / 2, 0, material.cream, material.linen);
           break;
         }
         default: {
           break;
         }
       }
-      group.userData.supportHeight = name === "canopy_bed" ? 0.6 : undefined;
+      group.userData.supportHeight =
+        name === "canopy_bed"
+          ? 0.6
+          : name === "upholstered_bed"
+            ? 0.58
+            : name === "modular_sofa"
+              ? 0.52
+              : undefined;
       addReferenceAsset(name, group);
       addDecoration(group, name, box);
       batchFurniture(group);
@@ -9032,7 +9191,7 @@
           ({ x, z } = floorPosition(program, room, token, c, r));
           holder = sceneRoot;
         } else {
-          const [pw, pd] = parent.token.dimensions;
+          const [pw, pd] = catalog[parent.token.name];
           x = (c - (colCount - 1) / 2) * (pw / Math.max(colCount, 1)) * 0.67;
           z = (r - (rowCount - 1) / 2) * (pd / Math.max(rowCount, 1)) * 0.67;
           holder = parent.group;
@@ -9047,7 +9206,7 @@
           x,
           isRoot
             ? room.elevation + ceilingOffset
-            : (parent.group.userData.supportHeight ?? parent.token.dimensions[2]),
+            : (parent.group.userData.supportHeight ?? catalog[parent.token.name][2]),
           z,
         );
         group.rotation.y = THREE.MathUtils.degToRad(token.yaw);
@@ -9086,9 +9245,9 @@
       maxZ = Math.max(...areas.map((item) => item.z + item.rows)),
       extent = Math.max(
         Math.max(maxX - minX, maxZ - minZ) * currentProgram.grid +
-          (room || focusFloor !== undefined || currentProgram.site === "none"
+          (room || areas.length === 1 || focusFloor !== undefined || currentProgram.site === "none"
             ? 0
-            : Math.min(currentProgram.margin, 5)),
+            : Math.min(currentProgram.margin, 1)),
         Math.max(...areas.map((area) => area.elevation + area.height)) -
           Math.min(...areas.map((area) => area.elevation)),
       ),
@@ -9103,8 +9262,8 @@
     controls.target.set(cx, elevation + 0.3, cz);
     camera.position.set(
       cx + (top ? 0 : extent * 0.18 * framing),
-      elevation + (top ? extent * 1.65 : extent * 0.95) * framing,
-      cz + (top ? 0.001 : extent * 1.4 * framing),
+      elevation + (top ? extent * 1.65 : extent * 1.15) * framing,
+      cz + (top ? 0.001 : extent * 1.1 * framing),
     );
     camera.lookAt(controls.target);
     controls.update();
@@ -10426,11 +10585,77 @@
       },
     ],
   );
+  examples["Warm modern apartment"] = buildExample(
+    "Soft upholstery, bent timber dining chairs and woven lighting.\n# Click furniture to change its asset, dimensions or rotation; edits can be undone with Ctrl/Cmd+Z.",
+    0.9,
+    [
+      {
+        cols: 8,
+        doors: ["east", "south"],
+        items: [
+          [3, 2, "modular_sofa"],
+          [3, 4, "coffee_table(books_on_top)"],
+          [3, 3, "jute_rug[2.5x1.9x0.018]"],
+          [5, 6, "round_dining_table"],
+          [4, 6, "wishbone_chair@90"],
+          [6, 6, "wishbone_chair@270"],
+          [5, 5, "wishbone_chair"],
+          [5, 7, "wishbone_chair@180"],
+          [1, 1, "plant"],
+          [6, 1, "console_table~north"],
+        ],
+        lights: [
+          { name: "woven_pendant", power: 12, x: 5, z: 6 },
+          { name: "downlight", power: 10, x: 1.5, z: 2 },
+          { name: "downlight", power: 10, x: 6, z: 3 },
+        ],
+        mounts: [["west", 5, "arched_mirror"]],
+        name: "living_dining",
+        rows: 8,
+        style: "neutral",
+        surface: "wood",
+        walls: ["north", "east", "south", "west"],
+        windows: ["north", "west"],
+        x: 0,
+        z: 0,
+      },
+      {
+        cols: 8,
+        doors: ["west"],
+        items: [
+          [3, 2, "upholstered_bed~north"],
+          [1, 1, "nightstand(lamp_on_top)~north"],
+          [5, 1, "nightstand(lamp_on_top)~north"],
+          [3, 5, "linen_bench"],
+          [6, 2, "timber_wardrobe~east"],
+          [1, 6, "plant"],
+          [6, 6, "linen_pouf"],
+          [3, 3, "jute_rug[2.4x2.2x0.018]"],
+        ],
+        lights: [
+          { name: "woven_pendant", power: 12, x: 3, z: 5 },
+          { name: "downlight", power: 8, x: 1.5, z: 5 },
+          { name: "downlight", power: 8, x: 5.5, z: 5 },
+        ],
+        mounts: [["south", 1, "arched_mirror"]],
+        name: "soft_bedroom",
+        rows: 8,
+        style: "neutral",
+        surface: "wood",
+        walls: ["north", "east", "south", "west"],
+        windows: ["north", "east"],
+        x: 8,
+        z: 0,
+      },
+    ],
+    { books: ["book_stack"], lamp: ["ceramic_table_lamp"] },
+  );
   for (const name of Object.keys(examples)) {
     examples[name] = enrichExample(examples[name], parseProgram, name);
   }
   const exampleGroups = {
     "Apartments and open plans": [
+      "Warm modern apartment",
       "Micro apartment",
       "Open-plan loft",
       "One-bedroom apartment",
@@ -10561,6 +10786,26 @@
   document.addEventListener("keydown", (event) => {
     if (assetBrowser.open) {
       return;
+    }
+    const shortcutKey = event.key.toLowerCase();
+    if (
+      !editor.hasFocus &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.altKey &&
+      !event.target.closest("input, textarea, [contenteditable]")
+    ) {
+      const command =
+        shortcutKey === "z"
+          ? event.shiftKey
+            ? redo
+            : undo
+          : shortcutKey === "y" && event.ctrlKey
+            ? redo
+            : undefined;
+      if (command && command(editor)) {
+        event.preventDefault();
+        return;
+      }
     }
     if (
       walkthrough &&

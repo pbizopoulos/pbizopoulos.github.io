@@ -31,6 +31,6 @@ maps; the grain color map uses sRGB. All four maps total approximately 195 KiB.
 `furniture-thumbnails.webp` is an original atlas rendered from this editor's
 procedural furniture with Three.js. Its manifest names each tile explicitly,
 so new catalog entries do not shift existing thumbnails. The 161 previews add
-approximately 129 KiB and load only when opening Assets. They require no live
+approximately 134 KiB and load only when opening Assets. They require no live
 renderers per card. Rebuild with `prm/generate-thumbnails.cjs` after changing
 furniture silhouettes or materials; see the script header for prerequisites.

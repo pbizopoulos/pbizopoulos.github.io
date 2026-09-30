@@ -355,6 +355,8 @@ h2 {
   color: #a2b6a8;
 }
 .selection-card {
+  max-height: calc(100% - var(--preview-tools-height, 84px) - 48px);
+  overflow-y: auto;
   position: absolute;
   z-index: 2;
   top: calc(var(--preview-tools-height, 84px) + 24px);
@@ -384,6 +386,9 @@ h2 {
     monospace;
 }
 .selection-card .change-asset {
+  width: auto;
+  margin-right: 12px;
+  justify-content: flex-start;
   min-height: 36px;
   padding: 0;
   text-align: left;
@@ -993,4 +998,46 @@ button svg {
 }
 .asset-thumbnail {
   flex-shrink: 0;
+}
+.object-adjustments {
+  width: 100%;
+}
+.object-adjustments summary {
+  cursor: pointer;
+  color: #557b64;
+  padding-block: 6px;
+}
+.object-dimensions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-block: 6px;
+}
+.object-dimensions label {
+  display: grid;
+  gap: 4px;
+}
+.object-dimensions input {
+  min-width: 0;
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #d5dcd6;
+  border-radius: 4px;
+}
+.object-dimensions button {
+  width: auto;
+  grid-column: 1 / -1;
+}
+@media (pointer: coarse) {
+  .object-dimensions input {
+    min-height: 40px;
+    font-size: 16px;
+  }
+}
+.object-dimensions > span {
+  grid-column: 1 / -1;
+}
+.object-dimensions input:disabled {
+  background: #edf1ed;
+  color: #65746a;
 }
