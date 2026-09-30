@@ -5362,6 +5362,7 @@
     fast: { pixels: 1_000_000, ratio: 1, shadow: 1024 },
     high: { pixels: 4_000_000, ratio: 2, shadow: 4096 },
   };
+  let motionResolution = false;
   $("renderQuality").addEventListener("change", () => {
     const profile = qualityProfiles[$("renderQuality").value],
       shadowSize = Math.min(profile.shadow, renderer.capabilities.maxTextureSize);
@@ -8474,11 +8475,18 @@
     viewport.style.setProperty("--viewport-height", `${h}px`);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    const profile = qualityProfiles[$("renderQuality").value];
-    renderer.setPixelRatio(
-      Math.min(devicePixelRatio, profile.ratio, Math.sqrt(profile.pixels / (w * h))),
-    );
-    renderer.setSize(w, h, false);
+    const profile = qualityProfiles[$("renderQuality").value],
+      pixelBudget = motionResolution ? Math.min(profile.pixels, 1_000_000) : profile.pixels,
+      ratio = Math.min(devicePixelRatio, profile.ratio, Math.sqrt(pixelBudget / (w * h)));
+    if (renderer.getPixelRatio() !== ratio) {
+      renderer.setPixelRatio(ratio);
+    }
+    if (
+      renderer.domElement.width !== Math.floor(w * ratio) ||
+      renderer.domElement.height !== Math.floor(h * ratio)
+    ) {
+      renderer.setSize(w, h, false);
+    }
   }
   new ResizeObserver(resize).observe(viewport);
   const standingPoint = new THREE.Vector3();
@@ -9206,7 +9214,12 @@
       lastView.copy(camera.matrixWorld);
       lastCameraChange = time;
     }
-    const detailReady = $("renderQuality").value !== "fast" && time - lastCameraChange > 180;
+    const moving = Boolean(currentProgram) && time - lastCameraChange <= 180;
+    if (moving !== motionResolution) {
+      motionResolution = moving;
+      resize();
+    }
+    const detailReady = $("renderQuality").value !== "fast" && !moving;
     if (detailReady !== detailActive) {
       detailActive = detailReady;
       renderDirty = true;
@@ -9507,6 +9520,9 @@
     }
   });
   document.addEventListener("keydown", (event) => {
+    if (assetBrowser.open) {
+      return;
+    }
     if (
       walkthrough &&
       (event.key === "Escape" ||
@@ -9616,6 +9632,8 @@
     resetCamera();
   });
   $("saveViewButton").addEventListener("click", () => {
+    motionResolution = false;
+    resize();
     camera.updateMatrixWorld();
     renderer.info.reset();
     renderDetail();
