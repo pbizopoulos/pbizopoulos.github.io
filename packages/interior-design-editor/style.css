@@ -1017,7 +1017,8 @@ button svg {
   display: grid;
   gap: 4px;
 }
-.object-dimensions input {
+.object-dimensions input,
+.object-dimensions select {
   min-width: 0;
   width: 100%;
   padding: 5px;
@@ -1029,7 +1030,8 @@ button svg {
   grid-column: 1 / -1;
 }
 @media (pointer: coarse) {
-  .object-dimensions input {
+  .object-dimensions input,
+  .object-dimensions select {
     min-height: 40px;
     font-size: 16px;
   }

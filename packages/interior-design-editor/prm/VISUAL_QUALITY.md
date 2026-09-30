@@ -197,3 +197,29 @@ used 20,646 triangles (previously 17,286); the showcase used 103,646 (97,742);
 the three-level overview used 318,210 (298,326). No collision warnings or browser
 errors occurred, and the renderer returned to sleep after settling. These are
 software-GPU workload measurements, not hardware frame-rate measurements.
+
+
+## Room controls and pointer workload
+
+Room selection cards show the room name, width/depth, indoor ceiling clearance
+and storey. Their existing expandable adjustment pattern now includes ceiling
+height (2.4–6 m), style and floor finish; outdoor areas omit ceiling height.
+Native labelled fields and the same Apply button follow the furniture controls.
+Style and floor choices share the parser's supported option lists. Changes use
+one CodeMirror transaction, preserve inline comments and other rooms, and replace
+the final effective directive instead of appending repeated overrides. Missing
+directives are inserted beneath the room header. Undo/redo remains available.
+The source panel is revealed only by the explicit edit-definition action.
+
+Source parsing for these controls happens on Apply rather than hover. Pinned
+selection, active scene builds and uncompiled source skip viewport ray picking;
+orbit drags also skip hover picking. Pointer movement no longer requests a full
+render by itself. Camera changes, changed hover outlines and actual control
+changes still request rendering. Browser checks verify zero picking calls and
+no extra rendered frames during pinned pointer movement, while normal hovering,
+source recompilation and 1.80 m walking remain functional.
+
+Room-control checks cover invalid height rejection, new/replaced directives,
+other-room preservation, history, duplicate effective directives and inline
+comments, outdoor finishes, viewport fit at 390 px and idle sleep. The independent
+critic found no material clarity or consistency issues in desktop/mobile views.

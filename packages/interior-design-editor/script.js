@@ -1,6 +1,8 @@
 /* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const defaultRoomHeight = 2.6,
-    walkEyeHeight = 1.8;
+    walkEyeHeight = 1.8,
+    roomStyles = ["warm", "blue", "neutral", "liminal", "industrial", "aquatic", "mediterranean"],
+    floorFinishes = ["auto", "tile", "stone", "grass", "terracotta", "wood", "concrete"];
   const referenceCatalog = {
     ac_condenser: [0.82, 0.36, 0.62],
     accent_chair: [0.72, 0.8, 0.86],
@@ -5442,6 +5444,9 @@
     }
   }
   function hoverObject(event) {
+    if (selectionPinned || sceneBuilding || editor.state.doc.toString() !== compiledSource) {
+      return;
+    }
     const bounds = renderer.domElement.getBoundingClientRect(),
       mouse = new THREE.Vector2(
         ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
@@ -5470,6 +5475,104 @@
     }
     indicateGroup(group);
   }
+  function roomAdjustments(room) {
+    const sourceDoc = compiledSource;
+    const adjustments = document.createElement("details"),
+      summary = document.createElement("summary"),
+      form = document.createElement("form"),
+      fields = new Map();
+    adjustments.className = "object-adjustments";
+    summary.textContent = room.kind === "room" ? "Room finishes & height" : "Outdoor finishes";
+    form.className = "object-dimensions";
+    const settings = [
+      ["Style", "Style", room.style, roomStyles],
+      ["Surface", "Floor finish", room.surface, floorFinishes],
+    ];
+    if (room.kind === "room") {
+      settings.unshift(["Height", "Ceiling height (m)", room.height]);
+    }
+    for (const [kind, caption, value, choices] of settings) {
+      const wrapper = document.createElement("label"),
+        input = document.createElement(choices ? "select" : "input");
+      wrapper.textContent = caption;
+      input.setAttribute(
+        "aria-label",
+        `${room.name.replaceAll("_", " ")} ${caption.toLowerCase()}`,
+      );
+      if (choices) {
+        for (const choice of choices) {
+          input.add(
+            new Option(
+              choice === "auto" ? "Automatic" : choice[0].toUpperCase() + choice.slice(1),
+              choice,
+            ),
+          );
+        }
+      } else {
+        input.type = "number";
+        input.required = true;
+        input.min = "2.4";
+        input.max = "6";
+        input.step = "any";
+      }
+      input.value = String(value);
+      wrapper.append(input);
+      form.append(wrapper);
+      fields.set(kind, input);
+    }
+    const apply = document.createElement("button");
+    apply.type = "submit";
+    apply.className = "tool-button";
+    apply.textContent = "Apply";
+    form.append(apply);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!form.checkValidity() || editor.state.doc.toString() !== sourceDoc) {
+        return;
+      }
+      const statements = readLayout(sourceDoc),
+        start = statements.findIndex(
+          (statement) => statement.kind === "Room" && statement.line === room.line,
+        ),
+        region = [];
+      for (const statement of statements.slice(start + 1)) {
+        if (["Room", "Floor", "Layout"].includes(statement.kind)) {
+          break;
+        }
+        region.push(statement);
+      }
+      const changes = [],
+        missing = [];
+      for (const [kind, , oldValue] of settings) {
+        const input = fields.get(kind),
+          value = kind === "Height" ? input.valueAsNumber : input.value;
+        if (String(value) === String(oldValue)) {
+          continue;
+        }
+        const replacement = `${kind.toUpperCase()} ${value}`,
+          directive = region.findLast((statement) => statement.kind === kind);
+        if (directive) {
+          const line = editor.state.doc.line(directive.line),
+            from = line.from + line.text.indexOf(directive.text);
+          changes.push({ from, insert: replacement, to: from + directive.text.length });
+        } else {
+          missing.push(replacement);
+        }
+      }
+      if (missing.length > 0) {
+        changes.push({
+          from: editor.state.doc.line(room.line).to,
+          insert: `\n${missing.join("\n")}`,
+        });
+      }
+      if (changes.length > 0) {
+        editor.dispatch({ changes: changes.toSorted((a, b) => a.from - b.from) });
+        clearHover();
+      }
+    });
+    adjustments.append(summary, form);
+    return adjustments;
+  }
   function indicateGroup(group) {
     if (selectionPinned) {
       return;
@@ -5489,11 +5592,20 @@
     scene.add(hoverOutline);
     selectionCard.replaceChildren();
     const title = document.createElement("strong");
-    title.textContent = token.name.replaceAll("_", " ");
+    const room = currentProgram.rooms.find(
+        (area) => area.line === token.line && area.name === token.room,
+      ),
+      roomSelection = room && token.name === room.kind;
+    title.textContent = (roomSelection ? room.name : token.name).replaceAll("_", " ");
     const dimensions = document.createElement("span");
-    dimensions.textContent = `${token.dimensions.map((x) => x.toFixed(2)).join(" × ")} m · ${token.yaw}°`;
+    dimensions.textContent = roomSelection
+      ? `${token.dimensions
+          .slice(0, 2)
+          .map((x) => x.toFixed(2))
+          .join(" × ")} m${room.kind === "room" ? ` · ${room.height.toFixed(2)} m ceiling` : ""}`
+      : `${token.dimensions.map((x) => x.toFixed(2)).join(" × ")} m · ${token.yaw}°`;
     const source = document.createElement("span");
-    source.textContent = `${token.room.replaceAll("_", " ")} · line ${token.line}`;
+    source.textContent = `${roomSelection ? floorLabel(room.floor) : token.room.replaceAll("_", " ")} · line ${token.line}`;
     selectionCard.append(title, dimensions, source);
     const sourceLine = editor.state.doc.line(token.line),
       cell =
@@ -5588,6 +5700,18 @@
       }
       adjustments.append(summary, form);
       selectionCard.append(adjustments);
+    }
+    if (roomSelection) {
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "text-button change-asset";
+      edit.textContent = "Edit room definition";
+      edit.addEventListener("click", () => {
+        highlightSource(token.line, true);
+        editor.dispatch({ selection: { anchor: sourceLine.from, head: sourceLine.to } });
+        editor.focus();
+      });
+      selectionCard.append(edit, roomAdjustments(room));
     }
     if (token.url) {
       const link = document.createElement("a");
@@ -5924,11 +6048,7 @@
         currentRoom.height = height;
       } else if (kind === "Surface") {
         const surface = statement.names[0].toLowerCase();
-        if (
-          active ||
-          !currentRoom ||
-          !["auto", "tile", "stone", "grass", "terracotta", "wood", "concrete"].includes(surface)
-        ) {
+        if (active || !currentRoom || !floorFinishes.includes(surface)) {
           fail(
             "Use SURFACE auto/tile/stone/grass/terracotta/wood/concrete inside an area definition",
             line,
@@ -5940,17 +6060,7 @@
           fail("Define a ROOM before its STYLE", line);
         }
         const style = statement.names[0].toLowerCase();
-        if (
-          ![
-            "warm",
-            "blue",
-            "neutral",
-            "liminal",
-            "industrial",
-            "aquatic",
-            "mediterranean",
-          ].includes(style)
-        ) {
+        if (!roomStyles.includes(style)) {
           fail(
             "STYLE must be warm, blue, neutral, liminal, industrial, aquatic, or mediterranean",
             line,
@@ -6260,8 +6370,6 @@
     renderDirty = true;
   }
   controls.addEventListener("change", requestRender);
-  viewport.addEventListener("pointermove", requestRender);
-  viewport.addEventListener("pointerleave", requestRender);
   document.addEventListener("input", requestRender);
   document.addEventListener("click", requestRender);
   scene.add(shadowRoot);
@@ -11210,7 +11318,7 @@
       );
       lastPointer = { x: event.clientX, y: event.clientY };
     }
-    if (!firstPerson) {
+    if (!firstPerson && event.buttons === 0) {
       hoverObject(event);
     }
   });
