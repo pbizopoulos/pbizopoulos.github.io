@@ -18,10 +18,16 @@ texture or source implementation is included here.
 
 The editor must render rooms that are edited interactively, so it combines
 prefiltered environment lighting, window daylight, sun shadows, warm room fill,
-contact shadows and Three.js GTAO ambient occlusion. Three.js
-[Reflector](https://threejs.org/docs/pages/Reflector.html) supplies mirrors in
-settled High-quality views. Each reflection target is limited to 512 square pixels
-with multisampling disabled and one reflection bounce. Balanced/Fast views and
+contact shadows and Three.js GTAO ambient occlusion. Both the viewport and asset
+studio use [WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html),
+with its WebGL 2 backend for browsers without WebGPU. The import map loads the
+matching WebGPU and TSL builds without introducing a bundler or changing the
+package layout. The renderers share an asynchronously initialized GPU device
+and request its supported texture/sampler limits for simultaneous fixture shadows.
+
+TSL's [reflector](https://threejs.org/docs/pages/ReflectorNode.html) supplies mirrors
+in settled High-quality views. Reflections use half linear resolution with
+multisampling disabled and one reflection bounce. Balanced/Fast views and
 camera movement use the cheaper silver surface. Mirrors release their render targets
 when scenes change.
 
@@ -41,7 +47,8 @@ this visual-quality change.
 - Render resolution follows the existing quality budgets and drops during movement.
   The scene renderer sleeps when idle. Asset previews render only on changes,
   release mesh buffers when selection changes, and dispose their own environment
-  target, controls, observer and WebGL context on close.
+  target, controls, observer and renderer on close. Closing the studio preserves
+  the shared device used by the main viewport.
 - Two local CC0 surface relief maps add about 102 KiB. They load after the initial
   render settles, time out after five seconds, and retain procedural fallbacks.
   Provenance is in [assets/ATTRIBUTION.md](assets/ATTRIBUTION.md).
@@ -84,13 +91,49 @@ previews if thumbnails cannot load.
 
 ## Settled-view ambient occlusion
 
-Three.js [GTAOPass](https://threejs.org/docs/pages/GTAOPass.html) replaces the
-hand-written ambient occlusion kernel. It reuses the scene depth prepass and
-reconstructs normals from depth, then denoises the result. Balanced uses 12 AO
+Three.js [GTAONode](https://threejs.org/docs/pages/GTAONode.html) and DenoiseNode
+replace the WebGL effect pass and manual compositor. They reuse the beauty pass's
+depth and reconstruct normals from it. The scene pass disables multisampling
+so its depth can be sampled; FXAANode antialiases the final composition. Balanced uses 12 AO
 samples; High uses 24. Both run at no more than half linear resolution and
 500,000 pixels. Moving and Fast views bypass it; switching to Fast releases
 its targets. Quality switching returns to stable geometry/texture counts and
 still views stop drawing. The compositor keeps AO bounded to avoid black halos.
+
+The sky, window daylight, room bounce and wall contact terms use TSL and node
+materials instead of GLSL strings and `onBeforeCompile`. Native simultaneous
+fixture lighting replaces the custom four-light batches, additive accumulation
+targets and repeated scene renders. Cached shadows are invalidated on each
+light's shadow object, matching WebGPURenderer's API. The renderer resizes shadow
+targets itself. Sunset hides the sun without disposing its cached shadow nodes.
+Fixture shadows fit the device's texture/sampler limits: each native shadow uses
+two texture slots, and twelve slots are reserved for materials, the sun and
+reflections. Stronger nearby fixtures receive priority at scene construction;
+every fixture still contributes light. This bounds shadow work and avoids shader
+failures on adapters with small limits. The WebGL 2 fallback caps fixture shadows
+at four to keep its generated lighting shaders practical on software GPUs. Draw counts use
+`renderer.info.render.drawCalls`; `render.calls` counts scene submissions.
+Fixture depth bias suppresses self-shadowing bands on walls and floors. Large
+night scenes can take several minutes to compile and render on the software GPU;
+the fallback validation allows longer initialization waits.
+
+`prm/validate-renderer.cjs` checks actual PNG pixels, all quality modes, mirrors,
+night fixture lighting, repeated effect disposal, asynchronous asset previews,
+idle rendering, mobile layout and invalid-source recovery. It requires a working
+WebGPU adapter by default; `INTERIOR_BACKEND=webgl` explicitly checks the same
+node renderer's fallback. `INTERIOR_OFFSCREEN=1` validates native WebGPU pixels
+by reading render targets, including the aligned rows in Three.js r181's readback.
+This machine's Chromium software WebGPU path renders valid offscreen pixels but
+returns blank canvases even for an independent plain red WebGPU clear. Native
+canvas presentation remains unverified here; the fallback supplies visible
+regression captures. The video recorder's existing `--software-rendering` option
+uses the node renderer's WebGL 2 backend to retain usable SwiftShader recordings.
+Thumbnail generation accepts `INTERIOR_BACKEND=webgl` for the same environment.
+
+Effect disposal includes the pinned r181 GTAO noise texture and FXAA's intermediate
+RTT target/material, whose public disposal methods do not release all resources.
+Repeated quality switches check stable texture and geometry counts. Denoising
+samples GTAO's existing result texture directly, avoiding an extra full-screen RTT.
 
 Opaque batches that are entirely indexed preserve their vertex indices;
 heterogeneous batches retain the existing non-indexed compatibility path.

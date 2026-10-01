@@ -3,6 +3,7 @@
  * INTERIOR_SCREENSHOTS optionally saves visual review captures.
  * INTERIOR_CHECK=walls limits the run to wall finish and reference-view checks.
  * INTERIOR_CHECK=exposure compares scene workload and checks camera controls.
+ * INTERIOR_BACKEND=webgl explicitly checks the node renderer's fallback.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,7 +24,7 @@ async function check(variant) {
   const browser = await chromium.launch({
     ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}),
     headless: true,
-    args: ['--no-sandbox', '--enable-unsafe-swiftshader'],
+    args: ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--disable-gpu-watchdog', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--disable-vulkan-surface'],
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 760 } });
@@ -34,9 +35,10 @@ async function check(variant) {
     });
     await page.route('**/script.js', async (route) => {
       const response = await route.fetch();
-      const source = variant === 'before' ? fs.readFileSync(baseline, 'utf8') : await response.text();
+      let source = variant === 'before' ? fs.readFileSync(baseline, 'utf8') : await response.text();
+      if (process.env.INTERIOR_BACKEND === 'webgl') source = source.replace('forceWebGL: !gpu', 'forceWebGL: true');
       const body = source.replace('  const requestedExample =',
-        '  document.querySelector("#renderQuality").value="fast"; globalThis.assetQuality = { THREE, catalog, makeFurniture, material, renderer, editor, sceneRoot, camera, get studio(){return assetStudio}, get program(){return currentProgram}, get warnings(){return findCollisions()}, get ready(){return !!currentProgram&&!sceneBuilding&&compiledSource===editor.state.doc.toString()}, get idle(){return (typeof indoorExposureAdjustment==="undefined"||indoorExposureAdjustment===desiredIndoorExposureAdjustment)&&!renderDirty&&performance.now()-lastCameraChange>250&&(document.querySelector("#renderQuality").value==="fast"||detailActive)} };\n  const requestedExample =');
+        '  document.querySelector("#renderQuality").value="fast"; globalThis.assetQuality = { THREE, catalog, makeFurniture, material, renderer, editor, scene, sceneRoot, camera, get studio(){return assetStudio}, get program(){return currentProgram}, get warnings(){return findCollisions()}, get ready(){return !!currentProgram&&!sceneBuilding&&compiledSource===editor.state.doc.toString()}, get idle(){return (typeof indoorExposureAdjustment==="undefined"||indoorExposureAdjustment===desiredIndoorExposureAdjustment)&&!renderDirty&&performance.now()-lastCameraChange>250&&(document.querySelector("#renderQuality").value==="fast"||detailActive)} };\n  const requestedExample =');
       assert.ok(body.includes('globalThis.assetQuality'), 'The editor instrumentation anchor must exist');
       await route.fulfill({ response, body });
     });
@@ -55,6 +57,7 @@ async function check(variant) {
     await page.waitForFunction(() => assetQuality.material.wood.map.image.width === 512, null, { timeout: 15000 });
     if (!wallOnly && !exposureOnly) {
       await page.click('#assetsButton');
+      await page.waitForFunction(() => assetQuality.studio?.object);
       for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine', 'shower', 'frameless_shower', 'toilet', 'toilet_open']) {
         if (variant === 'before' && !await page.evaluate((asset) => Boolean(assetQuality.catalog[asset]), name)) continue;
         await page.fill('#assetSearch', name);
@@ -78,7 +81,7 @@ async function check(variant) {
           const doorRay = name === 'washing_machine' ? new THREE.Raycaster(new THREE.Vector3(0, h * 0.435, 1), new THREE.Vector3(0, 0, -1)) : undefined;
           const opaque = doorRay?.intersectObject(group, true).find((entry) => !entry.object.material.transparent);
           const bounds = ['washing_machine', 'toilet', 'toilet_open'].includes(name) ? new THREE.Box3().setFromObject(group) : undefined;
-          return { height: h, hit: hit?.point.y, panes: panes.length ? panes : undefined, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
+          return { height: h, hit: hit?.point.y, panes: panes.length ? panes : undefined, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.drawCalls ?? studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
         }, name);
         if (variant === 'after' && ['sink', 'vanity', 'bathroom_vanity', 'kitchenette'].includes(name)) {
           const limit = name === 'kitchenette' ? 0.85 : data.height - (name === 'bathroom_vanity' ? 0.08 : 0.09);
@@ -118,7 +121,7 @@ async function check(variant) {
     for (const name of scenes) {
       if (await page.inputValue('#exampleSelect') !== name) await page.selectOption('#exampleSelect', name);
       await ready();
-      const data = await page.evaluate(() => ({ calls: assetQuality.renderer.info.render.calls, triangles: assetQuality.renderer.info.render.triangles, warnings: assetQuality.warnings }));
+      const data = await page.evaluate(() => ({ calls: assetQuality.renderer.info.render.drawCalls ?? assetQuality.renderer.info.render.calls, triangles: assetQuality.renderer.info.render.triangles, warnings: assetQuality.warnings }));
       assert.deepEqual(data.warnings, [], `${name} placement warnings`);
       workload[name] = data;
       console.log(variant, name, JSON.stringify(data));
@@ -190,10 +193,14 @@ async function check(variant) {
         await capture('exposure-fixed');
         await page.click('.sun-panel summary');
         const exposureRebuildsShadows = await page.evaluate((value) => {
+          const before = new Map();
+          assetQuality.scene.traverse((node) => { if (node.shadow) before.set(node, node.shadow.needsUpdate); });
           const input = document.querySelector('#sunExposure');
           input.value = String(value);
           input.dispatchEvent(new Event('input', { bubbles: true }));
-          return assetQuality.renderer.shadowMap.needsUpdate;
+          let needsUpdate = false;
+          assetQuality.scene.traverse((node) => { if (node.shadow && node.shadow.needsUpdate !== before.get(node)) needsUpdate = true; });
+          return needsUpdate;
         }, manualEV + 1);
         assert.equal(exposureRebuildsShadows, false, 'Exposure changes must retain cached shadows');
         await ready();

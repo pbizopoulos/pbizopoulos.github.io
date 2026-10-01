@@ -2,6 +2,7 @@
  * npm install --prefix /tmp/interior-thumbnails playwright
  * NODE_PATH=/tmp/interior-thumbnails/node_modules node prm/generate-thumbnails.cjs
  * Serve the editor first; pass its URL as the first argument if needed.
+ * INTERIOR_BACKEND=webgl uses the node renderer's software-compatible fallback.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,15 +12,17 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   const browser = await chromium.launch({
     ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}),
     headless: true,
-    args: ['--no-sandbox', '--enable-unsafe-swiftshader'],
+    args: ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--disable-gpu-watchdog', '--enable-features=Vulkan', '--use-vulkan=swiftshader', '--disable-vulkan-surface'],
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 760 } });
     await page.route('**/script.js', async (route) => {
       const response = await route.fetch();
-      const source = (await response.text()).replace(
+      let source = await response.text();
+      if (process.env.INTERIOR_BACKEND === 'webgl') source = source.replace('forceWebGL: !gpu', 'forceWebGL: true');
+      source = source.replace(
         '  const requestedExample =',
-        '  document.querySelector("#renderQuality").value="fast"; globalThis.catalogStudio = { catalog, previewAsset, material, get studio(){return assetStudio}, get ready(){return !sceneBuilding&&!renderDirty&&!!currentProgram} };\n  const requestedExample =',
+        '  document.querySelector("#renderQuality").value="fast"; globalThis.catalogStudio = { catalog, previewAsset, material, get studio(){return assetStudio}, selectAsset(name){selectedAsset=name}, get ready(){return !sceneBuilding&&!renderDirty&&!!currentProgram} };\n  const requestedExample =',
       );
       if (!source.includes('globalThis.catalogStudio')) throw new Error('Catalog instrumentation anchor was not found');
       await route.fulfill({ response, body: source });
@@ -30,6 +33,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.waitForFunction(() => globalThis.catalogStudio?.ready, null, { timeout: 120000 });
     await page.waitForFunction(() => catalogStudio.material.wood.map.image.width === 512, null, { timeout: 20000 });
     await page.click('#assetsButton');
+    await page.waitForFunction(() => catalogStudio.studio?.object);
     const names = await page.evaluate(() => Object.keys(catalogStudio.catalog).sort());
     const columns = 12, rows = Math.ceil(names.length / columns);
     await page.evaluate(({ columns, rows }) => {
@@ -40,8 +44,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       context.fillStyle = '#e9ede6'; context.fillRect(0, 0, atlas.width, atlas.height);
     }, { columns, rows });
     for (const [index, name] of names.entries()) {
-      await page.evaluate(({ index, name, columns }) => {
-        catalogStudio.previewAsset(name);
+      await page.evaluate(async ({ index, name, columns }) => {
+        catalogStudio.selectAsset(name);
+        await catalogStudio.previewAsset(name);
         const { renderer, camera, scene } = catalogStudio.studio;
         renderer.setPixelRatio(1); renderer.setSize(160, 128, false);
         camera.aspect = 1.25; camera.updateProjectionMatrix();

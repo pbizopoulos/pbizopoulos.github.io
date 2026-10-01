@@ -381,6 +381,10 @@ async def record(
                 permissions=["clipboard-read", "clipboard-write"],
                 device_scale_factor=1,
             )
+            if args.software_rendering:
+                await context.add_init_script(
+                    "Object.defineProperty(navigator, 'gpu', {value: undefined});",
+                )
             page = await context.new_page()
             page.on(
                 "requestfailed",

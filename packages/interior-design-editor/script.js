@@ -1,4 +1,4 @@
-/* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
+/* eslint-disable oxc/no-rest-spread-properties, no-underscore-dangle, unicorn/no-null, new-cap, unicorn/max-nested-calls, max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const defaultRoomHeight = 2.6,
     baseCameraExposure = 1.05,
     walkEyeHeight = 1.8,
@@ -389,7 +389,7 @@
       ctx.fillText(name === "citrus_print" ? "C I T R U S" : "A E G E A N", 128, 369);
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      texture.anisotropy = Math.min(4, renderer.getMaxAnisotropy());
       const paper = mat("#ffffff", 0.95);
       paper.map = texture;
       const print = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.055, h - 0.055), paper);
@@ -1733,8 +1733,10 @@
       { default: TinyQueue },
       { RoundedBoxGeometry },
       { RoomEnvironment },
-      { Reflector },
-      { GTAOPass },
+      TSL,
+      { ao },
+      { denoise },
+      { fxaa },
       { EditorState, StateEffect, StateField },
       { EditorView, Decoration, keymap, lineNumbers, drawSelection },
       {
@@ -1763,8 +1765,10 @@
       import("tinyqueue"),
       import("three/addons/geometries/RoundedBoxGeometry.js"),
       import("three/addons/environments/RoomEnvironment.js"),
-      import("three/addons/objects/Reflector.js"),
-      import("three/addons/postprocessing/GTAOPass.js"),
+      import("three/tsl"),
+      import("three/addons/tsl/display/GTAONode.js"),
+      import("three/addons/tsl/display/DenoiseNode.js"),
+      import("three/addons/tsl/display/FXAANode.js"),
       import("@codemirror/state"),
       import("@codemirror/view"),
       import("@codemirror/language"),
@@ -2667,7 +2671,6 @@
       "coastal_print",
       "wall_spot_pair",
     ];
-  let reflectingMirror = false;
   function archedOutline(w, h, inset = 0) {
     const shape = new THREE.Shape(),
       r = w / 2 - inset,
@@ -2686,31 +2689,19 @@
         ? new THREE.ShapeGeometry(outline, 24)
         : new THREE.PlaneGeometry(w - 0.05, h - 0.05),
       fallback = new THREE.Mesh(geometry, silver),
-      surface = new Reflector(geometry.clone(), {
-        clipBias: 0.003,
-        color: "#eeeae3",
-        multisample: 0,
-        textureHeight: 512,
-        textureWidth: 512,
-      });
+      reflection = TSL.reflector({ bounces: false, resolutionScale: 0.5, samples: 0 }),
+      finish = new THREE.MeshBasicNodeMaterial(),
+      surface = new THREE.Mesh(geometry.clone(), finish);
+    finish.colorNode = reflection.rgb.mul(TSL.color("#eeeae3"));
     surface.position.set(0, h / 2, d / 2 + 0.006);
+    surface.add(reflection.target);
+    surface.reflection = reflection;
+    surface.isReflector = true;
     fallback.position.copy(surface.position);
     fallback.userData.mirrorFallback = true;
     fallback.receiveShadow = true;
     surface.visible = false;
     group.add(fallback, surface);
-    const capture = surface.onBeforeRender;
-    surface.onBeforeRender = function onBeforeRender(...args) {
-      if (reflectingMirror || args[1].overrideMaterial) {
-        return;
-      }
-      reflectingMirror = true;
-      try {
-        capture.apply(surface, args);
-      } finally {
-        reflectingMirror = false;
-      }
-    };
   }
   function updateMirrors(root, reflective) {
     root.traverse((node) => {
@@ -2829,8 +2820,7 @@
   }
   const decorationExample =
       "# Posters, artwork, a clock, a shelf, and a ceramic vase\nGRID 1\nROOM gallery 8x8 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS north east west\nMOUNT south 1 poster\nMOUNT south 6 mirror\nMOUNT east 0 painting\nMOUNT east 7 wall_shelf\nMOUNT north 0 wall_clock\nLIGHT track_light AT 2,2 POWER 24\nLIGHT pendant_light AT 5,5 POWER 18\nLAYOUT gallery\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | .\n. | . | vase | . | . | . | . | .\n. | . | . | . | . | . | . | .\nEND",
-    daylightStrength = { value: 0 },
-    daylightPass = { value: 1 },
+    daylightStrength = TSL.uniform(0),
     daylightSourceMaterials = new Set(),
     daylightCeilings = new Set();
   function addDaylightFill(program, root) {
@@ -2903,55 +2893,37 @@
             return source;
           }
           if (!entry.materials.has(source)) {
-            const copy = source.clone();
-            daylightSourceMaterials.add(source);
-            copy.userData.ownedTexture = false;
+            const fill = TSL.Fn(() => {
+                const amount = TSL.float(0).toVar();
+                for (const opening of entry.openings) {
+                  const distance = TSL.positionWorld.xz.distance(TSL.vec2(opening.x, opening.y)),
+                    direction = TSL.vec3(opening.x, entry.base + 1.6, opening.y)
+                      .sub(TSL.positionWorld)
+                      .add(0.0001)
+                      .normalize(),
+                    facing = TSL.normalWorld.dot(direction).max(0).mul(0.88).add(0.12);
+                  amount.addAssign(facing.mul(opening.z).div(distance.pow(2).mul(0.18).add(1)));
+                }
+                return TSL.vec3(0.92, 0.96, 1)
+                  .mul(amount.mul(1.5).min(0.95))
+                  .add(TSL.vec3(1, 0.93, 0.82).mul(amount.mul(0.42).min(0.24)))
+                  .mul(daylightStrength)
+                  .mul(Math.PI);
+              })(),
+              edge = TSL.vec4(
+                TSL.positionWorld.xz.sub(TSL.vec2(entry.bounds.x, entry.bounds.y)),
+                TSL.vec2(entry.bounds.z, entry.bounds.w).sub(TSL.positionWorld.xz),
+              ).abs(),
+              nearWall = edge.mul(-9).exp().mul(TSL.vec4(entry.walls)),
+              contact = nearWall.x
+                .max(nearWall.y)
+                .max(nearWall.z)
+                .max(nearWall.w)
+                .mul(TSL.positionWorld.y.sub(entry.base).abs().mul(-9).exp()),
+              copy = createDaylightMaterial(source, fill, TSL.float(1).sub(contact.mul(0.22)));
             if (source === material.ceiling) {
               daylightCeilings.add(copy);
             }
-            copy.onBeforeCompile = (shader) => {
-              shader.uniforms.daylightStrength = daylightStrength;
-              shader.uniforms.daylightPass = daylightPass;
-              shader.uniforms.daylightOpenings = { value: entry.openings };
-              shader.uniforms.roomBounds = { value: entry.bounds };
-              shader.uniforms.roomBase = { value: entry.base };
-              shader.uniforms.roomWalls = { value: entry.walls };
-              shader.vertexShader = `varying vec3 daylightPosition;\n${shader.vertexShader}`;
-              shader.vertexShader = shader.vertexShader.replace(
-                "#include <project_vertex>",
-                "#include <project_vertex>\ndaylightPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;",
-              );
-              shader.fragmentShader = [
-                "varying vec3 daylightPosition;",
-                "uniform float daylightStrength;",
-                "uniform float daylightPass;",
-                "uniform vec4 daylightOpenings[4];",
-                "uniform vec4 roomBounds; uniform vec4 roomWalls; uniform float roomBase;",
-                shader.fragmentShader,
-              ].join("\n");
-              shader.fragmentShader = shader.fragmentShader.replace(
-                "#include <lights_fragment_end>",
-                [
-                  "float daylightFill = 0.0;",
-                  "vec3 skyNormal = inverseTransformDirection(normal, viewMatrix);",
-                  "for (int i = 0; i < 4; i++) {",
-                  "  float distanceToOpening = distance(daylightPosition.xz, daylightOpenings[i].xy);",
-                  "  vec3 openingDirection = normalize(vec3(daylightOpenings[i].x - daylightPosition.x, roomBase + 1.6 - daylightPosition.y, daylightOpenings[i].y - daylightPosition.z) + vec3(0.0001));",
-                  "  float facingOpening = 0.12 + 0.88 * max(0.0, dot(skyNormal, openingDirection));",
-                  "  daylightFill += facingOpening * daylightOpenings[i].z / (1.0 + 0.18 * distanceToOpening * distanceToOpening);",
-                  "}",
-                  "vec3 windowSky = vec3(0.92, 0.96, 1.0) * min(daylightFill * 1.5, 0.95);",
-                  "vec3 roomBounce = vec3(1.0, 0.93, 0.82) * min(daylightFill * 0.42, 0.24);",
-                  "irradiance += (windowSky + roomBounce) * daylightStrength * daylightPass * PI;",
-                  "#include <lights_fragment_end>",
-                  "vec4 edge = abs(vec4(daylightPosition.xz - roomBounds.xy, roomBounds.zw - daylightPosition.xz));",
-                  "vec4 nearWall = exp(-edge * 9.0) * roomWalls;",
-                  "float contact = max(max(nearWall.x,nearWall.y),max(nearWall.z,nearWall.w)) * exp(-abs(daylightPosition.y-roomBase)*9.0);",
-                  "reflectedLight.indirectDiffuse *= 1.0 - 0.22 * contact;",
-                ].join("\n"),
-              );
-            };
-            copy.customProgramCacheKey = () => "room-daylight-v4";
             entry.materials.set(source, copy);
           }
           return entry.materials.get(source);
@@ -2969,26 +2941,14 @@
         return;
       }
       const finish = (source) => {
-        if (
-          !source.isMeshStandardMaterial ||
-          source.customProgramCacheKey() === "room-daylight-v4"
-        ) {
+        if (!source.isMeshStandardMaterial || source.userData.daylight) {
           return source;
         }
         if (!exteriorMaterials.has(source)) {
-          const copy = source.clone();
-          daylightSourceMaterials.add(source);
-          copy.userData.ownedTexture = false;
-          copy.onBeforeCompile = (shader) => {
-            shader.uniforms.daylightStrength = daylightStrength;
-            shader.uniforms.daylightPass = daylightPass;
-            shader.fragmentShader = `uniform float daylightStrength; uniform float daylightPass;\n${shader.fragmentShader}`;
-            shader.fragmentShader = shader.fragmentShader.replace(
-              "#include <lights_fragment_end>",
-              "irradiance += vec3(0.32, 0.38, 0.46) * daylightStrength * daylightPass * PI;\n#include <lights_fragment_end>",
-            );
-          };
-          copy.customProgramCacheKey = () => "exterior-sky-v1";
+          const copy = createDaylightMaterial(
+            source,
+            TSL.vec3(0.32, 0.38, 0.46).mul(daylightStrength).mul(Math.PI),
+          );
           exteriorMaterials.set(source, copy);
         }
         return exteriorMaterials.get(source);
@@ -2998,260 +2958,88 @@
         : finish(node.material);
     });
   }
-  function createFixtureRenderer(renderer, scene, camera, sunlight) {
-    const passTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }),
-      sumTarget = new THREE.WebGLRenderTarget(1, 1, {
-        depthBuffer: false,
-        type: THREE.HalfFloatType,
-      }),
-      quadScene = new THREE.Scene(),
-      quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
-      vertexShader =
-        "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
-      sumMaterial = new THREE.ShaderMaterial({
-        blending: THREE.AdditiveBlending,
-        depthTest: false,
-        depthWrite: false,
-        fragmentShader:
-          "uniform sampler2D source; varying vec2 vUv; void main() { gl_FragColor = texture2D(source, vUv); }",
-        toneMapped: false,
-        transparent: true,
-        uniforms: { source: { value: passTarget.texture } },
-        vertexShader,
-      }),
-      outputMaterial = new THREE.ShaderMaterial({
-        depthTest: false,
-        depthWrite: false,
-        fragmentShader:
-          "uniform sampler2D source; varying vec2 vUv;\n      void main() { gl_FragColor = vec4(texture2D(source, vUv).rgb, 1.0);\n        #include <tonemapping_fragment>\n        #include <colorspace_fragment>\n      }",
-        uniforms: { source: { value: sumTarget.texture } },
-        vertexShader,
-      }),
-      quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sumMaterial);
-    quadScene.add(quad);
-    const size = new THREE.Vector2(),
-      black = new THREE.Color(0);
-    return function renderFixtures() {
-      const lights = [],
-        materials = new Set();
-      scene.traverseVisible((node) => {
-        if (node.isPointLight && node.intensity > 0) {
-          lights.push(node);
-        }
-        for (const material of [node.material].flat().filter(Boolean)) {
-          materials.add(material);
-        }
-      });
-      if (lights.length <= 4) {
-        renderer.render(scene, camera);
-        return;
+  function createDaylightMaterial(source, irradiance, occlusion = TSL.float(1)) {
+    const Base = source.isMeshPhysicalMaterial
+      ? THREE.MeshPhysicalNodeMaterial
+      : THREE.MeshStandardNodeMaterial;
+    class DaylightMaterial extends Base {
+      setupLightMap() {
+        return new THREE.IrradianceNode(this.daylightNode);
       }
-      renderer.getDrawingBufferSize(size);
-      if (passTarget.width !== size.x || passTarget.height !== size.y) {
-        passTarget.setSize(size.x, size.y);
-        sumTarget.setSize(size.x, size.y);
-      }
-      const saved = {
-          autoClear: renderer.autoClear,
-          autoClearDepth: renderer.autoClearDepth,
-          background: scene.background,
-          clearAlpha: renderer.getClearAlpha(),
-          clearColor: renderer.getClearColor(new THREE.Color()),
-          environmentIntensity: scene.environmentIntensity,
-          shadows: renderer.shadowMap.needsUpdate,
-          sunVisible: sunlight.visible,
-          target: renderer.getRenderTarget(),
-          toneMapping: renderer.toneMapping,
-        },
-        emission = [...materials].filter((m) => m.emissive).map((m) => [m, m.emissiveIntensity]),
-        unlit = [...materials]
-          .filter((m) => !m.isMeshStandardMaterial && !m.isMeshPhysicalMaterial && m.colorWrite)
-          .map((m) => [m, m.colorWrite]);
-      try {
-        renderer.autoClearDepth = true;
-        renderer.toneMapping = THREE.NoToneMapping;
-        renderer.setClearColor(0, 1);
-        renderer.setRenderTarget(sumTarget);
-        renderer.clear();
-        for (let start = 0; start < lights.length; start += 4) {
-          lights.forEach((light, index) => {
-            light.visible = index >= start && index < start + 4;
-          });
-          if (start > 0) {
-            scene.background = black;
-            sunlight.visible = false;
-            daylightPass.value = 0;
-            scene.environmentIntensity = 0;
-            emission.forEach(([material]) => {
-              material.emissiveIntensity = 0;
-            });
-            unlit.forEach(([material]) => {
-              material.colorWrite = false;
-            });
-          }
-          renderer.shadowMap.needsUpdate = saved.shadows;
-          renderer.autoClear = true;
-          renderer.setRenderTarget(passTarget);
-          renderer.render(scene, camera);
-          renderer.autoClear = false;
-          renderer.setRenderTarget(sumTarget);
-          quad.material = sumMaterial;
-          renderer.render(quadScene, quadCamera);
-        }
-        renderer.toneMapping = saved.toneMapping;
-        renderer.setRenderTarget(saved.target);
-        renderer.autoClear = true;
-        quad.material = outputMaterial;
-        renderer.autoClearDepth = !saved.target?.depthTexture;
-        renderer.render(quadScene, quadCamera);
-      } finally {
-        lights.forEach((light) => {
-          light.visible = true;
-        });
-        emission.forEach(([material, intensity]) => {
-          material.emissiveIntensity = intensity;
-        });
-        unlit.forEach(([material, colorWrite]) => {
-          material.colorWrite = colorWrite;
-        });
-        sunlight.visible = saved.sunVisible;
-        daylightPass.value = 1;
-        scene.environmentIntensity = saved.environmentIntensity;
-        scene.background = saved.background;
-        renderer.toneMapping = saved.toneMapping;
-        renderer.autoClear = saved.autoClear;
-        renderer.autoClearDepth = saved.autoClearDepth;
-        renderer.setClearColor(saved.clearColor, saved.clearAlpha);
-        renderer.setRenderTarget(saved.target);
-      }
-    };
+    }
+    const finish = new DaylightMaterial();
+    finish.daylightNode = irradiance;
+    const Source = source.isMeshPhysicalMaterial
+      ? THREE.MeshPhysicalMaterial
+      : THREE.MeshStandardMaterial;
+    Source.prototype.copy.call(finish, source);
+    finish.aoNode = source.aoMap ? TSL.materialAO.mul(occlusion) : occlusion;
+    finish.userData.ownedTexture = false;
+    finish.userData.daylight = true;
+    daylightSourceMaterials.add(source);
+    return finish;
   }
-  function createDetailRenderer(renderer, scene, sceneRoot, camera, renderBeauty) {
-    const beauty = new THREE.WebGLRenderTarget(1, 1, {
-        depthTexture: new THREE.DepthTexture(1, 1),
-        samples: Math.min(2, renderer.capabilities.maxSamples),
-        type: THREE.HalfFloatType,
-      }),
-      depthMaterial = new THREE.MeshDepthMaterial(),
-      screen = new THREE.Scene(),
-      screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
-      vertexShader =
-        "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
-      ambient = new GTAOPass(
-        scene,
-        camera,
-        1,
-        1,
-        undefined,
-        { distanceFallOff: 1, radius: 0.4, samples: 12, scale: 0.85, thickness: 0.6 },
-        { depthPhi: 2, normalPhi: 3, radius: 4, samples: 8 },
-      ),
-      compositeMaterial = new THREE.ShaderMaterial({
-        depthTest: false,
-        depthWrite: false,
-        fragmentShader: [
-          "varying vec2 vUv; uniform sampler2D colorMap,aoMap,depthMap; uniform vec2 texel;",
-          "void main() {",
-          " float centerDepth = texture2D(depthMap,vUv).r;",
-          " float ao = texture2D(aoMap,vUv).r; float weightSum = 1.0;",
-          " for (int x = -1; x <= 1; x++) { for (int y = -1; y <= 1; y++) {",
-          "   if (x == 0 && y == 0) continue;",
-          "   vec2 uv = vUv + vec2(float(x),float(y)) * texel;",
-          "   float weight = exp(-abs(texture2D(depthMap,uv).r-centerDepth)*3000.0);",
-          "   ao += texture2D(aoMap,uv).r * weight; weightSum += weight;",
-          " }}",
-          " gl_FragColor = vec4(texture2D(colorMap,vUv).rgb * clamp(ao/weightSum,0.45,1.0),1.0);",
-          " #include <tonemapping_fragment>",
-          " #include <colorspace_fragment>",
-          "}",
-        ].join("\n"),
-        uniforms: {
-          aoMap: { value: ambient.gtaoMap },
-          colorMap: { value: beauty.texture },
-          depthMap: { value: beauty.depthTexture },
-          texel: { value: new THREE.Vector2(1, 1) },
-        },
-        vertexShader,
-      }),
-      quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compositeMaterial),
-      size = new THREE.Vector2();
-    screen.add(quad);
-    ambient.setGBuffer(beauty.depthTexture);
-    ambient.output = GTAOPass.OUTPUT.Off;
-    let allocated = false;
-    return function renderDetail(detail = $("renderQuality").value !== "fast") {
-      updateMirrors(sceneRoot, detail && $("renderQuality").value === "high");
-      if (!detail || $("renderQuality").value === "fast") {
-        if (allocated && $("renderQuality").value === "fast") {
-          beauty.dispose();
-          ambient.dispose();
-          allocated = false;
-        }
-        renderBeauty();
+  let gpuInitialization;
+  async function createRenderer(parameters) {
+    gpuInitialization ??= (async () => {
+      const adapter = await navigator.gpu?.requestAdapter();
+      if (!adapter) {
         return;
       }
-      renderer.getDrawingBufferSize(size);
-      if (!allocated || beauty.width !== size.x || beauty.height !== size.y) {
-        beauty.setSize(size.x, size.y);
-        const scale = Math.min(0.5, Math.sqrt(500_000 / (size.x * size.y))),
-          width = Math.max(1, Math.ceil(size.x * scale)),
-          height = Math.max(1, Math.ceil(size.y * scale));
-        ambient.setSize(width, height);
-        compositeMaterial.uniforms.texel.value.set(1 / width, 1 / height);
-        allocated = true;
-      }
-      const target = renderer.getRenderTarget(),
-        { overrideMaterial } = scene,
-        { background } = scene,
-        { autoClearDepth } = renderer,
-        shadowsEnabled = renderer.shadowMap.enabled,
-        hidden = [];
-      for (const node of scene.children) {
-        if (node !== sceneRoot && node.visible && (node.isMesh || node.isGroup)) {
-          hidden.push(node);
-          node.visible = false;
-        }
-      }
-      sceneRoot.traverseVisible((node) => {
-        if (
-          node.isLine ||
-          node.userData.contact ||
-          (node.isMesh && [node.material].flat().some((m) => m.transparent && m.opacity < 0.98))
-        ) {
-          hidden.push(node);
-          node.visible = false;
-        }
+      const device = await adapter.requestDevice({
+        requiredFeatures: [...adapter.features],
+        requiredLimits: {
+          maxSampledTexturesPerShaderStage: adapter.limits.maxSampledTexturesPerShaderStage,
+          maxSamplersPerShaderStage: adapter.limits.maxSamplersPerShaderStage,
+        },
       });
-      try {
-        renderer.setRenderTarget(beauty);
-        renderer.clear();
-        scene.overrideMaterial = depthMaterial;
-        scene.background = undefined;
-        renderer.shadowMap.enabled = false;
+      return { adapter, device };
+    })().catch(() => null);
+    const gpu = await gpuInitialization,
+      renderer = new THREE.WebGPURenderer({ ...parameters, device: gpu?.device, forceWebGL: !gpu });
+    await renderer.init();
+    return renderer;
+  }
+  function createDetailRenderer(renderer, scene, sceneRoot, camera) {
+    let effects;
+    const size = new THREE.Vector2();
+    return function renderDetail(detail = $("renderQuality").value !== "fast") {
+      const quality = $("renderQuality").value;
+      updateMirrors(sceneRoot, detail && quality === "high");
+      if (!detail || quality === "fast") {
+        if (effects && quality === "fast") {
+          effects.processing.dispose();
+          effects.scenePass.dispose();
+          effects.ambient.dispose();
+          effects.ambient._noiseNode.value.dispose();
+          effects.filtered.noiseNode.value.dispose();
+          effects.filtered.dispose();
+          effects.antialias.textureNode.renderTarget.dispose();
+          effects.antialias.textureNode._quadMesh.material.dispose();
+          effects = undefined;
+        }
         renderer.render(scene, camera);
-        scene.overrideMaterial = overrideMaterial;
-        scene.background = background;
-        renderer.shadowMap.enabled = shadowsEnabled;
-        hidden.forEach((node) => {
-          node.visible = true;
-        });
-        renderBeauty();
-        renderer.autoClearDepth = autoClearDepth;
-        ambient.updateGtaoMaterial({ samples: $("renderQuality").value === "high" ? 24 : 12 });
-        ambient.render(renderer);
-        renderer.setRenderTarget(target);
-        quad.material = compositeMaterial;
-        renderer.render(screen, screenCamera);
-      } finally {
-        scene.overrideMaterial = overrideMaterial;
-        scene.background = background;
-        renderer.shadowMap.enabled = shadowsEnabled;
-        renderer.autoClearDepth = autoClearDepth;
-        hidden.forEach((node) => {
-          node.visible = true;
-        });
-        renderer.setRenderTarget(target);
+        return;
       }
+      if (!effects) {
+        const scenePass = TSL.pass(scene, camera, { samples: 0 }),
+          beauty = scenePass.getTextureNode("output"),
+          depth = scenePass.getTextureNode("depth"),
+          ambient = ao(depth, null, camera),
+          filtered = denoise(ambient.getTextureNode(), depth, null, camera),
+          processing = new THREE.PostProcessing(renderer),
+          antialias = fxaa(TSL.vec4(beauty.rgb.mul(filtered.r.clamp(0.45, 1)), beauty.a));
+        ambient.radius.value = 0.4;
+        ambient.thickness.value = 0.6;
+        ambient.scale.value = 0.85;
+        filtered.radius.value = 4;
+        processing.outputNode = antialias;
+        effects = { ambient, antialias, filtered, processing, scenePass };
+      }
+      renderer.getDrawingBufferSize(size);
+      effects.ambient.resolutionScale = Math.min(0.5, Math.sqrt(500_000 / (size.x * size.y)));
+      effects.ambient.samples.value = quality === "high" ? 24 : 12;
+      effects.processing.render();
     };
   }
   const examples = {
@@ -5259,7 +5047,7 @@
         "Could not copy. Select the token above and copy it manually.";
     }
   });
-  let assetStudio;
+  let assetStudio, assetStudioPending;
   function clearAssetPreview() {
     if (!assetStudio?.object) {
       return;
@@ -5267,7 +5055,7 @@
     assetStudio.scene.remove(assetStudio.object);
     assetStudio.object.traverse((node) => {
       if (node.isReflector) {
-        node.getRenderTarget().dispose();
+        node.reflection.dispose();
       }
       if (node.geometry && !templateGeometries.has(node.geometry)) {
         node.geometry.dispose();
@@ -5298,15 +5086,34 @@
     }
     studio.framing = false;
   }
-  function previewAsset(name) {
+  async function previewAsset(name) {
     if (!name || !assetBrowser.open) {
       return;
     }
+    if (assetStudioPending) {
+      await assetStudioPending.catch(() => null);
+      if (!assetBrowser.open || name !== selectedAsset) {
+        return;
+      }
+    }
     if (!assetStudio) {
       const scene = new THREE.Scene(),
-        camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100),
-        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }),
-        controls = new OrbitControls(camera, renderer.domElement);
+        camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+      let renderer;
+      assetStudioPending = createRenderer({ alpha: true, antialias: true });
+      try {
+        renderer = await assetStudioPending;
+      } catch (error) {
+        showStatus(`Could not load asset preview: ${error.message}`, "error");
+        return;
+      } finally {
+        assetStudioPending = undefined;
+      }
+      if (!assetBrowser.open) {
+        renderer.dispose();
+        return;
+      }
+      const controls = new OrbitControls(camera, renderer.domElement);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.05;
@@ -5358,6 +5165,9 @@
       });
       assetStudio = { camera, controls, environment, observer, renderer, scene, shadow };
       observer.observe($("assetPreview"));
+    }
+    if (name !== selectedAsset) {
+      return;
     }
     clearAssetPreview();
     const count = selectableGroups.length,
@@ -5417,7 +5227,6 @@
       assetStudio.shadow.material.dispose();
       assetStudio.environment.dispose();
       assetStudio.renderer.dispose();
-      assetStudio.renderer.forceContextLoss();
       assetStudio = undefined;
       $("assetPreview").replaceChildren();
     }
@@ -6323,12 +6132,10 @@
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#eff2ee");
   const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 250),
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = await createRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.info.autoReset = false;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.autoUpdate = false;
-  renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -6357,6 +6164,7 @@
   controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
   const sunlight = new THREE.DirectionalLight("#ffedd3", 2.4);
   sunlight.castShadow = true;
+  sunlight.shadow.autoUpdate = false;
   sunlight.shadow.mapSize.set(2048, 2048);
   sunlight.shadow.camera.left = -12;
   sunlight.shadow.camera.right = 12;
@@ -6377,8 +6185,14 @@
     renderDirty = true,
     lastBuildTime = 0;
   const lastView = new THREE.Matrix4(),
-    renderFixtures = createFixtureRenderer(renderer, scene, camera, sunlight),
-    renderDetail = createDetailRenderer(renderer, scene, sceneRoot, camera, renderFixtures);
+    renderDetail = createDetailRenderer(renderer, scene, sceneRoot, camera);
+  function invalidateShadows() {
+    scene.traverse((node) => {
+      if (node.shadow) {
+        node.shadow.needsUpdate = true;
+      }
+    });
+  }
   function requestRender() {
     renderDirty = true;
   }
@@ -6397,17 +6211,50 @@
     if (enclosure) {
       shadowRoot.add(enclosure);
     }
-    renderer.shadowMap.needsUpdate = true;
+    invalidateShadows();
   }
   function fixtureLight(parent, intensity, x, y, z) {
     const light = new THREE.PointLight("#ffe4ba", intensity, 0, 2);
     light.position.set(x, y, z);
     light.castShadow = true;
+    light.shadow.autoUpdate = false;
     light.shadow.mapSize.set(256, 256);
     light.shadow.camera.near = 0.01;
+    light.shadow.bias = -0.00005;
     light.shadow.normalBias = 0.005;
     parent.add(light);
     return light;
+  }
+  function budgetFixtureShadows() {
+    const { backend } = renderer,
+      textureLimit = backend.device
+        ? Math.min(
+            backend.device.limits.maxSampledTexturesPerShaderStage,
+            backend.device.limits.maxSamplersPerShaderStage,
+          )
+        : backend.gl.getParameter(backend.gl.MAX_TEXTURE_IMAGE_UNITS),
+      budget = Math.min(
+        backend.device ? Infinity : 4,
+        Math.max(0, Math.floor((textureLimit - 12) / 2)),
+      ),
+      fixtures = [],
+      position = new THREE.Vector3();
+    sceneRoot.updateMatrixWorld(true);
+    sceneRoot.traverse((node) => {
+      if (node.isPointLight) {
+        node.getWorldPosition(position);
+        fixtures.push({
+          light: node,
+          priority:
+            (node.userData.litIntensity ?? node.intensity) /
+            (1 + position.distanceToSquared(camera.position)),
+        });
+      }
+    });
+    fixtures.sort((a, b) => b.priority - a.priority);
+    fixtures.forEach(({ light }, index) => {
+      light.castShadow = index < budget;
+    });
   }
   function updateIndoorLights() {
     renderDirty = true;
@@ -6427,7 +6274,7 @@
         }
         const intensity = enabled ? node.userData.litIntensity : 0;
         if (node.intensity !== intensity || node.visible !== enabled) {
-          renderer.shadowMap.needsUpdate = true;
+          invalidateShadows();
         }
         node.intensity = intensity;
         node.visible = enabled;
@@ -6454,13 +6301,13 @@
   let motionResolution = false;
   $("renderQuality").addEventListener("change", () => {
     const profile = qualityProfiles[$("renderQuality").value],
-      shadowSize = Math.min(profile.shadow, renderer.capabilities.maxTextureSize);
+      shadowSize = Math.min(
+        profile.shadow,
+        renderer.backend.device?.limits.maxTextureDimension2D ?? 4096,
+      );
     if (sunlight.shadow.mapSize.x !== shadowSize) {
-      sunlight.shadow.map?.dispose();
-      /* eslint-disable unicorn/no-null -- Three.js recreates shadow targets only when map is null. */ sunlight.shadow.map =
-        null;
-      /* eslint-enable unicorn/no-null */ sunlight.shadow.mapSize.set(shadowSize, shadowSize);
-      renderer.shadowMap.needsUpdate = true;
+      sunlight.shadow.mapSize.set(shadowSize, shadowSize);
+      invalidateShadows();
     }
     resize();
   });
@@ -6490,63 +6337,69 @@
     }
   }
   const skyUniforms = {
-      day: { value: 1 },
-      moonDirection: { value: new THREE.Vector3() },
-      sunDirection: { value: new THREE.Vector3() },
-      twilight: { value: 0 },
+      day: TSL.uniform(1),
+      moonDirection: TSL.uniform(new THREE.Vector3()),
+      sunDirection: TSL.uniform(new THREE.Vector3()),
+      twilight: TSL.uniform(0),
     },
-    skyMaterial = new THREE.ShaderMaterial({
+    skyMaterial = new THREE.MeshBasicNodeMaterial({
       depthTest: false,
       depthWrite: false,
-      fragmentShader: [
-        "varying vec3 direction;",
-        "uniform vec3 sunDirection;",
-        "uniform vec3 moonDirection;",
-        "uniform float day;",
-        "uniform float twilight;",
-        "float hash(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }",
-        "void main() {",
-        "vec3 ray = normalize(direction);",
-        "float height = max(ray.y, 0.0);",
-        "float horizon = pow(1.0 - height, 5.0);",
-        "vec3 night = mix(vec3(0.002,0.004,0.012), vec3(0.012,0.018,0.03), horizon);",
-        "vec3 daylight = mix(vec3(0.12,0.32,0.64), vec3(0.65,0.76,0.8), horizon);",
-        "vec3 color = mix(night, daylight, day);",
-        "float facingSun = pow(max(dot(ray, normalize(vec3(sunDirection.x,0.001,sunDirection.z))),0.0),8.0);",
-        "color += vec3(0.55,0.14,0.035) * twilight * horizon * facingSun;",
-        "float sunAngle = dot(ray, sunDirection);",
-        "color += vec3(1.0,0.65,0.3) * pow(max(sunAngle,0.0),256.0) * day * 0.35;",
-        "color += vec3(8.0,6.5,4.0) * smoothstep(0.999986,0.999991,sunAngle) * step(0.0,ray.y);",
-        "vec2 starUV = vec2(atan(ray.z,ray.x),asin(ray.y)) * 180.0;",
-        "vec3 cell = vec3(floor(starUV),0.0);",
-        "float star = step(0.992,hash(cell)) * (1.0-smoothstep(0.06,0.24,length(fract(starUV)-0.5)));",
-        "color += vec3(star * 2.0) * (1.0-day) * (1.0-twilight) * smoothstep(0.0,0.15,ray.y);",
-        "float moonCos = dot(ray,moonDirection);",
-        "float moonRadius = 0.0045;",
-        "if (moonCos > cos(moonRadius) && ray.y > 0.0) {",
-        "vec3 tangent = (ray - moonDirection * moonCos) / moonRadius;",
-        "vec3 normal = tangent - moonDirection * sqrt(max(0.0,1.0-dot(tangent,tangent)));",
-        "float lit = max(dot(normal,sunDirection),0.0);",
-        "color = vec3(0.008,0.01,0.016) + vec3(0.8,0.83,0.88) * lit;",
-        "}",
-        "color = mix(vec3(0.006,0.009,0.012) + vec3(0.12,0.16,0.1)*day, color, smoothstep(-0.025,0.0,ray.y));",
-        "gl_FragColor = vec4(color,1.0);",
-        "#include <tonemapping_fragment>",
-        "#include <colorspace_fragment>",
-        "}",
-      ].join("\n"),
       side: THREE.BackSide,
-      uniforms: skyUniforms,
-      vertexShader: [
-        "varying vec3 direction;",
-        "void main() {",
-        "direction = position;",
-        "vec4 clip = projectionMatrix * vec4(mat3(viewMatrix) * position, 1.0);",
-        "gl_Position = clip.xyww;",
-        "}",
-      ].join("\n"),
-    }),
-    sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMaterial);
+    });
+  skyMaterial.vertexNode = TSL.Fn(() => {
+    const direction = TSL.cameraViewMatrix.mul(TSL.vec4(TSL.positionGeometry, 0)),
+      clip = TSL.cameraProjectionMatrix.mul(TSL.vec4(direction.xyz, 1));
+    return TSL.vec4(clip.xy, clip.w, clip.w);
+  })();
+  skyMaterial.colorNode = TSL.Fn(() => {
+    const { day, twilight, sunDirection, moonDirection } = skyUniforms,
+      ray = TSL.positionGeometry.normalize(),
+      horizon = ray.y.max(0).oneMinus().pow(5),
+      night = TSL.mix(TSL.vec3(0.002, 0.004, 0.012), TSL.vec3(0.012, 0.018, 0.03), horizon),
+      daylight = TSL.mix(TSL.vec3(0.12, 0.32, 0.64), TSL.vec3(0.65, 0.76, 0.8), horizon),
+      color = TSL.mix(night, daylight, day).toVar(),
+      facingSun = ray
+        .dot(TSL.vec3(sunDirection.x, 0.001, sunDirection.z).normalize())
+        .max(0)
+        .pow(8),
+      sunAngle = ray.dot(sunDirection),
+      starUV = TSL.vec2(TSL.atan(ray.z, ray.x), ray.y.asin()).mul(180),
+      cell = TSL.vec3(starUV.floor(), 0).mul(0.1031).fract().toVar();
+    color.addAssign(TSL.vec3(0.55, 0.14, 0.035).mul(twilight).mul(horizon).mul(facingSun));
+    color.addAssign(TSL.vec3(1, 0.65, 0.3).mul(sunAngle.max(0).pow(256)).mul(day).mul(0.35));
+    color.addAssign(
+      TSL.vec3(8, 6.5, 4)
+        .mul(TSL.smoothstep(0.999986, 0.999991, sunAngle))
+        .mul(TSL.step(0, ray.y)),
+    );
+    cell.addAssign(cell.dot(cell.yzx.add(33.33)));
+    const star = TSL.step(0.992, cell.x.add(cell.y).mul(cell.z).fract()).mul(
+      TSL.smoothstep(0.06, 0.24, starUV.fract().sub(0.5).length()).oneMinus(),
+    );
+    color.addAssign(
+      TSL.vec3(star.mul(2))
+        .mul(day.oneMinus())
+        .mul(twilight.oneMinus())
+        .mul(TSL.smoothstep(0, 0.15, ray.y)),
+    );
+    const moonCos = ray.dot(moonDirection),
+      moonRadius = 0.0045;
+    TSL.If(moonCos.greaterThan(Math.cos(moonRadius)).and(ray.y.greaterThan(0)), () => {
+      const tangent = ray.sub(moonDirection.mul(moonCos)).div(moonRadius),
+        normal = tangent.sub(
+          moonDirection.mul(TSL.float(1).sub(tangent.dot(tangent)).max(0).sqrt()),
+        ),
+        lit = normal.dot(sunDirection).max(0);
+      color.assign(TSL.vec3(0.008, 0.01, 0.016).add(TSL.vec3(0.8, 0.83, 0.88).mul(lit)));
+    });
+    return TSL.mix(
+      TSL.vec3(0.006, 0.009, 0.012).add(TSL.vec3(0.12, 0.16, 0.1).mul(day)),
+      color,
+      TSL.smoothstep(-0.025, 0, ray.y),
+    );
+  })();
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMaterial);
   sky.frustumCulled = false;
   sky.renderOrder = -1000;
   scene.add(sky);
@@ -6557,7 +6410,7 @@
       return;
     }
     if (!["sunExposure", "sunExposureMode"].includes(event?.target?.id)) {
-      renderer.shadowMap.needsUpdate = true;
+      invalidateShadows();
     }
     const { altitude, azimuth } = solarPosition(
         $("sunDate").value,
@@ -6597,7 +6450,7 @@
     daylightStrength.value = Math.min(1, daylight * 4);
     scene.environmentIntensity = daylightStrength.value * 0.22;
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
-    sunlight.castShadow = altitude > 0;
+    sunlight.visible = altitude > 0;
     if (previousDaylight !== altitude > 0) {
       fixtureOverride = undefined;
     }
@@ -6679,7 +6532,7 @@
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    texture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
     return texture;
   }
   const grainTexture = surfaceTexture("wood"),
@@ -6805,7 +6658,7 @@
   stripeTexture.wrapS = THREE.RepeatWrapping;
   stripeTexture.wrapT = THREE.RepeatWrapping;
   stripeTexture.colorSpace = THREE.SRGBColorSpace;
-  stripeTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  stripeTexture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
   material.stripedLinen.map = stripeTexture;
   material.stripedLinen.userData.textureScale = 0.22;
   material.stripedLinen.bumpMap = weaveTexture;
@@ -6834,7 +6687,7 @@
   const reedTexture = new THREE.CanvasTexture(reedCanvas);
   reedTexture.wrapS = THREE.RepeatWrapping;
   reedTexture.wrapT = THREE.RepeatWrapping;
-  reedTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  reedTexture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
   material.wicker.map = reedTexture;
   material.wicker.bumpMap = reedTexture;
   material.wicker.bumpScale = 0.0015;
@@ -6890,7 +6743,7 @@
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       texture.colorSpace = slot === "map" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      texture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
       surfaces[slot] = texture;
     }
     return surfaces;
@@ -6919,7 +6772,7 @@
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       texture.colorSpace = slot === "map" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      texture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
       surfaces[slot] = texture;
       canvases.push(context);
       pixels.push(context.createImageData(size, size));
@@ -7007,7 +6860,7 @@
   }
   material.kilim.map = new THREE.CanvasTexture(kilimCanvas);
   material.kilim.map.colorSpace = THREE.SRGBColorSpace;
-  material.kilim.map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  material.kilim.map.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
   material.kilim.bumpMap = weaveTexture;
   material.kilim.bumpScale = 0.001;
   for (const key of ["stone", "terracotta"]) {
@@ -7083,7 +6936,7 @@
   material.flagstone.userData.textureScale = 2.4;
   material.flagstone.color.set("#e3dfd4");
   material.flagstone.roughness = 0.85;
-  pavingTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  pavingTexture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
   const lawnCanvas = document.createElement("canvas");
   lawnCanvas.width = 256;
   lawnCanvas.height = 256;
@@ -7108,7 +6961,7 @@
   lawnTexture.wrapS = THREE.RepeatWrapping;
   lawnTexture.wrapT = THREE.RepeatWrapping;
   lawnTexture.colorSpace = THREE.SRGBColorSpace;
-  lawnTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  lawnTexture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
   material.grass.map = lawnTexture;
   material.grass.color.set("#a2ad80");
   material.grass.bumpMap = lawnTexture;
@@ -7225,7 +7078,7 @@
               texture.colorSpace = slot === "map" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
               texture.wrapS = THREE.RepeatWrapping;
               texture.wrapT = THREE.RepeatWrapping;
-              texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+              texture.anisotropy = Math.min(8, renderer.getMaxAnisotropy());
               return texture;
             } finally {
               URL.revokeObjectURL(url);
@@ -10058,7 +9911,7 @@
   });
   function updateFloorVisibility() {
     renderDirty = true;
-    renderer.shadowMap.needsUpdate = true;
+    invalidateShadows();
     clearHover();
     const gardens = new Set(
       currentProgram?.rooms.filter((room) => room.garden).map((room) => room.name),
@@ -10125,7 +9978,7 @@
     shadowRoot.clear();
     sceneRoot.traverse((node) => {
       if (node.isReflector) {
-        node.getRenderTarget().dispose();
+        node.reflection.dispose();
       }
       if (node.isLight) {
         node.shadow?.dispose();
@@ -10338,6 +10191,7 @@
       setFirstPerson(false);
       setFirstPerson(true);
     }
+    budgetFixtureShadows();
     return true;
   }
   function resize() {
@@ -11099,7 +10953,7 @@
       const target = wallsCollapsed ? 0.045 : 1;
       if (walls.scale.y !== target) {
         renderDirty = true;
-        renderer.shadowMap.needsUpdate = true;
+        invalidateShadows();
       }
       walls.scale.y += (target - walls.scale.y) * blend;
       if (Math.abs(target - walls.scale.y) < 0.001) {
@@ -11171,7 +11025,7 @@
       const renderStarted = performance.now();
       renderDetail(detailActive);
       const stats = $("renderStats");
-      stats.textContent = `${renderer.info.render.calls.toLocaleString()} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles · ${lastBuildTime.toFixed(0)} ms build`;
+      stats.textContent = `${renderer.info.render.drawCalls.toLocaleString()} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles · ${lastBuildTime.toFixed(0)} ms build`;
       stats.title = `${renderer.info.memory.geometries} geometries · ${renderer.info.memory.textures} textures · ${(performance.now() - renderStarted).toFixed(1)} ms CPU submission (not GPU frame time)`;
       renderDirty = false;
       renderProgress();
@@ -11790,12 +11644,12 @@
     compile(true);
   }
   loadSurfaceScans();
-})().catch((_error) => {
+})().catch((error) => {
   document.querySelector("#renderProgress")?.setAttribute("hidden", "");
   document.querySelector("#viewport")?.setAttribute("aria-busy", "false");
   const message = document.querySelector("#message span:last-child");
   if (message) {
-    message.textContent = "Could not load the editor or 3D libraries. Check your connection.";
+    message.textContent = `Could not initialize the editor: ${error.message}`;
     message.parentElement.hidden = false;
     message.parentElement.className = "message error";
   }
