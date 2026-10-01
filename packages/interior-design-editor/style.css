@@ -1118,8 +1118,7 @@ button.icon-button {
   .viewport-caption {
     display: none;
   }
-}
-/* The preview can also narrow when the source panel is resized on desktop. */
+} /* The preview can also narrow when the source panel is resized on desktop. */
 @container (max-width: 440px) {
   .preview-bar,
   .scene-toolbar {

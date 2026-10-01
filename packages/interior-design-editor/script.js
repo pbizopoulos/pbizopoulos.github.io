@@ -844,8 +844,6 @@ const initializeStudio = async function initializeStudio() {
             for (let x = 0; x < 256; x += 1) {
               seed = (Math.imul(seed, 1_664_525) + 1_013_904_223 + 4_294_967_296) % 4_294_967_296;
               const noise = seed / 4_294_967_296;
-              // Low-amplitude grain keeps close views tactile without
-              // adding textures or shimmering in distant, mipmapped views.
               const warp = Math.sin((x / 256) * Math.PI * 2) * 2,
                 grain = (y / 256) * Math.PI * 24 + warp;
               const value =
@@ -873,19 +871,11 @@ const initializeStudio = async function initializeStudio() {
         weave = texture("fabric"),
         plaster = texture("plaster"),
         physical = (color, options = {}) =>
-          new THREE.MeshPhysicalNodeMaterial({
-            color,
-            roughness: 0.7,
-            ...options,
-          });
+          new THREE.MeshPhysicalNodeMaterial({ color, roughness: 0.7, ...options });
       this.material = {
         accent: physical("#b56e46", { map: weave, sheen: 0.5 }),
         brass: physical("#b69b60", { metalness: 0.85, roughness: 0.26 }),
-        ceramic: physical("#eee7d9", {
-          clearcoat: 0.6,
-          clearcoatRoughness: 0.2,
-          roughness: 0.23,
-        }),
+        ceramic: physical("#eee7d9", { clearcoat: 0.6, clearcoatRoughness: 0.2, roughness: 0.23 }),
         clay: physical("#ad6549", { roughness: 0.78 }),
         concrete: physical("#a5a59b", { map: plaster, roughness: 0.92 }),
         darkWood: physical("#62503e", { map: woodMap, roughness: 0.48 }),
@@ -904,32 +894,15 @@ const initializeStudio = async function initializeStudio() {
           roughness: 0.06,
           transparent: true,
         }),
-        glow: physical("#fff2d8", {
-          emissive: "#ffdfad",
-          emissiveIntensity: 1.5,
-          roughness: 0.5,
-        }),
-        // A quiet studio backdrop needs no texture or bump sampling.
-        ground: new THREE.MeshStandardNodeMaterial({ color: "#e3dfd5", roughness: 1 }),
+        glow: physical("#fff2d8", { emissive: "#ffdfad", emissiveIntensity: 1.5, roughness: 0.5 }),
         grass: physical("#8a946d", { map: plaster, roughness: 1 }),
+        ground: new THREE.MeshStandardNodeMaterial({ color: "#e3dfd5", roughness: 1 }),
         leaf: physical("#435941", { roughness: 0.82, side: THREE.DoubleSide }),
-        leafLight: physical("#738261", {
-          roughness: 0.85,
-          side: THREE.DoubleSide,
-        }),
-        linen: physical("#e6ddcc", {
-          bumpMap: weave,
-          bumpScale: 0.004,
-          map: weave,
-          sheen: 0.6,
-        }),
+        leafLight: physical("#738261", { roughness: 0.85, side: THREE.DoubleSide }),
+        linen: physical("#e6ddcc", { bumpMap: weave, bumpScale: 0.004, map: weave, sheen: 0.6 }),
         metal: physical("#515855", { metalness: 0.85, roughness: 0.27 }),
         mirror: physical("#fafafa", { metalness: 1, roughness: 0.015 }),
-        rug: physical("#c2b496", {
-          bumpMap: weave,
-          bumpScale: 0.015,
-          map: weave,
-        }),
+        rug: physical("#c2b496", { bumpMap: weave, bumpScale: 0.015, map: weave }),
         screen: physical("#13242a", { metalness: 0.35, roughness: 0.17 }),
         soil: physical("#45362a"),
         stone: physical("#c5beb0", {
@@ -1420,12 +1393,7 @@ const initializeStudio = async function initializeStudio() {
       }
     }
   }
-  const normals = {
-      east: [1, 0, 0],
-      north: [0, 0, -1],
-      south: [0, 0, 1],
-      west: [-1, 0, 0],
-    },
+  const normals = { east: [1, 0, 0], north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0] },
     turns = { east: -Math.PI / 2, north: 0, south: Math.PI, west: Math.PI / 2 };
   function buildScene(program, library) {
     const root = new THREE.Group(),
@@ -1510,6 +1478,7 @@ const initializeStudio = async function initializeStudio() {
       roomGroups.push(roomRoot);
       box(roomRoot, w, 0.14, d, 0, -0.075, 0, m.stone, 0);
       const finish = room.surface === "auto" ? "wood" : room.surface;
+      let floor;
       if (finish === "wood") {
         const plankLength = 1.2,
           plankWidth = 0.16,
@@ -1535,7 +1504,7 @@ const initializeStudio = async function initializeStudio() {
             );
           }
         }
-        const floor = new THREE.InstancedMesh(
+        floor = new THREE.InstancedMesh(
           library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
           m.wood,
           transforms.length,
@@ -1544,23 +1513,17 @@ const initializeStudio = async function initializeStudio() {
           floor.setMatrixAt(i, matrix);
           floor.setColorAt(i, colors[i]);
         });
-        owned.push(floor);
-        floor.receiveShadow = true;
-        roomRoot.add(floor);
       } else {
         const tileSize = finish === "tile" ? 0.6 : finish === "terracotta" ? 0.3 : 1.2,
           cols = Math.ceil((w - 0.001) / tileSize),
           rows = Math.ceil((d - 0.001) / tileSize),
           matrix = new THREE.Matrix4(),
           color = new THREE.Color();
-        // One draw per room, including clipped perimeter tiles. Geometry and
-        // material remain shared; only the instance buffer belongs to the scene.
-        const floor = new THREE.InstancedMesh(
+        floor = new THREE.InstancedMesh(
           library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
           m[finish] || m.stone,
           cols * rows,
         );
-        // Write straight into the buffer instead of retaining a Matrix4 per tile.
         for (let col = 0; col < cols; col += 1) {
           for (let row = 0; row < rows; row += 1) {
             const width = Math.min(tileSize, w - col * tileSize),
@@ -1586,10 +1549,10 @@ const initializeStudio = async function initializeStudio() {
         if (floor.instanceColor) {
           floor.instanceColor.needsUpdate = true;
         }
-        floor.receiveShadow = true;
-        owned.push(floor);
-        roomRoot.add(floor);
       }
+      floor.receiveShadow = true;
+      owned.push(floor);
+      roomRoot.add(floor);
       if (room.kind === "room") {
         const ceiling = box(roomRoot, w, 0.1, d, 0, room.height + 0.05, 0, m.white, 0);
         ceiling.userData.room = room;
@@ -1779,12 +1742,7 @@ const initializeStudio = async function initializeStudio() {
     }
     for (const entry of walls) {
       const { group, room, side, length } = entry,
-        opposite = {
-          east: "west",
-          north: "south",
-          south: "north",
-          west: "east",
-        }[side],
+        opposite = { east: "west", north: "south", south: "north", west: "east" }[side],
         shared = entry.rooms.length > 1,
         door =
           room.doors.includes(side) || entry.rooms.slice(1).some((r) => r.doors.includes(opposite)),
@@ -2167,20 +2125,11 @@ const initializeStudio = async function initializeStudio() {
         }
         face.castShadow = false;
         face.receiveShadow = false;
-        const reflected = reflector({
-          bounces: false,
-          resolutionScale: 0.5,
-          samples: 0,
-        });
+        const reflected = reflector({ bounces: false, resolutionScale: 0.5, samples: 0 });
         face.add(reflected.target);
         const material = new THREE.MeshBasicNodeMaterial();
         material.colorNode = reflected;
-        this.reflectors.push({
-          face,
-          material,
-          node: reflected,
-          original: face.material,
-        });
+        this.reflectors.push({ face, material, node: reflected, original: face.material });
       }
     }
     disposeReflections() {
@@ -2214,8 +2163,6 @@ const initializeStudio = async function initializeStudio() {
       this.renderer.setSize(width, height);
       const aspect = width / height;
       if (this.model && this.mode === "3d" && aspect !== this.perspective.aspect) {
-        // Preserve the orbit and the user's zoom while compensating for a
-        // narrower horizontal field of view after resizing the workspace.
         const framing = Math.max(1, 1.15 / aspect) / Math.max(1, 1.15 / this.perspective.aspect);
         this.perspective.position
           .sub(this.controls.target)
@@ -2707,27 +2654,19 @@ const initializeStudio = async function initializeStudio() {
       const size = this.renderer.getDrawingBufferSize(new THREE.Vector2()),
         width = Math.round(size.x),
         height = Math.round(size.y),
-        target = new THREE.RenderTarget(width, height, {
-          type: THREE.UnsignedByteType,
-        });
-      // Output passes already encode display colors. A linear attachment stores
-      // those bytes without an additional hardware sRGB conversion.
+        target = new THREE.RenderTarget(width, height, { type: THREE.UnsignedByteType });
       target.texture.colorSpace = THREE.LinearSRGBColorSpace;
       const { moving } = this,
         previousOutput = this.renderer.getOutputRenderTarget();
       this.moving = false;
       try {
         if (this.quality === "fast") {
-          // Direct rendering otherwise treats this as an intermediate target
-          // and skips the tone mapping used by the live canvas.
           this.renderer.setOutputRenderTarget(target);
         }
         this.renderer.setRenderTarget(target);
         this.render();
         const pixels = await this.renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height),
           packed = new Uint8ClampedArray(width * height * 4),
-          // WebGPU pads each RGBA8 row to 256 bytes, except the final row.
-          // Dividing buffer length by height therefore corrupts unaligned widths.
           stride = this.backend === "WebGPU" ? Math.ceil((width * 4) / 256) * 256 : width * 4;
         for (let row = 0; row < height; row += 1) {
           const source = this.backend === "WebGPU" ? row : height - 1 - row;
@@ -2759,9 +2698,7 @@ const initializeStudio = async function initializeStudio() {
     }
     async previewImage(name) {
       this.busy = true;
-      const target = new THREE.RenderTarget(512, 384, {
-        type: THREE.UnsignedByteType,
-      });
+      const target = new THREE.RenderTarget(512, 384, { type: THREE.UnsignedByteType });
       target.texture.colorSpace = THREE.SRGBColorSpace;
       const scene = new THREE.Scene();
       scene.background = new THREE.Color("#e5e3db");
@@ -2846,8 +2783,6 @@ const initializeStudio = async function initializeStudio() {
       ]),
     ),
     sourceMatcher = new MatchDecorator({
-      regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
       decoration: (match) =>
         sourceMarks[
           match[1]
@@ -2860,6 +2795,8 @@ const initializeStudio = async function initializeStudio() {
                   ? "number"
                   : "separator"
         ],
+      regexp:
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -2885,9 +2822,7 @@ const initializeStudio = async function initializeStudio() {
     studio;
   const doc = () => editor.state.doc.toString(),
     replaceSource = (source) =>
-      editor.dispatch({
-        changes: { from: 0, insert: source, to: editor.state.doc.length },
-      }),
+      editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } }),
     guarded =
       (action) =>
       (...args) =>
@@ -2981,10 +2916,7 @@ const initializeStudio = async function initializeStudio() {
       const line = editor.state.doc.line(token.line);
       editor.dispatch({
         effects: EditorView.scrollIntoView(line.from, { y: "nearest" }),
-        selection: {
-          anchor: line.from + token.start,
-          head: line.from + token.end,
-        },
+        selection: { anchor: line.from + token.start, head: line.from + token.end },
       });
     }
   }
@@ -3182,10 +3114,7 @@ const initializeStudio = async function initializeStudio() {
           foldGutter(),
           folding,
           sourceHighlighting,
-          EditorView.contentAttributes.of({
-            "aria-label": "Design source",
-            spellcheck: "false",
-          }),
+          EditorView.contentAttributes.of({ "aria-label": "Design source", spellcheck: "false" }),
           EditorState.tabSize.of(2),
           keymap.of([
             {
