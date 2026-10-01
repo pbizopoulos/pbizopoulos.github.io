@@ -2,6 +2,7 @@
  * PLAYWRIGHT_MODULE and CHROME_PATH support an existing browser installation.
  * INTERIOR_SCREENSHOTS optionally saves visual review captures.
  * INTERIOR_CHECK=walls limits the run to wall finish and reference-view checks.
+ * INTERIOR_CHECK=exposure compares scene workload and checks camera controls.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,6 +12,7 @@ const baseURL = process.argv[2] || 'http://localhost:8765/packages/interior-desi
 const baseline = process.argv[3];
 const output = process.env.INTERIOR_SCREENSHOTS;
 const wallOnly = process.env.INTERIOR_CHECK === 'walls';
+const exposureOnly = process.env.INTERIOR_CHECK === 'exposure';
 const additionalSceneDrawAllowance = 6;
 const sceneTriangleRatioLimit = 1.06;
 const additionalSceneTriangleAllowance = 2000;
@@ -34,7 +36,7 @@ async function check(variant) {
       const response = await route.fetch();
       const source = variant === 'before' ? fs.readFileSync(baseline, 'utf8') : await response.text();
       const body = source.replace('  const requestedExample =',
-        '  document.querySelector("#renderQuality").value="fast"; globalThis.assetQuality = { THREE, catalog, makeFurniture, material, renderer, editor, sceneRoot, camera, get studio(){return assetStudio}, get program(){return currentProgram}, get warnings(){return findCollisions()}, get ready(){return !!currentProgram&&!sceneBuilding&&compiledSource===editor.state.doc.toString()}, get idle(){return !renderDirty&&performance.now()-lastCameraChange>250&&(document.querySelector("#renderQuality").value==="fast"||detailActive)} };\n  const requestedExample =');
+        '  document.querySelector("#renderQuality").value="fast"; globalThis.assetQuality = { THREE, catalog, makeFurniture, material, renderer, editor, sceneRoot, camera, get studio(){return assetStudio}, get program(){return currentProgram}, get warnings(){return findCollisions()}, get ready(){return !!currentProgram&&!sceneBuilding&&compiledSource===editor.state.doc.toString()}, get idle(){return (typeof indoorExposureAdjustment==="undefined"||indoorExposureAdjustment===desiredIndoorExposureAdjustment)&&!renderDirty&&performance.now()-lastCameraChange>250&&(document.querySelector("#renderQuality").value==="fast"||detailActive)} };\n  const requestedExample =');
       assert.ok(body.includes('globalThis.assetQuality'), 'The editor instrumentation anchor must exist');
       await route.fulfill({ response, body });
     });
@@ -51,7 +53,7 @@ async function check(variant) {
       assetQuality.material.wallTile?.addEventListener('dispose', () => { globalThis.wallTileDisposals += 1; });
     });
     await page.waitForFunction(() => assetQuality.material.wood.map.image.width === 512, null, { timeout: 15000 });
-    if (!wallOnly) {
+    if (!wallOnly && !exposureOnly) {
       await page.click('#assetsButton');
       for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine', 'shower', 'frameless_shower']) {
         await page.fill('#assetSearch', name);
@@ -164,6 +166,43 @@ async function check(variant) {
         await ready();
         await capture(`reference-${view}`);
       }
+      if (await page.locator('#sunExposureMode').count()) {
+        const manualEV = Number(await page.inputValue('#sunExposure'));
+        const baseExposure = 1.05 * 2 ** manualEV;
+        const adaptiveExposure = await page.evaluate(() => assetQuality.renderer.toneMappingExposure);
+        assert.ok(adaptiveExposure > baseExposure + 0.1, 'An enclosed daytime bathroom should adapt');
+        assert.ok(adaptiveExposure <= baseExposure * 2 ** 0.85 + 0.001, 'Adaptation must stay within its exposure budget');
+        await page.click('.scene-options > summary');
+        await page.click('.sun-panel summary');
+        await page.selectOption('#sunExposureMode', 'fixed');
+        await ready();
+        const fixedExposure = await page.evaluate(() => assetQuality.renderer.toneMappingExposure);
+        assert.ok(Math.abs(fixedExposure - baseExposure) < 0.0001, 'Fixed exposure must restore the manual value');
+        await page.click('.sun-panel summary');
+        await capture('exposure-fixed');
+        await page.click('.sun-panel summary');
+        const exposureRebuildsShadows = await page.evaluate((value) => {
+          const input = document.querySelector('#sunExposure');
+          input.value = String(value);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          return assetQuality.renderer.shadowMap.needsUpdate;
+        }, manualEV + 1);
+        assert.equal(exposureRebuildsShadows, false, 'Exposure changes must retain cached shadows');
+        await ready();
+        assert.ok(Math.abs(await page.evaluate(() => assetQuality.renderer.toneMappingExposure) - baseExposure * 2) < 0.0001, 'One EV must double exposure');
+        await page.fill('#sunExposure', '');
+        await ready();
+        assert.ok(Number.isFinite(await page.evaluate(() => assetQuality.renderer.toneMappingExposure)), 'Incomplete exposure input must preserve a finite render');
+        await page.fill('#sunExposure', String(manualEV));
+        await page.selectOption('#sunExposureMode', 'adaptive');
+        await ready();
+        await capture('exposure-controls');
+        await page.click('.scene-options > summary');
+        await page.click('#resetButton');
+        await ready();
+        assert.ok(Math.abs(await page.evaluate(() => assetQuality.renderer.toneMappingExposure) - baseExposure) < 0.0001, '3D overview must use fixed exposure');
+        console.log('CAMERA EXPOSURE', JSON.stringify({ adaptiveExposure, fixedExposure, manualEV }));
+      }
     }
     const frame = await page.evaluate(() => assetQuality.renderer.info.render.frame);
     await page.waitForTimeout(600);
@@ -185,5 +224,5 @@ async function check(variant) {
       assert.ok(after[name].triangles <= before[name].triangles * sceneTriangleRatioLimit + additionalSceneTriangleAllowance, `${name} geometry budget`);
     }
   }
-  console.log(wallOnly ? 'WALL FINISH / CONTINUITY / REFERENCE VIEWS / BROWSER / IDLE CHECKS PASS' : 'ASSET GEOMETRY / BASIN DEPTH / SCENES / BROWSER / IDLE / WORKLOAD CHECKS PASS');
+  console.log(wallOnly || exposureOnly ? 'SCENES / WALL CONTINUITY / CAMERA EXPOSURE / BROWSER / IDLE / WORKLOAD CHECKS PASS' : 'ASSET GEOMETRY / BASIN DEPTH / SCENES / BROWSER / IDLE / WORKLOAD CHECKS PASS');
 })().catch((error) => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });

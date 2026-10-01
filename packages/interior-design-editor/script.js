@@ -1,5 +1,6 @@
 /* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const defaultRoomHeight = 2.6,
+    baseCameraExposure = 1.05,
     walkEyeHeight = 1.8,
     showerGlassOpacity = { edge: 0.36, face: 0.13 },
     roomStyles = ["warm", "blue", "neutral", "liminal", "industrial", "aquatic", "mediterranean"],
@@ -2872,6 +2873,7 @@
           }
           return new THREE.Vector4(opening.x, opening.z, weight / Math.sqrt(area), 0);
         });
+      room.daylightAccess = openings.reduce((total, opening) => total + opening.z, 0);
       while (openings.length < 4) {
         openings.push(new THREE.Vector4());
       }
@@ -6367,6 +6369,9 @@
   const shadowRoot = new THREE.Group(),
     shadowMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
   let fixtureOverride,
+    cameraExposureCompensation = 0,
+    indoorExposureAdjustment = 0,
+    desiredIndoorExposureAdjustment = 0,
     previousDaylight,
     renderDirty = true,
     lastBuildTime = 0;
@@ -6455,7 +6460,16 @@
     }
     resize();
   });
-  const sunFields = ["Date", "Time", "Latitude", "Longitude", "Offset", "Orientation", "Exposure"],
+  const sunFields = [
+      "Date",
+      "Time",
+      "Latitude",
+      "Longitude",
+      "Offset",
+      "Orientation",
+      "Exposure",
+      "ExposureMode",
+    ],
     sharedSettings = new URLSearchParams(location.hash.slice(1)),
     today = new Date();
   $("sunDate").value =
@@ -6532,12 +6546,14 @@
   sky.frustumCulled = false;
   sky.renderOrder = -1000;
   scene.add(sky);
-  function updateSun() {
+  function updateSun(event) {
     renderDirty = true;
-    renderer.shadowMap.needsUpdate = true;
     if (!$("sunSettings").checkValidity()) {
       $("sunStatus").textContent = "Enter a valid date, time, and values within the shown ranges.";
       return;
+    }
+    if (!["sunExposure", "sunExposureMode"].includes(event?.target?.id)) {
+      renderer.shadowMap.needsUpdate = true;
     }
     const { altitude, azimuth } = solarPosition(
         $("sunDate").value,
@@ -6571,7 +6587,9 @@
       )
       .multiplyScalar(radius * 3)
       .add(sunlight.target.position);
-    renderer.toneMappingExposure = 1.05 * 2 ** $("sunExposure").valueAsNumber;
+    cameraExposureCompensation = $("sunExposure").valueAsNumber;
+    renderer.toneMappingExposure =
+      baseCameraExposure * 2 ** (cameraExposureCompensation + indoorExposureAdjustment);
     daylightStrength.value = Math.min(1, daylight * 4);
     scene.environmentIntensity = daylightStrength.value * 0.22;
     sunlight.intensity = altitude > 0 ? 2.4 * Math.min(1, daylight * 4) : 0;
@@ -10982,6 +11000,30 @@
     }
   }
   $("walkthroughButton").addEventListener("click", startWalkthrough);
+  function indoorExposureTarget() {
+    if (sceneBuilding) {
+      return indoorExposureAdjustment;
+    }
+    if (
+      !firstPerson ||
+      !currentProgram ||
+      $("sunExposureMode").value !== "adaptive" ||
+      daylightStrength.value === 0
+    ) {
+      return 0;
+    }
+    const floor = Math.round((camera.position.y - walkEyeHeight) / 3),
+      room = currentProgram.rooms.find(
+        (area) =>
+          area.kind === "room" &&
+          area.floor === floor &&
+          Math.abs(camera.position.x - area.centerX) < (area.cols * currentProgram.grid) / 2 &&
+          Math.abs(camera.position.z - area.centerZ) < (area.rows * currentProgram.grid) / 2,
+      );
+    return room
+      ? 0.85 * (1 - Math.min(1, (room.daylightAccess ?? 0) / 1.2)) * daylightStrength.value
+      : 0;
+  }
   let lastFrameTime = performance.now(),
     lastCameraChange = 0,
     detailActive = false;
@@ -11052,7 +11094,22 @@
       lastView.copy(camera.matrixWorld);
       lastCameraChange = time;
     }
-    const moving = Boolean(currentProgram) && time - lastCameraChange <= 180;
+    if (renderDirty) {
+      desiredIndoorExposureAdjustment = indoorExposureTarget();
+    }
+    const exposureAdapting =
+      Math.abs(desiredIndoorExposureAdjustment - indoorExposureAdjustment) > 0.001;
+    if (indoorExposureAdjustment !== desiredIndoorExposureAdjustment) {
+      indoorExposureAdjustment +=
+        (desiredIndoorExposureAdjustment - indoorExposureAdjustment) * blend;
+      if (Math.abs(desiredIndoorExposureAdjustment - indoorExposureAdjustment) < 0.001) {
+        indoorExposureAdjustment = desiredIndoorExposureAdjustment;
+      }
+      renderer.toneMappingExposure =
+        baseCameraExposure * 2 ** (cameraExposureCompensation + indoorExposureAdjustment);
+      renderDirty = true;
+    }
+    const moving = Boolean(currentProgram) && (time - lastCameraChange <= 180 || exposureAdapting);
     if (moving !== motionResolution) {
       motionResolution = moving;
       resize();

@@ -161,7 +161,7 @@
                     and date, including daylight saving.
                   </p>
                   <label
-                    >Exposure (EV)
+                    >Exposure compensation (EV)
                     <input
                       id="sunExposure"
                       type="number"
@@ -172,6 +172,17 @@
                       required
                     />
                   </label>
+                  <label
+                    >Camera exposure
+                    <select id="sunExposureMode" aria-describedby="cameraExposureHelp" required>
+                      <option value="adaptive">Adapt indoors</option>
+                      <option value="fixed">Fixed</option>
+                    </select>
+                  </label>
+                  <p id="cameraExposureHelp">
+                    Walk views adapt to enclosed rooms in daylight. Fixed keeps the same exposure in
+                    every view; EV compensation applies to both modes.
+                  </p>
                   <output id="sunStatus" aria-live="polite"></output>
                   <output id="indoorLights" aria-live="polite">Automatic fixture lighting</output>
                   <output id="renderStats" title="Scene rendering workload"
