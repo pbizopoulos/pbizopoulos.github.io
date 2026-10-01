@@ -223,3 +223,31 @@ Room-control checks cover invalid height rejection, new/replaced directives,
 other-room preservation, history, duplicate effective directives and inline
 comments, outdoor finishes, viewport fit at 390 px and idle sleep. The independent
 critic found no material clarity or consistency issues in desktop/mobile views.
+
+
+## Recessed basins and cabinet construction
+
+Generic sinks and vanities now use hollow cabinet shells and real countertop
+openings made with Three.js Shape/Path and ExtrudeGeometry. Closed bowl profiles
+leave the drain visible below the rim, without hidden solid cabinets filling the
+basin. The reference kitchenette and bathroom vanity use the same shell helper.
+Hidden structural panels remain plain boxes; visible finishes retain bevels.
+Basins cast shadows and merge with matching opaque fixture surfaces.
+
+Curved pulls, separate wardrobe doors, recessed bases and a refrigerator gasket
+replace flat hardware and painted panel divisions. The preview studio uses less
+fill light and exposure so white bevels and bowl depth remain legible. The catalog
+atlas is regenerated from the same studio and cached procedural models.
+
+`prm/validate-assets.cjs` runs browser checks for finite geometry, unobstructed
+recessed bowls, placement warnings, browser errors and settled renderer sleep.
+An optional baseline script adds representative workload comparisons;
+`INTERIOR_SCREENSHOTS` writes review images. Run against a locally served editor
+with Playwright available (`PLAYWRIGHT_MODULE` and `CHROME_PATH` can select tools).
+
+The final Fast-view comparison was 332 draws / 104,318 triangles for the warm
+apartment (332 / 103,646 before), 1,285 / 318,954 for the three-level apartment
+(1,287 / 318,210), and 206 / 34,862 for Kitchen & dining (204 / 31,958). These
+software-GPU counts include render passes and are not hardware frame rates.
+All checks passed. Four basin rays reached the recessed interior rather than a
+solid countertop or cabinet, and vanity/kitchenette previews each saved one draw.

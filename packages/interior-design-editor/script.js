@@ -414,7 +414,7 @@
         fixtureLight(group, 2.5, side * 0.2, h * 0.4 - 0.07, 0.1);
       }
     } else if (name === "bathroom_vanity") {
-      b(w, h - 0.12, d - 0.025, 0, (h - 0.12) / 2 + 0.04, -0.012, m.white);
+      cabinetShell(group, w, d - 0.025, 0.04, h - 0.055, m.white, -0.012);
       for (const y of [0.26, 0.59]) {
         b(w - 0.025, 0.3, 0.025, 0, y, d / 2 - 0.01, m.white);
         b(0.18, 0.015, 0.03, 0, y + 0.1, d / 2 + 0.016, m.brass);
@@ -1241,12 +1241,13 @@
       button.rotation.x = Math.PI / 2;
     } else if (name === "kitchenette") {
       b(w, 0.12, d - 0.08, 0, 0.06, 0, m.slate);
-      b(w, 0.75, d - 0.04, 0, 0.49, 0, m.white);
-      b(0.385, 0.055, d + 0.03, -1.0225, 0.9, 0);
-      b(1.345, 0.055, d + 0.03, 0.5425, 0.9, 0);
-      for (const side of [-1, 1]) {
-        b(0.7, 0.055, 0.095, -0.48, 0.9, side * 0.2925);
-      }
+      cabinetShell(group, w, d - 0.04, 0.12, 0.8725, m.white, 0);
+      cutWorktop(group, w + 0.03, d + 0.03, 0.055, 0, 0.9275, 0, m.wood, {
+        d: 0.48,
+        w: 0.68,
+        x: -0.48,
+        z: 0,
+      });
       for (let i = 0; i < 4; i += 1) {
         const x = ((i - 1.5) * w) / 4;
         b(w / 4 - 0.018, 0.67, 0.035, x, 0.49, d / 2, m.white);
@@ -5299,7 +5300,7 @@
         controls = new OrbitControls(camera, renderer.domElement);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.05;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       const environmentRoom = new RoomEnvironment(),
         environmentGenerator = new THREE.PMREMGenerator(renderer),
@@ -5307,8 +5308,8 @@
       environmentRoom.dispose();
       environmentGenerator.dispose();
       scene.environment = environment.texture;
-      scene.environmentIntensity = 0.8;
-      scene.add(new THREE.HemisphereLight("#fff9ec", "#95856c", 2.4));
+      scene.environmentIntensity = 0.65;
+      scene.add(new THREE.HemisphereLight("#fff9ec", "#95856c", 0.9));
       const key = new THREE.DirectionalLight("#ffffff", 2.6);
       key.position.set(3, 5, 4);
       scene.add(key);
@@ -6690,6 +6691,7 @@
       opal: "#f3eddf",
       plaster: "#f1ede3",
       porcelain: "#f4f0e7",
+      rubber: "#303332",
       rug: "#aa7055",
       screen: "#16232b",
       sea: "#567873",
@@ -7095,6 +7097,8 @@
   material.cabinetGlass.opacity = 0.25;
   material.cabinetGlass.depthWrite = false;
   material.cabinetGlass.roughness = 0.12;
+  material.rubber.roughness = 0.95;
+  material.rubber.envMapIntensity = 0.2;
   material.metal.metalness = 0.85;
   material.metal.roughness = 0.27;
   material.screen.roughness = 0.16;
@@ -7290,7 +7294,32 @@
       }
     }
   }
-  function box(parent, w, h, d, x, y, z, m) {
+  function surfaceUVs(geometry, finish, w, h, d) {
+    if (finish.userData.textureScale) {
+      const positions = geometry.attributes.position,
+        normals = geometry.attributes.normal,
+        { uv } = geometry.attributes,
+        scale = finish.userData.textureScale;
+      for (let i = 0; i < positions.count; i += 1) {
+        const nx = Math.abs(normals.getX(i)),
+          ny = Math.abs(normals.getY(i));
+        const verticalGrain = finish.userData.woodGrain && h > Math.max(w, d);
+        uv.setXY(
+          i,
+          (verticalGrain ? positions.getY(i) : nx > 0.7 ? positions.getZ(i) : positions.getX(i)) /
+            scale,
+          (verticalGrain
+            ? nx > 0.7
+              ? positions.getZ(i)
+              : positions.getX(i)
+            : ny > 0.7
+              ? positions.getZ(i)
+              : positions.getY(i)) / scale,
+        );
+      }
+    }
+  }
+  function box(parent, w, h, d, x, y, z, m, detailed = parent.userData.detailed) {
     const upholstered = [
         material.fabric,
         material.fabricDark,
@@ -7306,32 +7335,10 @@
         (m.userData.woodGrain || [material.white, material.enamel, material.chrome].includes(m)),
       radius = Math.min(upholstered ? 0.065 : thickness <= 0.06 ? 0.0025 : 0.012, thickness * 0.24),
       geometry =
-        parent.userData.detailed && (thickness > 0.06 || thinFinish)
+        detailed && (thickness > 0.06 || thinFinish)
           ? new RoundedBoxGeometry(w, h, d, upholstered ? 2 : 1, radius)
           : new THREE.BoxGeometry(w, h, d);
-    if (m.userData.textureScale) {
-      const positions = geometry.attributes.position,
-        normals = geometry.attributes.normal,
-        { uv } = geometry.attributes,
-        scale = m.userData.textureScale;
-      for (let i = 0; i < positions.count; i += 1) {
-        const nx = Math.abs(normals.getX(i)),
-          ny = Math.abs(normals.getY(i));
-        const verticalGrain = m.userData.woodGrain && h > Math.max(w, d);
-        uv.setXY(
-          i,
-          (verticalGrain ? positions.getY(i) : nx > 0.7 ? positions.getZ(i) : positions.getX(i)) /
-            scale,
-          (verticalGrain
-            ? nx > 0.7
-              ? positions.getZ(i)
-              : positions.getX(i)
-            : ny > 0.7
-              ? positions.getZ(i)
-              : positions.getY(i)) / scale,
-        );
-      }
-    }
+    surfaceUVs(geometry, m, w, h, d);
     const mesh = new THREE.Mesh(geometry, m);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
@@ -7452,6 +7459,70 @@
     parent.add(mesh);
     return mesh;
   }
+  function pullHandle(parent, length, x, y, z, vertical = false) {
+    const point = (along, reach) => [
+      x + (vertical ? 0 : along),
+      y + (vertical ? along : 0),
+      z + reach,
+    ];
+    curvedRod(
+      parent,
+      [
+        point(-length / 2, 0.004),
+        point(-length / 2, 0.032),
+        point(length / 2, 0.032),
+        point(length / 2, 0.004),
+      ],
+      0.0075,
+      material.metal,
+      8,
+    );
+  }
+  function cabinetShell(parent, w, d, bottom, top, finish, z = -0.02) {
+    const height = top - bottom;
+    for (const side of [-1, 1]) {
+      box(parent, 0.025, height, d, side * (w / 2 - 0.0125), bottom + height / 2, z, finish, false);
+    }
+    box(parent, w - 0.05, height, 0.025, 0, bottom + height / 2, z - d / 2 + 0.0125, finish, false);
+    box(parent, w - 0.05, 0.025, d - 0.025, 0, bottom + 0.0125, z + 0.0125, finish, false);
+    box(parent, w - 0.05, 0.05, 0.025, 0, top - 0.025, z + d / 2 - 0.0125, finish, false);
+  }
+  function cutWorktop(parent, w, d, thickness, x, y, z, finish, opening) {
+    const shape = new THREE.Shape();
+    shape.moveTo(-w / 2, -d / 2);
+    shape.lineTo(w / 2, -d / 2);
+    shape.lineTo(w / 2, d / 2);
+    shape.lineTo(-w / 2, d / 2);
+    shape.closePath();
+    const hole = new THREE.Path();
+    hole.absellipse(
+      opening.x,
+      -opening.z,
+      opening.w * 0.48,
+      opening.d * 0.48,
+      0,
+      Math.PI * 2,
+      true,
+      0,
+    );
+    shape.holes.push(hole);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.002,
+      bevelThickness: 0.002,
+      curveSegments: 12,
+      depth: thickness,
+      steps: 1,
+    });
+    geometry.rotateX(-Math.PI / 2);
+    surfaceUVs(geometry, finish, w, thickness, d);
+    const top = new THREE.Mesh(geometry, finish);
+    top.position.set(x, y - thickness, z);
+    top.castShadow = true;
+    top.receiveShadow = true;
+    parent.add(top);
+  }
   function insetBasin(parent, w, d, x, y, z, finish = material.metal) {
     const profile = [
         [0.5, 0],
@@ -7459,6 +7530,7 @@
         [0.43, -0.1],
         [0.3, -0.14],
         [0.06, -0.145],
+        [0, -0.145],
       ],
       bowl = new THREE.Mesh(
         new THREE.LatheGeometry(
@@ -7469,6 +7541,7 @@
       );
     bowl.scale.set(w, 1, d);
     bowl.position.set(x, y, z);
+    bowl.castShadow = true;
     bowl.receiveShadow = true;
     parent.add(bowl);
     cylinder(parent, 0.029, 0.029, 0.006, x, y - 0.14, z, material.screen, 16);
@@ -7520,6 +7593,7 @@
     geometry.computeVertexNormals();
     const basin = new THREE.Mesh(geometry, material.porcelain);
     basin.position.set(x, y, z);
+    basin.castShadow = true;
     basin.receiveShadow = true;
     parent.add(basin);
     box(parent, w * 0.7, 0.015, d * 0.6, x, y - 0.12, z, material.porcelain);
@@ -8310,24 +8384,26 @@
               cd / 2 - 0.014,
               material.wood,
             );
-            box(
-              group,
-              cw * 0.23,
-              0.013,
-              0.025,
-              0,
-              y + drawerHeight * 0.2,
-              cd / 2 + 0.006,
-              material.metal,
-            );
+            pullHandle(group, cw * 0.23, 0, y + drawerHeight * 0.2, cd / 2);
           }
           break;
         }
         case "wardrobe": {
-          box(group, cw, ch, cd, 0, ch / 2, 0, material.wood);
-          box(group, 0.018, ch * 0.88, 0.018, 0, ch / 2, cd / 2 + 0.015, material.woodDark);
-          for (const x of [-0.1, 0.1]) {
-            box(group, 0.018, 0.18, 0.03, x, ch * 0.52, cd / 2 + 0.04, material.metal);
+          box(group, cw, ch - 0.035, cd - 0.035, 0, (ch + 0.035) / 2, -0.0175, material.woodDark);
+          box(group, cw - 0.06, 0.035, cd - 0.07, 0, 0.0175, 0, material.woodDark);
+          const doorWidth = (cw - 0.016) / 2;
+          for (const side of [-1, 1]) {
+            box(
+              group,
+              doorWidth - 0.005,
+              ch - 0.065,
+              0.025,
+              (side * doorWidth) / 2,
+              ch / 2 + 0.005,
+              cd / 2 - 0.0125,
+              material.wood,
+            );
+            pullHandle(group, 0.18, side * 0.1, ch * 0.52, cd / 2, true);
           }
           break;
         }
@@ -8336,7 +8412,11 @@
         case "stove":
         case "kitchen_island": {
           box(group, cw - 0.06, 0.1, cd - 0.07, 0, 0.05, -0.02, material.woodDark);
-          box(group, cw, ch - 0.15, cd - 0.04, 0, (ch + 0.05) / 2, -0.02, material.woodDark);
+          if (name === "sink") {
+            cabinetShell(group, cw, cd - 0.015, 0.1, ch - 0.06, material.woodDark, -0.0075);
+          } else {
+            box(group, cw, ch - 0.15, cd - 0.04, 0, (ch + 0.05) / 2, -0.02, material.woodDark);
+          }
           const doors = Math.max(1, Math.round(cw / 0.55)),
             doorWidth = (cw - 0.025) / doors;
           for (let i = 0; i < doors; i += 1) {
@@ -8351,23 +8431,20 @@
               cd / 2 - 0.012,
               material.wood,
             );
-            box(
-              group,
-              doorWidth * 0.45,
-              0.014,
-              0.024,
-              x,
-              ch - 0.19,
-              cd / 2 + 0.005,
-              material.metal,
-            );
+            pullHandle(group, doorWidth * 0.45, x, ch - 0.19, cd / 2);
           }
-          box(group, cw + 0.025, 0.06, cd + 0.025, 0, ch - 0.03, 0, material.white);
           if (name === "sink") {
-            box(group, cw * 0.56, 0.015, cd * 0.55, 0, ch + 0.006, 0, material.metal);
-            box(group, cw * 0.47, 0.008, cd * 0.45, 0, ch + 0.015, 0, mat("#839da1", 0.25, 0.3));
-            cylinder(group, 0.012, 0.012, 0.2, cw * 0.22, ch + 0.1, -cd * 0.18, material.metal, 10);
-            box(group, 0.16, 0.02, 0.02, cw * 0.18, ch + 0.2, -cd * 0.18, material.metal);
+            const basinWidth = cw * 0.56,
+              basinDepth = cd * 0.55;
+            cutWorktop(group, cw + 0.025, cd + 0.025, 0.06, 0, ch, 0, material.white, {
+              d: basinDepth,
+              w: basinWidth,
+              x: 0,
+              z: 0,
+            });
+            insetBasin(group, basinWidth, basinDepth, 0, ch + 0.008, 0);
+          } else {
+            box(group, cw + 0.025, 0.06, cd + 0.025, 0, ch - 0.03, 0, material.white);
           }
           if (name === "stove") {
             box(group, cw * 0.88, ch * 0.45, 0.012, 0, ch * 0.42, cd / 2 + 0.005, material.metal);
@@ -8490,15 +8567,19 @@
           break;
         }
         case "vanity": {
-          box(group, cw, ch - 0.1, cd - 0.03, 0, (ch - 0.1) / 2 + 0.04, -0.015, material.white);
-          for (const y of [ch * 0.29, ch * 0.66]) {
-            box(group, cw - 0.035, ch * 0.34, 0.025, 0, y, cd / 2, material.white);
-            box(group, cw * 0.64, 0.015, 0.035, 0, y + ch * 0.12, cd / 2 + 0.023, material.metal);
+          cabinetShell(group, cw, cd - 0.015, 0.04, ch - 0.025, material.white, -0.0075);
+          const drawerHeight = (ch - 0.075) / 2;
+          for (let i = 0; i < 2; i += 1) {
+            const y = 0.04 + drawerHeight * (i + 0.5);
+            box(group, cw - 0.035, drawerHeight - 0.012, 0.025, 0, y, cd / 2, material.white);
+            pullHandle(group, cw * 0.64, 0, y + drawerHeight * 0.2, cd / 2 + 0.0125);
           }
-          for (const side of [-1, 1]) {
-            box(group, 0.15, 0.05, cd + 0.02, side * (cw / 2 - 0.065), ch, 0, material.porcelain);
-            box(group, cw - 0.26, 0.05, 0.09, 0, ch, side * (cd / 2 - 0.035), material.porcelain);
-          }
+          cutWorktop(group, cw + 0.02, cd + 0.02, 0.05, 0, ch + 0.025, 0, material.porcelain, {
+            d: cd - 0.16,
+            w: cw - 0.28,
+            x: 0,
+            z: 0,
+          });
           insetBasin(group, cw - 0.28, cd - 0.16, 0, ch + 0.025, 0, material.porcelain);
           break;
         }
@@ -8544,10 +8625,22 @@
           break;
         }
         case "fridge": {
-          box(group, cw, ch, cd, 0, ch / 2, 0, material.white);
-          box(group, cw * 0.9, 0.025, 0.012, 0, ch * 0.58, cd / 2 + 0.012, material.metal);
-          box(group, 0.035, 0.22, 0.035, cw * 0.34, ch * 0.37, cd / 2 + 0.035, material.metal);
-          box(group, 0.035, 0.22, 0.035, cw * 0.34, ch * 0.73, cd / 2 + 0.035, material.metal);
+          box(group, cw, ch, cd - 0.04, 0, ch / 2, -0.02, material.white);
+          const split = ch * 0.65;
+          box(group, cw - 0.012, split - 0.012, 0.04, 0, split / 2, cd / 2 - 0.02, material.white);
+          box(
+            group,
+            cw - 0.012,
+            ch - split - 0.012,
+            0.04,
+            0,
+            (ch + split) / 2,
+            cd / 2 - 0.02,
+            material.white,
+          );
+          box(group, cw - 0.025, 0.01, 0.008, 0, split, cd / 2 - 0.035, material.rubber);
+          pullHandle(group, 0.22, cw * 0.34, ch * 0.43, cd / 2, true);
+          pullHandle(group, 0.18, cw * 0.34, ch * 0.79, cd / 2, true);
           break;
         }
         case "tv": {
