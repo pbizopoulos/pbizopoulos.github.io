@@ -33,19 +33,13 @@ class OutputPathTests(unittest.TestCase):
                 assert main.default_output(cwd) == package / "tmp" / "walkthrough.mp4"  # noqa: S101
             assert not (package / "packages").exists()  # noqa: S101
 
-    def test_outside_flake_requires_explicit_output(self) -> None:
+    def test_outside_flake_fails(self) -> None:
         """Avoid guessing a persistent directory outside the repository."""
         with (
             TemporaryDirectory() as directory,
-            pytest.raises(ValueError, match="specify --output"),
+            pytest.raises(ValueError, match="run from within"),
         ):
             main.default_output(Path(directory))
-
-    def test_explicit_output_remains_relative_to_caller(self) -> None:
-        """Honor a supplied destination without applying default discovery."""
-        assert main.parser().parse_args(["--output", "demo.mp4"]).output == Path(  # noqa: S101
-            "demo.mp4",
-        )
 
 
 class RecordingTests(unittest.IsolatedAsyncioTestCase):

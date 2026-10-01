@@ -2,7 +2,6 @@
 """Record a concise investor demo using Playwright and CDP screencasting."""
 
 # ruff: noqa: CPY001, E501, RUF001, S603, S607, PLR2004
-import argparse
 import asyncio
 import base64
 import json
@@ -25,6 +24,9 @@ from typing import Any, Literal
 from playwright.async_api import CDPSession, Error, Page, async_playwright, expect
 
 LOGGER = logging.getLogger(__name__)
+WIDTH = 1600
+HEIGHT = 1000
+HOLD = 3
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -312,58 +314,20 @@ def default_output(directory: Path) -> Path:
         package = root / "packages" / "interior-design-editor-video"
         if (root / "flake.nix").is_file() and (package / "default.nix").is_file():
             return package / "tmp" / "walkthrough.mp4"
-    message = "outside the Interior Design Editor flake; specify --output PATH.mp4"
+    message = "run from within the Interior Design Editor flake"
     raise ValueError(message)
 
 
-def parser() -> argparse.ArgumentParser:
-    """Expose reproducible recording settings through the canonical CLI."""
-    result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument(
-        "--output",
-        type=Path,
-        help="MP4 destination (default: this flake's interior-design-editor-video/tmp/walkthrough.mp4; refuses to overwrite)",
-    )
-    result.add_argument(
-        "--site",
-        type=Path,
-        help="Interior Design Editor static site directory",
-    )
-    result.add_argument(
-        "--hold",
-        type=float,
-        default=3,
-        help="Seconds per inspection pause (default: 3; real-time recording)",
-    )
-    result.add_argument("--width", type=int, default=1600)
-    result.add_argument("--height", type=int, default=1000)
-    result.add_argument(
-        "--headed",
-        action="store_true",
-        help="Show Chromium while recording",
-    )
-    result.add_argument(
-        "--software-rendering",
-        action="store_true",
-        help="Use SwiftShader when a hardware GPU is unavailable (may be slow)",
-    )
-    return result
-
-
 async def record(
-    args: argparse.Namespace,
     url: str,
     directory: Path,
 ) -> tuple[Path, list[dict[str, Any]]]:
     """Launch, capture, and close resources even when a tour assertion fails."""
     async with async_playwright() as playwright:
         browser_env = dict(os.environ)
-        if not args.headed:
-            browser_env.pop("WAYLAND_DISPLAY", None)
+        browser_env.pop("WAYLAND_DISPLAY", None)
         browser_args = ["--enable-gpu"]
-        if args.software_rendering:
-            browser_args = ["--enable-unsafe-swiftshader", "--use-angle=swiftshader"]
-        elif sys.platform == "linux":
+        if sys.platform == "linux":
             browser_args += [
                 "--use-angle=vulkan",
                 "--enable-features=Vulkan",
@@ -372,19 +336,15 @@ async def record(
         browser = await playwright.chromium.launch(
             channel="chromium",
             env=browser_env,
-            headless=not args.headed,
+            headless=True,
             args=browser_args,
         )
         try:
             context = await browser.new_context(
-                viewport={"width": args.width, "height": args.height},
+                viewport={"width": WIDTH, "height": HEIGHT},
                 permissions=["clipboard-read", "clipboard-write"],
                 device_scale_factor=1,
             )
-            if args.software_rendering:
-                await context.add_init_script(
-                    "Object.defineProperty(navigator, 'gpu', {value: undefined});",
-                )
             page = await context.new_page()
             page.on(
                 "requestfailed",
@@ -403,8 +363,8 @@ async def record(
             )
             session = await context.new_cdp_session(page)
             recording = Screencast(session, directory)
-            await recording.start(args.width, args.height)
-            tour = Tour(page, args.hold, recording)
+            await recording.start(WIDTH, HEIGHT)
+            tour = Tour(page, HOLD, recording)
             try:
                 await tour.run()
             finally:
@@ -418,46 +378,31 @@ async def record(
 def main() -> None:
     """Record the investor story, then encode a real-time MP4 and chapter JSON."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    cli = parser()
-    args = cli.parse_args()
-    if args.site is None:
-        args.site = Path(
-            os.environ.get(
-                "INTERIOR_DESIGN_EDITOR_SITE",
-                Path(__file__).resolve().parent.parent / "interior-design-editor",
-            ),
-        )
-    if (
-        not 0 < args.hold <= 60
-        or args.width < 1280
-        or args.height < 900
-        or args.width % 2
-        or args.height % 2
-    ):
-        cli.error(
-            "use a hold between 0 and 60 seconds and even dimensions of at least 1280×900",
-        )
-    if args.output is None:
-        try:
-            args.output = default_output(Path.cwd())
-        except ValueError as error:
-            cli.error(str(error))
-    args.output = args.output.resolve()
-    chapters_path = args.output.with_suffix(".chapters.json")
-    if args.output.exists() or chapters_path.exists():
-        cli.error("output or chapter file already exists; choose a new --output")
-    if not (args.site / "index.html").is_file():
-        cli.error(f"no index.html in {args.site}")
+    site = Path(
+        os.environ.get(
+            "INTERIOR_DESIGN_EDITOR_SITE",
+            Path(__file__).resolve().parent.parent / "interior-design-editor",
+        ),
+    )
+    output = default_output(Path.cwd()).resolve()
+    chapters_path = output.with_suffix(".chapters.json")
+    if output.exists() or chapters_path.exists():
+        message = "output or chapter file already exists; move or remove it before recording"
+        raise FileExistsError(message)
+    if not (site / "index.html").is_file():
+        message = f"no index.html in {site}"
+        raise FileNotFoundError(message)
     if not shutil.which("ffmpeg"):
-        cli.error("ffmpeg is required")
-    args.output.parent.mkdir(parents=True, exist_ok=True)
+        message = "ffmpeg is required"
+        raise RuntimeError(message)
+    output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
         prefix="screencast-",
-        dir=args.output.parent,
+        dir=output.parent,
     ) as temporary:
         directory = Path(temporary)
-        with serve(args.site) as url:
-            manifest, chapters = asyncio.run(record(args, url, directory))
+        with serve(site) as url:
+            manifest, chapters = asyncio.run(record(url, directory))
         subprocess.run(
             [
                 "ffmpeg",
@@ -483,7 +428,7 @@ def main() -> None:
                 "yuv420p",
                 "-movflags",
                 "+faststart",
-                str(args.output),
+                str(output),
             ],
             check=True,
         )
@@ -498,20 +443,20 @@ def main() -> None:
             "stream=width,height,duration",
             "-of",
             "json",
-            str(args.output),
+            str(output),
         ],
         capture_output=True,
         text=True,
         check=True,
     )
     stream = json.loads(probe.stdout)["streams"][0]
-    if (stream["width"], stream["height"]) != (args.width, args.height) or float(
+    if (stream["width"], stream["height"]) != (WIDTH, HEIGHT) or float(
         stream["duration"],
     ) < chapters[-1]["seconds"]:
         message = f"Encoded video failed dimension/duration verification: {stream}"
         raise RuntimeError(message)
     chapters_path.write_text(json.dumps(chapters, indent=2) + "\n")
-    LOGGER.info("Saved %s\nChapters: %s", args.output, chapters_path)
+    LOGGER.info("Saved %s\nChapters: %s", output, chapters_path)
 
 
 if __name__ == "__main__":
