@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Record a concise investor demo using Playwright and CDP screencasting."""
 
-# ruff: noqa: CPY001, E501, RUF001, S603, S607, PLR2004
+# ruff: noqa: CPY001, E501, S603, S607
 import asyncio
 import base64
 import json
@@ -387,7 +387,9 @@ def main() -> None:
     output = default_output(Path.cwd()).resolve()
     chapters_path = output.with_suffix(".chapters.json")
     if output.exists() or chapters_path.exists():
-        message = "output or chapter file already exists; move or remove it before recording"
+        message = (
+            "output or chapter file already exists; move or remove it before recording"
+        )
         raise FileExistsError(message)
     if not (site / "index.html").is_file():
         message = f"no index.html in {site}"
