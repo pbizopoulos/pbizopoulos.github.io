@@ -251,3 +251,27 @@ apartment (332 / 103,646 before), 1,285 / 318,954 for the three-level apartment
 software-GPU counts include render passes and are not hardware frame rates.
 All checks passed. Four basin rays reached the recessed interior rather than a
 solid countertop or cabinet, and vanity/kitchenette previews each saved one draw.
+
+
+## Porcelain walls and aligned finishes
+
+Mediterranean bath/wash rooms use a shared warm porcelain wall finish with
+0.6 × 1.2 m tiles, pale fine grout and a shallow bump. Three 256-pixel maps
+provide color, relief and roughness; floor tile maps remain separate. Wall
+sections project textures from their model coordinates, keeping seams aligned
+above/below windows and beside doors. This also aligns plaster detail across
+openings. Exterior faces retain their existing facade coordinates.
+
+The independent critic approved the cabinet cavities and support geometry, and
+identified a faint refrigerator split at catalog size. Its existing charcoal
+gasket now sits closer to the door surface; no meshes or triangles were added.
+The browser validation also checks tile dimensions and UV continuity where
+separate wall sections meet: nine tiled wall meshes and 36 shared vertex
+comparisons produced zero mismatches. `INTERIOR_CHECK=walls` runs this focused
+check. Daylight material clones are identified by their shared texture maps.
+
+The before/after browser comparison retained exactly the same scene draw and
+triangle counts as the cabinet pass in all three representative examples.
+Placement warnings, browser errors and settled renderer sleep checks passed.
+The critic approved the final portrait tiles, visible pale joints and refrigerator
+seal, with no apparent alignment or readability defects.

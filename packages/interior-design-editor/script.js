@@ -6863,11 +6863,12 @@
     }
     return surfaces;
   }
-  function tiledSurface(terracotta = false) {
+  function tiledSurface(terracotta = false, wall = false) {
     const surfaces = {},
       canvases = [],
       pixels = [],
-      size = 512,
+      size = wall ? 256 : 512,
+      tileSize = size / 4,
       tiles = [];
     let seed = 93;
     const random = () => {
@@ -6894,18 +6895,21 @@
     for (let y = 0; y < size; y += 1) {
       for (let x = 0; x < size; x += 1) {
         const edge = Math.min(
-            (x % 128) + 0.5,
-            127.5 - (x % 128),
-            (y % 128) + 0.5,
-            127.5 - (y % 128),
+            (x % tileSize) + 0.5,
+            tileSize - 0.5 - (x % tileSize),
+            (y % tileSize) + 0.5,
+            tileSize - 0.5 - (y % tileSize),
           ),
-          grout = Math.max(0, 1 - edge / (terracotta ? 1.25 : 0.9)),
+          grout = wall
+            ? Math.max(0, Math.min(1, 0.66 - edge))
+            : Math.max(0, 1 - edge / (terracotta ? 1.25 : 0.9)),
           noise = random() - 0.5,
           mineral =
             Math.sin(x * 0.065 + Math.sin(y * 0.037) * 1.5) * 1.4 + Math.sin((x + y) * 0.019) * 0.7,
-          base = tiles[Math.floor(y / 128) * 4 + Math.floor(x / 128)] + mineral + noise * 1.5,
+          base =
+            tiles[Math.floor(y / tileSize) * 4 + Math.floor(x / tileSize)] + mineral + noise * 1.5,
           values = [
-            base * (1 - grout) + (terracotta ? 100 : 166) * grout,
+            base * (1 - grout) + (terracotta ? 100 : wall ? 242 : 166) * grout,
             235 - grout * 95 + noise * 2,
             211 + grout * 35 + mineral * 2,
           ],
@@ -6981,6 +6985,13 @@
     material[key].roughness = key === "stone" ? 0.72 : 0.98;
     material[key].color.set(key === "stone" ? "#eee9df" : "#efe5d6");
   }
+  material.wallTile = material.stone.clone();
+  Object.assign(material.wallTile, tiledSurface(false, true));
+  material.wallTile.color.set("#ded8cc");
+  material.wallTile.roughness = 0.64;
+  material.wallTile.bumpScale = 0.0008;
+  material.wallTile.userData.textureScale = 4.8;
+  material.wallTile.userData.textureAspect = 0.5;
   const pavingCanvas = document.createElement("canvas");
   pavingCanvas.width = 512;
   pavingCanvas.height = 512;
@@ -7299,7 +7310,8 @@
       const positions = geometry.attributes.position,
         normals = geometry.attributes.normal,
         { uv } = geometry.attributes,
-        scale = finish.userData.textureScale;
+        scale = finish.userData.textureScale,
+        horizontalScale = scale * (finish.userData.textureAspect || 1);
       for (let i = 0; i < positions.count; i += 1) {
         const nx = Math.abs(normals.getX(i)),
           ny = Math.abs(normals.getY(i));
@@ -7307,7 +7319,7 @@
         uv.setXY(
           i,
           (verticalGrain ? positions.getY(i) : nx > 0.7 ? positions.getZ(i) : positions.getX(i)) /
-            scale,
+            horizontalScale,
           (verticalGrain
             ? nx > 0.7
               ? positions.getZ(i)
@@ -8638,7 +8650,7 @@
             cd / 2 - 0.02,
             material.white,
           );
-          box(group, cw - 0.025, 0.01, 0.008, 0, split, cd / 2 - 0.035, material.rubber);
+          box(group, cw - 0.025, 0.01, 0.008, 0, split, cd / 2 - 0.006, material.rubber);
           pullHandle(group, 0.22, cw * 0.34, ch * 0.43, cd / 2, true);
           pullHandle(group, 0.18, cw * 0.34, ch * 0.79, cd / 2, true);
           break;
@@ -9106,7 +9118,7 @@
       const wallMaterial =
         room.style === "mediterranean"
           ? /(bath|wash)/u.test(room.name)
-            ? material.stone
+            ? material.wallTile
             : material.plaster
           : room.style === "liminal"
             ? material.yellow
@@ -9228,6 +9240,22 @@
                 vertical ? spanCenter : fixed,
                 wallMaterial,
               );
+            if (wallMaterial.userData.textureScale) {
+              const { position, normal, uv } = wall.geometry.attributes,
+                scale = wallMaterial.userData.textureScale,
+                horizontalScale = scale * (wallMaterial.userData.textureAspect || 1);
+              for (let i = 0; i < position.count; i += 1) {
+                uv.setXY(
+                  i,
+                  (Math.abs(normal.getX(i)) > 0.7
+                    ? position.getZ(i) + wall.position.z
+                    : position.getX(i) + wall.position.x) / horizontalScale,
+                  (Math.abs(normal.getY(i)) > 0.7
+                    ? position.getZ(i) + wall.position.z
+                    : position.getY(i) + wall.position.y) / scale,
+                );
+              }
+            }
             wall.castShadow = true;
             if (!sharedEdge) {
               applyFacade(wall, dir, outsideFinish);
