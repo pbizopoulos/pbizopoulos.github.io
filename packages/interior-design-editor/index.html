@@ -244,6 +244,7 @@
                 >
                 <output id="sunStatus"></output>
               </form>
+              <button id="projectDetailsButton">Project details</button>
               <button
                 id="fullscreenButton"
                 class="icon-button"
@@ -288,6 +289,13 @@
         </div>
       </section>
     </main>
+    <dialog id="projectDetails" aria-labelledby="projectDetailsTitle">
+      <header>
+        <h2 id="projectDetailsTitle">Project details</h2>
+        <button id="closeProjectDetails" aria-label="Close project details">Close</button>
+      </header>
+      <div id="projectDetailsContent"></div>
+    </dialog>
     <dialog id="assetBrowser" aria-labelledby="assetBrowserTitle">
       <header>
         <div>

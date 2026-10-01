@@ -1169,3 +1169,14 @@ button.icon-button {
     animation: none;
   }
 }
+
+#projectDetailsContent li {
+  margin-block: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+#projectDetailsContent a {
+  display: block;
+  width: fit-content;
+  color: var(--ink);
+}

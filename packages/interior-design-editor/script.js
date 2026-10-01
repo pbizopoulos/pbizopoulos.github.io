@@ -4,6 +4,7 @@
         ac_condenser: [0.82, 0.36, 0.62],
         accent_chair: [0.72, 0.8, 0.86],
         air_conditioner: [1.02, 0.22, 0.31],
+        air_quality_sensor: [0.09, 0.04, 0.1],
         aquarium: [1.8, 0.65, 1.45],
         arcade_machine: [0.75, 0.85, 1.7],
         arched_mirror: [0.7, 0.045, 1.1],
@@ -53,13 +54,17 @@
         floor_drain: [0.18, 0.18, 0.015],
         flower_border: [2.4, 0.65, 0.65],
         fluorescent_light: [1.2, 0.3, 2.7],
+        folding_table: [0.65, 0.65, 0.71],
         folding_chair: [0.5, 0.58, 0.88],
         fountain: [1.8, 1.8, 1.5],
         frameless_shower: [0.9, 0.95, 2.05],
         fridge: [0.73, 0.7, 1.82],
+        guitar: [0.37, 0.12, 1],
         garden_lamp: [0.22, 0.22, 0.9],
         garden_steps: [1.5, 1.5, 0.6],
         garment_rack: [1.05, 0.5, 1.7],
+        grey_sofa: [1.54, 0.84, 0.85],
+        grey_armchair: [0.66, 0.68, 0.84],
         globe_lamp: [0.42, 0.42, 1.65],
         grape_trellis: [2.4, 0.4, 2.5],
         gym_bench: [0.65, 1.45, 1.1],
@@ -75,6 +80,7 @@
         kitchen_island: [1.55, 0.85, 0.91],
         kitchen_table: [1.52, 0.86, 0.75],
         kitchenette: [2.4, 0.65, 2.25],
+        laptop: [0.304, 0.2, 0.2],
         lamp: [0.4, 0.4, 1.48],
         lantern: [0.3, 0.3, 0.5],
         laundry_basket: [0.44, 0.4, 0.56],
@@ -102,10 +108,13 @@
         plant: [0.48, 0.48, 1.12],
         planter: [1.05, 0.34, 0.46],
         pool: [5.6, 3.4, 0.85],
+        plate: [0.26, 0.26, 0.025],
+        pedestal_fan: [0.41, 0.36, 1.2],
         poster: [0.6, 0.025, 0.85],
         retaining_wall: [2.4, 0.3, 0.65],
         retro_fridge: [0.6, 0.64, 1.55],
         roller_shutter: [1.8, 0.18, 2.5],
+        robot_vacuum: [0.35, 0.35, 0.095],
         roman_blind: [1.6, 0.12, 1.5],
         round_dining_table: [1.2, 1.2, 0.75],
         rug: [1.55, 1.15, 0.025],
@@ -126,6 +135,7 @@
         stairs: [1.2, 3.6, 3],
         stone_path: [1.2, 3, 0.04],
         stove: [0.64, 0.65, 0.88],
+        suitcase: [0.4, 0.25, 0.65],
         sun_lounger: [0.75, 1.95, 0.65],
         table_lamp: [0.28, 0.28, 0.4],
         telescope: [1.1, 1.2, 1.65],
@@ -146,10 +156,13 @@
         tufted_sofa: [1.9, 0.85, 0.86],
         tv: [0.93, 0.09, 0.6],
         tv_stand: [1.33, 0.42, 0.53],
+        usb_charger: [0.035, 0.028, 0.065],
         upholstered_bed: [1.7, 2.2, 1.05],
         vanity: [0.95, 0.52, 0.84],
         vase: [0.22, 0.22, 0.34],
         vending_machine: [0.95, 0.8, 1.9],
+        water_bottle: [0.09, 0.09, 0.3],
+        water_glass: [0.085, 0.085, 0.12],
         wall_clock: [0.32, 0.06, 0.32],
         wall_coat_hooks: [0.7, 0.07, 0.18],
         wall_lamp: [0.22, 0.19, 0.3],
@@ -165,12 +178,248 @@
         woven_pendant: [0.58, 0.58, 2.7],
       },
       examples = {
-        Bedroom:
-          "# Bedroom: 3.5 × 4 m. GRID is metres per cell.\n# Furniture: asset[width x depth x height]~wall<product URL>.\n# Links are product references; the renderer uses generic shapes.\nGRID 0.5\nROOM main 7x8 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS north\nSURFACE wood\nMOUNT east 4 mirror\nLIGHT ceiling_light AT 3,4 POWER 18\nLAYOUT main\n. | . | . | . | . | . | .\n. | . | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .\n. | . | . | . | . | . | .\n. | . | . | . | . | . | .\n. | . | . | . | . | . | .\n. | side_table[0.55x0.55x0.45]<https://www.ikea.com/us/en/p/lack-side-table-white-30449908/> | . | . | . | . | .\n. | . | . | . | . | dresser~east | .\n. | . | . | . | . | . | .\nEND",
-        "Kitchen & dining":
-          "# Kitchen: 4 × 3.5 m. @ rotates furniture in degrees.\n# Append <https://...> to furniture to keep its product link.\nGRID 0.5\nROOM main 8x7 AT 0,0\nWALLS north east south west\nDOORS south\nWINDOWS east\nSURFACE tile\nLIGHT ceiling_light AT 4,3 POWER 18\nLAYOUT main\n. | . | . | . | . | . | . | .\n. | fridge~north | . | . | kitchen_counter[1.35x0.62x0.9]~north | . | stove~north | .\n. | . | . | . | . | . | . | .\n. | . | . | . | kitchen_chair | . | . | .\n. | . | . | . | . | . | . | .\n. | . | kitchen_chair@90 | . | kitchen_table[1.4x0.78x0.74]<https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/> | . | kitchen_chair@270 | .\n. | . | . | . | . | . | . | .\nEND",
-        "Small apartment":
-          "# A 27 m² apartment: living/kitchen, bedroom and bathroom.\n# AT places rooms in grid cells; matching DOORS connect rooms.\n# Append <https://...> to furniture; click it to open the product.\n# Rendered furniture is generic. Set dimensions to your actual item.\nGRID 0.5\nROOM living 8x6 AT 0,0\nWALLS north east south west\nDOORS east south\nWINDOWS north west\nSURFACE wood\nLIGHT ceiling_light AT 3,5 POWER 18\nROOM bedroom 6x6 AT 8,0\nWALLS north east south west\nDOORS west south\nWINDOWS north east\nSURFACE wood\nLIGHT ceiling_light AT 3,4 POWER 12\nROOM bathroom 6x4 AT 8,6\nWALLS north east south west\nDOORS north\nWINDOWS none\nSURFACE tile\nLIGHT ceiling_light AT 3,2 POWER 12\nLAYOUT living\n. | . | . | . | . | . | . | .\n. | fridge~north | . | . | . | kitchenette[2.1x0.65x2.25]~north | . | .\n. | . | . | . | . | desk[1x0.6x0.74]<https://www.ikea.com/us/en/p/linnmon-adils-table-white-s29932181/> | . | .\n. | sofa~west | . | . | . | . | . | .\n. | . | . | . | coffee_table | . | . | .\n. | . | . | . | . | . | . | .\nEND\nLAYOUT bedroom\n. | . | . | . | . | .\n. | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .\n. | . | . | . | . | .\n. | . | . | . | . | .\n. | . | . | . | . | .\n. | . | . | . | . | .\nEND\nLAYOUT bathroom\n. | . | . | . | . | .\n. | shower~west | . | . | toilet~east | .\n. | . | . | . | . | .\n. | bathroom_vanity~south | . | . | . | .\nEND",
+        Bedroom: `DETAIL project "Bedroom: 3.5 × 4 m. GRID is metres per cell."
+DETAIL project "Furniture: asset[width x depth x height]~wall<product URL>."
+DETAIL project "Links are product references; the renderer uses generic shapes."
+GRID 0.5
+ROOM main 7x8 AT 0,0
+WALLS north east south west
+DOORS south
+WINDOWS north
+SURFACE wood
+MOUNT east 4 mirror
+LIGHT ceiling_light AT 3,4 POWER 18
+LAYOUT main
+. | . | . | . | . | . | .
+. | . | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .
+. | . | . | . | . | . | .
+. | . | . | . | . | . | .
+. | . | . | . | . | . | .
+. | side_table[0.55x0.55x0.45]<https://www.ikea.com/us/en/p/lack-side-table-white-30449908/> | . | . | . | . | .
+. | . | . | . | . | dresser~east | .
+. | . | . | . | . | . | .
+END`,
+        "Kitchen & dining": `DETAIL project "Kitchen: 4 × 3.5 m. @ rotates furniture in degrees."
+DETAIL project "Append <https://...> to furniture to keep its product link."
+GRID 0.5
+ROOM main 8x7 AT 0,0
+WALLS north east south west
+DOORS south
+WINDOWS east
+SURFACE tile
+LIGHT ceiling_light AT 4,3 POWER 18
+LAYOUT main
+. | . | . | . | . | . | . | .
+. | fridge~north | . | . | kitchen_counter[1.35x0.62x0.9]~north | . | stove~north | .
+. | . | . | . | . | . | . | .
+. | . | . | . | kitchen_chair | . | . | .
+. | . | . | . | . | . | . | .
+. | . | kitchen_chair@90 | . | kitchen_table[1.4x0.78x0.74]<https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/> | . | kitchen_chair@270 | .
+. | . | . | . | . | . | . | .
+END`,
+        "Small apartment": `DETAIL project "A 27 m² apartment: living/kitchen, bedroom and bathroom."
+DETAIL project "AT places rooms in grid cells; matching DOORS connect rooms."
+DETAIL project "Append <https://...> to furniture; click it to open the product."
+DETAIL project "Rendered furniture is generic. Set dimensions to your actual item."
+GRID 0.5
+ROOM living 8x6 AT 0,0
+WALLS north east south west
+DOORS east south
+WINDOWS north west
+SURFACE wood
+LIGHT ceiling_light AT 3,5 POWER 18
+ROOM bedroom 6x6 AT 8,0
+WALLS north east south west
+DOORS west south
+WINDOWS north east
+SURFACE wood
+LIGHT ceiling_light AT 3,4 POWER 12
+ROOM bathroom 6x4 AT 8,6
+WALLS north east south west
+DOORS north
+WINDOWS none
+SURFACE tile
+LIGHT ceiling_light AT 3,2 POWER 12
+LAYOUT living
+. | . | . | . | . | . | . | .
+. | fridge~north | . | . | . | kitchenette[2.1x0.65x2.25]~north | . | .
+. | . | . | . | . | desk[1x0.6x0.74]<https://www.ikea.com/us/en/p/linnmon-adils-table-white-s29932181/> | . | .
+. | sofa~west | . | . | . | . | . | .
+. | . | . | . | coffee_table | . | . | .
+. | . | . | . | . | . | . | .
+END
+LAYOUT bedroom
+. | . | . | . | . | .
+. | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+END
+LAYOUT bathroom
+. | . | . | . | . | .
+. | shower~west | . | . | toilet~east | .
+. | . | . | . | . | .
+. | bathroom_vanity~south | . | . | . | .
+END`,
+        "Καλαμαριά · apartment": `DETAIL project "Καλαμαριά · Κρεβατοκάμαρα, μπαλκόνι, σαλόνι, κουζίνα, δωμάτιο, μπάνιο."
+DETAIL project "Ενδεικτική κάτοψη — δεν δόθηκαν πραγματικές διαστάσεις δωματίων."
+DETAIL project "GRID 0.26 m. Μπαλκόνι: 6 × 0.26 = 1.56 m βάθος."
+DETAIL project "Γενικά μοντέλα, όχι ακριβή αντίγραφα προϊόντων. Κλικ για σύνδεσμο."
+DETAIL project "Επιβεβαιωμένα: GEDVED 154×84×85, UDSBJERG 66×68×84 cm;"
+DETAIL project "HÖGSTEN 73×65×83, SUNDSÖ 65×65×71 cm. Τα υπόλοιπα είναι προσεγγίσεις."
+DETAIL project "Κρεβάτι 160×200 cm από το μέγεθος GRUSNARV· πάχος στρώματος ενδεικτικό."
+GRID 0.26
+ROOM living 16x14 AT 0,0
+WALLS north east south west
+DOORS north east south
+WINDOWS west
+SURFACE wood
+MOUNT east 3 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45
+MOUNT east 3 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>
+MOUNT west 11 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>
+LIGHT ceiling_light AT 8,7 POWER 18
+ROOM kitchen 12x14 AT 16,0
+WALLS north east south west
+DOORS west south
+WINDOWS east
+SURFACE tile
+LIGHT ceiling_light AT 6,7 POWER 18
+ROOM bedroom 16x14 AT 0,14
+WALLS north east south west
+DOORS north
+WINDOWS west
+SURFACE wood
+LIGHT ceiling_light AT 10,7 POWER 12
+ROOM study 12x8 AT 16,14
+WALLS north east south west
+MOUNT north 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2
+DOORS north south
+WINDOWS east
+SURFACE wood
+LIGHT ceiling_light AT 6,4 POWER 12
+ROOM bathroom 12x6 AT 16,22
+WALLS north east south west
+DOORS north
+WINDOWS east
+SURFACE tile
+MOUNT south 8 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>
+LIGHT ceiling_light AT 6,3 POWER 12
+BALCONY balcony 28x6 AT 0,-6
+WALLS none
+RAILS north east west
+SURFACE tile
+DETAIL living "ΣΑΛΟΝΙ — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."
+DETAIL living "Aristo: επιτοίχιο 135×31.6×25 cm, ενδεικτικό ύψος βάσης 45 cm."
+DETAIL living "HAMA 220810 (στήριξη TV)" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>
+DETAIL living "Εκκρεμεί ντίζα μανιβέλας" <https://karol.gr/product/ntiza-manivelas-exagoni/>
+DETAIL living "Αντικατάσταση: Ξενοφώντος 8–10 Καλαμαριά" <https://www.avraampanagiotidis.gr/>
+LAYOUT living
+.
+.
+.
+.
+.
+.
+. | . | grey_sofa[1.54x0.84x0.85]~west<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> | . | . | . | jute_rug[1.6x2x0.018]
+.
+.
+.
+. | . | . | . | . | . | coffee_table[0.9x0.5x0.4] | . | . | . | grey_armchair[0.66x0.68x0.84]@-35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>
+.
+. | . | . | . | . | . | . | . | . | . | . | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>
+.
+END
+DETAIL kitchen "ΚΟΥΖΙΝΑ — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."
+DETAIL kitchen "Απορροφητήρας Franke" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>
+DETAIL kitchen "Ανταλλακτικό GEYSER ARAGON EH" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>
+DETAIL kitchen "Έρευνα αγοράς: πλυντήριο πιάτων — δεν έχει επιλεγεί, δεν τοποθετήθηκε."
+LAYOUT kitchen
+.
+. | . | fridge[0.6x0.66x1.86]~north<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> | . | . | . | sink[1.05x0.6x0.9]~north<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | . | stove[0.6x0.6x0.88]~north<https://manuall.gr/franke-ca-52-m-xs-fournos/>
+.
+.
+.
+.
+.
+.
+. | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>
+.
+.
+.
+.
+.
+END
+LAYOUT tableware
+plate<https://www.ikea.gr/proioda/fargklar-piato-mat-4-tem-26-cm/70479644/> | water_bottle<https://www.e-jumbo.gr/kouzina/potiria-boukalia-koupes/gyalina-boukalia-nerou/boukalia-vidota/boukalia-vidota-diafana/boukali-nerou-gyalino-kymatisto-schedio-metalliko-kapaki-1.25lt_1642315/> | water_glass<https://www.ikea.com/lt/en/p/ikea-365-glass-clear-glass-60279711/>
+END
+DETAIL bedroom "ΚΡΕΒΑΤΟΚΑΜΑΡΑ — Grecostrom Structure."
+DETAIL bedroom "GRUSNARV (προστατευτικό στρώματος)" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>
+DETAIL bedroom "Εκκρεμότητες: αλλαγή ανεμιστήρα με του Πευκοχωρίου, διάφανες IKEA με γάντζο."
+DETAIL bedroom "Ο Morris και οι κουρτίνες τοποθετήθηκαν ως ενδεικτικά υπάρχοντα/μελλοντικά."
+LAYOUT bedroom
+.
+. | . | nightstand(bedside_on_top)~north
+. | . | . | . | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>
+.
+.
+.
+.
+curtain_pair[1.8x0.12x2.5]~west
+.
+.
+. | . | pedestal_fan<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>
+. | . | . | . | . | . | . | . | . | . | . | . | . | wardrobe~east
+.
+.
+END
+LAYOUT bedside
+air_quality_sensor<https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/> | usb_charger<https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>
+END
+DETAIL study "ΔΩΜΑΤΙΟ — Dell XPS 13 9343, κλασική κιθάρα, ρούχα, βαλίτσα/back-packs."
+DETAIL study "VATTENKAR 52×26 cm ως ράφι, ενδεικτικό ύψος βάσης 1.20 m."
+DETAIL study "Δεν τοποθετήθηκε γραφείο· τελικά επιλέχθηκε το stand ως ράφι."
+DETAIL study "Εκκρεμεί: CMOS ML1220 με καλώδια/φις, εσώρουχα Tezenis (Cosmos), χορδές κιθάρας."
+DETAIL study "Έρευνα shelf bracket· ο δοσμένος σύνδεσμος αφορά steppers" <https://www.skroutz.gr/c/811/steppers.html>
+DETAIL study "Προηγούμενες επιλογές γραφείου, όχι επιλεγμένες" <https://www.skroutz.gr/s/55807212/Grafeio-Ravan-Xylino-sapphire-oak-me-Metallika-Podia-72x45x29ek-GP041-0079-2.html?product_id=271186251>
+DETAIL study "Προηγούμενη επιλογή γραφείου" <https://www.skroutz.gr/s/60752062/grafeio-xylino-leyko-80x40ek-02842134.html>
+LAYOUT study
+.
+.
+.
+. | garment_rack~west
+.
+. | . | . | . | . | . | . | . | . | . | guitar~east
+. | suitcase~west
+.
+END
+LAYOUT laptop
+laptop<https://web.archive.org/web/20260422013443/https://dl.dell.com/manuals/all-products/esuprt_laptop/esuprt_xps_laptop/xps-13-9343-laptop_reference%20guide_en-us.pdf>
+END
+DETAIL bathroom "ΜΠΑΝΙΟ — πλυντήριο (manual), καθρέπτης Drop Gusto Wood Cut 60 cm."
+LAYOUT bathroom
+.
+. | . | . | . | . | . | . | . | . | washing_machine[0.6x0.6x0.85]~east<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>
+. | shower[0.8x0.8x2.05]~west
+.
+. | . | . | . | toilet~south | . | . | . | bathroom_vanity~south
+.
+END
+DETAIL balcony "ΜΠΑΛΚΟΝΙ — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."
+DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί, παραμένει κενός χώρος δεξιά."
+DETAIL balcony "MADORA" <https://www.leroymerlin.gr/gr/epipla-diamorfosi-exoterikou-horou/epipla-kipou-axesouar/kounies/kounia-dithesia-madora-alouminiowicker-se-kafe-hroma-86492377>
+DETAIL balcony "HM5905.02, 150×90×128h cm" <https://www.freebox.gr/en/product/hanging-nest-for-2-hm5905-02-cappuccino-rope-cream-cushions-150x90x128hcm/>
+DETAIL balcony "Βάθος 1.56 m: το σώμα 0.90 m αφήνει 0.66 m συνολικά, πριν από βάση/αιώρηση."
+DETAIL balcony "Απαιτούνται πραγματικές διαστάσεις βάσης και περιθώρια κατασκευαστή για έλεγχο."
+LAYOUT balcony
+.
+.
+. | . | . | outdoor_chair[0.73x0.65x0.83]@90<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/> | . | . | . | folding_table[0.65x0.65x0.71]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/> | . | . | . | outdoor_chair[0.73x0.65x0.83]@270<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+.
+.
+.
+END
+DETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>`,
       },
       fixtureNames = new Set(
         Object.keys(catalog).filter((name) => /light|lamp|pendant|lantern/u.test(name)),
@@ -182,6 +431,7 @@
         "poster",
         "wall_clock",
         "wall_shelf",
+        "tv_stand",
         "botanical_print",
         "wall_tv",
         "wall_outlet",
@@ -325,6 +575,7 @@
         fail("Layout exceeds 200,000 characters", 1);
       }
       const program = {
+        details: [],
         exteriorWallThickness: 0.24,
         facade: "none",
         grid: 0.82,
@@ -344,8 +595,20 @@
       for (let index = 0; index < lines.length; index += 1) {
         const original = lines[index];
         let insideLink = false,
+          quoted = false,
+          escaped = false,
           end = original.length;
         for (let i = 0; i < original.length; i += 1) {
+          if (quoted) {
+            if (escaped) escaped = false;
+            else if (original[i] === "\\") escaped = true;
+            else if (original[i] === '"') quoted = false;
+            continue;
+          }
+          if (original[i] === '"' && !insideLink) {
+            quoted = true;
+            continue;
+          }
           if (original[i] === "<") {
             insideLink = true;
           }
@@ -394,7 +657,23 @@
           continue;
         }
         let m;
-        if ((m = /^GRID\s+([\d.]+)$/iu.exec(text))) {
+        if ((m = /^DETAIL\s+(\w+)\s+("(?:[^"\\]|\\.)*")(?:\s+<([^<>]+)>)?$/iu.exec(text))) {
+          let detail;
+          try {
+            detail = JSON.parse(m[2]);
+          } catch {
+            fail("DETAIL needs a JSON string", line);
+          }
+          if (!detail.trim() || detail.length > 1000 || program.details.length >= 128) {
+            fail("Use at most 128 details, each 1–1000 characters", line);
+          }
+          program.details.push({
+            room: m[1].toLowerCase(),
+            text: detail,
+            url: productUrl(m[3], line),
+            line,
+          });
+        } else if ((m = /^GRID\s+([\d.]+)$/iu.exec(text))) {
           program.grid = Number(m[1]);
           if (program.grid < 0.2 || program.grid > 3 || !Number.isFinite(program.grid)) {
             fail("GRID must be 0.2–3 metres", line);
@@ -510,17 +789,30 @@
             z: Number(m[3]),
           });
         } else if (
-          (m = /^MOUNT\s+(north|east|south|west)\s+(\d+)\s+(\w+)(?:<([^<>]+)>)?$/iu.exec(text))
+          (m = /^MOUNT\s+(north|east|south|west)\s+(\d+)\s+(\S+)(?:\s+HEIGHT\s+([\d.]+))?$/iu.exec(
+            text,
+          ))
         ) {
-          if (!room || !mountNames.has(m[3].toLowerCase())) {
-            fail("MOUNT needs a room and a wall decoration, wall_lamp or air_conditioner", line);
+          const token = parseToken(m[3], line, original.indexOf(m[3])),
+            height = m[4] === undefined ? undefined : Number(m[4]);
+          if (!room || !token || !mountNames.has(token.name) || token.wall || token.yaw !== 0) {
+            fail(
+              "MOUNT needs a room and a wall decoration or fixture without rotation or wall placement",
+              line,
+            );
+          }
+          if (
+            height !== undefined &&
+            (!Number.isFinite(height) || height < 0 || height + token.dimensions[2] > room.height)
+          ) {
+            fail("MOUNT HEIGHT places the bottom of the fixture inside the room", line);
           }
           room.mounts.push({
+            ...token,
             cell: Number(m[2]),
+            height,
             line,
-            name: m[3].toLowerCase(),
             side: m[1].toLowerCase(),
-            url: productUrl(m[4], line),
           });
         } else if ((m = /^WALL_THICKNESS\s+([\d.]+)\s+([\d.]+)$/iu.exec(text))) {
           const values = [Number(m[1]), Number(m[2])];
@@ -555,6 +847,11 @@
       }
       if (program.rooms.length === 0) {
         fail("Add a ROOM and its LAYOUT", 1);
+      }
+      for (const detail of program.details) {
+        if (detail.room !== "project" && !roomNames.has(detail.room)) {
+          fail(`Unknown detail room “${detail.room}”`, detail.line);
+        }
       }
       const minX = Math.min(...program.rooms.map((r) => r.x)),
         minZ = Math.min(...program.rooms.map((r) => r.z));
@@ -658,11 +955,28 @@
         fixtureCount +=
           lightCounts.get(r.name) +
           r.lights.length +
-          r.mounts.filter((mount) => fixtureNames.has(mount.name)).length;
+          r.mounts.reduce(
+            (total, mount) =>
+              total +
+              Number(fixtureNames.has(mount.name)) +
+              (mount.child ? lightCounts.get(mount.child) || 0 : 0),
+            0,
+          );
         if (fixtureCount > 64) {
           fail("A design supports at most 64 light fixtures", r.line);
         }
-        instanceCount += sizes.get(r.name) + r.mounts.length + r.lights.length;
+        for (const mount of r.mounts) {
+          if (mount.child && !program.layouts[mount.child]) {
+            fail(`Missing LAYOUT ${mount.child}`, mount.line);
+          }
+        }
+        instanceCount +=
+          sizes.get(r.name) +
+          r.lights.length +
+          r.mounts.reduce(
+            (total, mount) => total + 1 + (mount.child ? sizes.get(mount.child) : 0),
+            0,
+          );
         if (instanceCount > 1024) {
           fail("A design supports at most 1,024 expanded furniture instances", r.line);
         }
@@ -844,13 +1158,19 @@ const initializeStudio = async function initializeStudio() {
             for (let x = 0; x < 256; x += 1) {
               seed = (Math.imul(seed, 1_664_525) + 1_013_904_223 + 4_294_967_296) % 4_294_967_296;
               const noise = seed / 4_294_967_296;
-              const warp = Math.sin((x / 256) * Math.PI * 2) * 2,
-                grain = (y / 256) * Math.PI * 24 + warp;
+              const u = (x / 256) * Math.PI * 2,
+                v = (y / 256) * Math.PI * 2,
+                warp = Math.sin(u) * 0.8 + Math.sin(u * 3 + Math.sin(v)) * 0.25,
+                grain = v * 18 + warp;
               const value =
                 kind === "wood"
-                  ? 225 + 7 * Math.sin(grain) + 3 * Math.sin(grain * 3) + 6 * noise
+                  ? 224 +
+                    6 * Math.sin(grain) +
+                    2 * Math.sin(grain * 3 + u) +
+                    4 * Math.sin(v * 5 + warp) +
+                    4 * noise
                   : kind === "fabric"
-                    ? 232 + 5 * Math.cos(x * Math.PI) * Math.cos(y * Math.PI) + 7 * noise
+                    ? 231 + 7 * Math.sin(u * 64) * Math.sin(v * 64) + 5 * noise
                     : 237 + 10 * noise;
               const i = (y * 256 + x) * 4;
               pixels.data[i + 2] = value;
@@ -871,7 +1191,9 @@ const initializeStudio = async function initializeStudio() {
         weave = texture("fabric"),
         plaster = texture("plaster"),
         physical = (color, options = {}) =>
-          new THREE.MeshPhysicalNodeMaterial({ color, roughness: 0.7, ...options });
+          new (options.sheen || options.clearcoat
+            ? THREE.MeshPhysicalNodeMaterial
+            : THREE.MeshStandardNodeMaterial)({ color, roughness: 0.7, ...options });
       this.material = {
         accent: physical("#b56e46", { map: weave, sheen: 0.5 }),
         brass: physical("#b69b60", { metalness: 0.85, roughness: 0.26 }),
@@ -881,11 +1203,24 @@ const initializeStudio = async function initializeStudio() {
         darkWood: physical("#62503e", { map: woodMap, roughness: 0.48 }),
         fabric: physical("#84968b", {
           bumpMap: weave,
-          bumpScale: 0.004,
+          bumpScale: 0.0015,
           map: weave,
           sheen: 0.7,
           sheenColor: new THREE.Color("#b8c6ba"),
           sheenRoughness: 0.8,
+        }),
+        greyFabric: physical("#969796", {
+          bumpMap: weave,
+          bumpScale: 0.0015,
+          map: weave,
+          sheen: 0.5,
+          sheenRoughness: 0.8,
+        }),
+        wicker: physical("#edece5", {
+          bumpMap: weave,
+          bumpScale: 0.002,
+          map: weave,
+          roughness: 0.85,
         }),
         glass: physical("#d0e0dc", {
           depthWrite: false,
@@ -899,7 +1234,7 @@ const initializeStudio = async function initializeStudio() {
         ground: new THREE.MeshStandardNodeMaterial({ color: "#e3dfd5", roughness: 1 }),
         leaf: physical("#435941", { roughness: 0.82, side: THREE.DoubleSide }),
         leafLight: physical("#738261", { roughness: 0.85, side: THREE.DoubleSide }),
-        linen: physical("#e6ddcc", { bumpMap: weave, bumpScale: 0.004, map: weave, sheen: 0.6 }),
+        linen: physical("#e6ddcc", { bumpMap: weave, bumpScale: 0.0015, map: weave, sheen: 0.6 }),
         metal: physical("#515855", { metalness: 0.85, roughness: 0.27 }),
         mirror: physical("#fafafa", { metalness: 1, roughness: 0.015 }),
         rug: physical("#c2b496", { bumpMap: weave, bumpScale: 0.015, map: weave }),
@@ -907,7 +1242,7 @@ const initializeStudio = async function initializeStudio() {
         soil: physical("#45362a"),
         stone: physical("#c5beb0", {
           bumpMap: plaster,
-          bumpScale: 0.006,
+          bumpScale: 0.002,
           map: plaster,
           roughness: 0.5,
         }),
@@ -915,14 +1250,14 @@ const initializeStudio = async function initializeStudio() {
         tile: physical("#d5d1c7", { clearcoat: 0.3, roughness: 0.24 }),
         wall: physical("#ebe4d9", {
           bumpMap: plaster,
-          bumpScale: 0.006,
+          bumpScale: 0.002,
           map: plaster,
           roughness: 0.94,
         }),
         white: physical("#f2efe7", { clearcoat: 0.25, roughness: 0.42 }),
         wood: physical("#b58a59", {
           bumpMap: woodMap,
-          bumpScale: 0.009,
+          bumpScale: 0.002,
           map: woodMap,
           roughness: 0.45,
         }),
@@ -938,7 +1273,7 @@ const initializeStudio = async function initializeStudio() {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(...position);
       mesh.receiveShadow = true;
-      mesh.castShadow = mesh.receiveShadow;
+      mesh.castShadow = !material.transparent;
       parent.add(mesh);
       return mesh;
     }
@@ -946,11 +1281,48 @@ const initializeStudio = async function initializeStudio() {
       const key = `box:${w}:${h}:${d}:${round}`;
       return AssetLibrary.mesh(
         parent,
-        this.geometry(key, () =>
-          round
-            ? new RoundedBoxGeometry(w, h, d, 2, Math.min(round, w / 3, h / 3, d / 3))
-            : new THREE.BoxGeometry(w, h, d),
-        ),
+        this.geometry(key, () => {
+          const geometry = round
+              ? new RoundedBoxGeometry(w, h, d, 2, Math.min(round, w / 3, h / 3, d / 3))
+              : new THREE.BoxGeometry(w, h, d),
+            uv = geometry.getAttribute("uv"),
+            normals = geometry.getAttribute("normal");
+          for (let i = 0; i < uv.count; i += 1) {
+            const nx = Math.abs(normals.getX(i)),
+              ny = Math.abs(normals.getY(i)),
+              nz = Math.abs(normals.getZ(i));
+            uv.setXY(
+              i,
+              uv.getX(i) * (nx > ny && nx > nz ? d : w),
+              uv.getY(i) * (ny > nx && ny > nz ? d : h),
+            );
+          }
+          return geometry;
+        }),
+        material,
+        [x, y, z],
+      );
+    }
+    cloth(parent, w, d, x, y, z, material, drape = 0.08) {
+      return AssetLibrary.mesh(
+        parent,
+        this.geometry(`cloth:${w}:${d}:${drape}`, () => {
+          const geometry = new THREE.PlaneGeometry(w, d, 16, 12);
+          geometry.rotateX(-Math.PI / 2);
+          const positions = geometry.getAttribute("position"),
+            uv = geometry.getAttribute("uv");
+          for (let i = 0; i < positions.count; i += 1) {
+            const px = positions.getX(i),
+              pz = positions.getZ(i),
+              edge = THREE.MathUtils.smoothstep(Math.abs(px) / (w / 2), 0.84, 1),
+              fold =
+                Math.sin(px * 17 + Math.sin(pz * 8)) * 0.008 + Math.sin(pz * 11 + px * 4) * 0.004;
+            positions.setY(i, fold - edge * drape);
+            uv.setXY(i, uv.getX(i) * w, uv.getY(i) * d);
+          }
+          geometry.computeVertexNormals();
+          return geometry;
+        }),
         material,
         [x, y, z],
       );
@@ -958,7 +1330,10 @@ const initializeStudio = async function initializeStudio() {
     cylinder(parent, r1, r2, h, x, y, z, material = this.material.wood) {
       return AssetLibrary.mesh(
         parent,
-        this.geometry(`cylinder:${r1}:${r2}:${h}`, () => new THREE.CylinderGeometry(r1, r2, h, 32)),
+        this.geometry(
+          `cylinder:${r1}:${r2}:${h}`,
+          () => new THREE.CylinderGeometry(r1, r2, h, Math.max(r1, r2) < 0.04 ? 12 : 24),
+        ),
         material,
         [x, y, z],
       );
@@ -966,7 +1341,7 @@ const initializeStudio = async function initializeStudio() {
     sphere(parent, x, y, z, sx, sy, sz, material) {
       const mesh = AssetLibrary.mesh(
         parent,
-        this.geometry("sphere", () => new THREE.SphereGeometry(1, 24, 16)),
+        this.geometry("sphere", () => new THREE.SphereGeometry(1, 20, 12)),
         material,
         [x, y, z],
       );
@@ -1024,8 +1399,9 @@ const initializeStudio = async function initializeStudio() {
       ) {
         legs(0.15);
         box(w, 0.19, d, 0, 0.21, 0, m.darkWood);
-        const back = !/bench|pouf|ottoman/u.test(name);
-        box(w - 0.04, h * 0.35, d - 0.04, 0, h * 0.4, 0, m.fabric, 0.055);
+        const back = !/bench|pouf|ottoman/u.test(name),
+          upholstery = name.startsWith("grey_") ? m.greyFabric : m.fabric;
+        box(w - 0.04, h * 0.35, d - 0.04, 0, h * 0.4, 0, upholstery, 0.055);
         const count = Math.max(1, Math.round(w / 0.8));
         for (let i = 0; i < count; i += 1) {
           box(
@@ -1035,15 +1411,15 @@ const initializeStudio = async function initializeStudio() {
             ((i - (count - 1) / 2) * (w - 0.12)) / count,
             h * 0.54,
             0,
-            m.fabric,
+            upholstery,
             0.045,
           );
         }
         if (back) {
-          box(w - 0.02, h * 0.53, 0.18, 0, h * 0.71, -d / 2 + 0.1, m.fabric, 0.06).rotation.x =
+          box(w - 0.02, h * 0.53, 0.18, 0, h * 0.71, -d / 2 + 0.1, upholstery, 0.06).rotation.x =
             -0.08;
           for (const s of [-1, 1]) {
-            box(0.13, h * 0.42, d, s * (w / 2 - 0.07), h * 0.6, 0, m.fabric, 0.04);
+            box(0.13, h * 0.42, d, s * (w / 2 - 0.07), h * 0.6, 0, upholstery, 0.04);
           }
           for (const s of [-1, 1]) {
             const pillow = box(
@@ -1073,8 +1449,8 @@ const initializeStudio = async function initializeStudio() {
           0.045,
         );
         box(w - 0.05, 0.2, d - 0.08, 0, 0.4, 0, m.linen, 0.055);
-        box(w - 0.03, 0.045, d * 0.66, 0, 0.515, d * 0.15, m.linen, 0.014);
-        box(w + 0.01, 0.09, d * 0.24, 0, 0.535, d * 0.28, m.fabric, 0.022);
+        this.cloth(group, w + 0.015, d * 0.66, 0, 0.53, d * 0.15, m.linen);
+        this.cloth(group, w + 0.025, d * 0.24, 0, 0.55, d * 0.28, m.fabric, 0.1);
         for (const s of [-1, 1]) {
           box(w * 0.4, 0.14, d * 0.22, s * w * 0.23, 0.57, -d * 0.28, m.linen, 0.045);
         }
@@ -1083,6 +1459,42 @@ const initializeStudio = async function initializeStudio() {
             for (const t of [-1, 1]) {
               cyl(0.02, 0.02, h, s * w * 0.48, h / 2, t * d * 0.48, m.darkWood);
             }
+          }
+        }
+      } else if (/outdoor_chair|patio_chair|woven_chair/u.test(name)) {
+        for (const side of [-1, 1]) {
+          for (const front of [-1, 1]) {
+            this.rod(
+              group,
+              [side * w * 0.36, 0, front * d * 0.32],
+              [side * w * 0.32, h * 0.5, front * d * 0.28],
+              0.018,
+              m.white,
+            );
+          }
+          box(0.045, 0.05, d * 0.88, side * w * 0.45, h * 0.72, 0, m.wicker, 0.018);
+          this.rod(
+            group,
+            [side * w * 0.45, h * 0.48, d * 0.3],
+            [side * w * 0.45, h * 0.72, d * 0.3],
+            0.012,
+            m.white,
+          );
+        }
+        box(w * 0.86, 0.065, d * 0.9, 0, h * 0.5, 0, m.wicker, 0.035);
+        box(w * 0.9, h * 0.47, 0.075, 0, h * 0.75, -d * 0.4, m.wicker, 0.035).rotation.x = -0.12;
+        box(w * 0.68, 0.055, d * 0.67, 0, h * 0.56, d * 0.05, m.greyFabric, 0.025);
+      } else if (name === "folding_table") {
+        box(w, 0.028, d, 0, h - 0.014, 0, m.white, 0.008);
+        for (const side of [-1, 1]) {
+          for (const front of [-1, 1]) {
+            this.rod(
+              group,
+              [side * w * 0.37, 0.015, front * d * 0.4],
+              [side * w * 0.37, h - 0.03, -front * d * 0.32],
+              0.012,
+              m.white,
+            );
           }
         }
       } else if (/chair|stool/u.test(name)) {
@@ -1118,20 +1530,25 @@ const initializeStudio = async function initializeStudio() {
         }
       } else if (/rug|mat|linen_throw/u.test(name)) {
         box(w, Math.max(0.012, h), d, 0, h / 2, 0, m.rug, 0.003);
-        for (const s of [-1, 1]) {
-          for (let i = 0; i < Math.min(45, w * 24); i += 1) {
-            box(
-              0.005,
-              0.004,
-              0.05,
+        const count = Math.min(45, Math.floor(w * 24)),
+          fringe = new THREE.InstancedMesh(
+            this.geometry("rug-fringe", () => new THREE.BoxGeometry(0.005, 0.004, 0.05)),
+            m.linen,
+            count * 2,
+          ),
+          matrix = new THREE.Matrix4();
+        for (let side = 0; side < 2; side += 1) {
+          for (let i = 0; i < count; i += 1) {
+            matrix.makeTranslation(
               -w / 2 + 0.025 + i * 0.04,
               h + 0.002,
-              s * (d / 2 + 0.02),
-              m.linen,
-              0,
+              (side ? 1 : -1) * (d / 2 + 0.02),
             );
+            fringe.setMatrixAt(side * count + i, matrix);
           }
         }
+        fringe.receiveShadow = true;
+        group.add(fringe);
       } else if (/plant|tree|palm|cypress|bougainvillea|flower|hedge|topiary|trellis/u.test(name)) {
         const potHeight = h * 0.28,
           radius = Math.min(w, d) * 0.28;
@@ -1359,6 +1776,67 @@ const initializeStudio = async function initializeStudio() {
             0.008,
           );
         }
+      } else if (name === "wall_shelf") {
+        box(w, 0.035, d, 0, h - 0.02, 0, m.wood, 0.006);
+        for (const side of [-1, 1]) {
+          box(0.022, h - 0.04, 0.025, side * w * 0.35, h / 2, -d / 2 + 0.02, m.metal, 0);
+          this.rod(
+            group,
+            [side * w * 0.35, 0.03, -d / 2],
+            [side * w * 0.35, h - 0.04, d / 2 - 0.02],
+            0.009,
+            m.metal,
+          );
+        }
+      } else if (name === "laptop") {
+        box(w, 0.012, d, 0, 0.006, 0, m.metal, 0.006);
+        box(w * 0.85, 0.002, d * 0.45, 0, 0.014, -d * 0.12, m.screen, 0.002);
+        box(w, h, 0.008, 0, h / 2, -d / 2 + 0.015, m.metal, 0.006);
+        box(w - 0.018, h - 0.018, 0.004, 0, h / 2, -d / 2 + 0.022, m.screen, 0.002);
+      } else if (name === "guitar") {
+        this.sphere(group, 0, h * 0.22, 0, w / 2, h * 0.22, d / 2, m.wood);
+        this.sphere(group, 0, h * 0.43, 0, w * 0.37, h * 0.16, d / 2, m.wood);
+        box(w * 0.13, h * 0.48, d * 0.32, 0, h * 0.7, 0, m.darkWood, 0.004);
+        box(w * 0.2, h * 0.12, d * 0.4, 0, h * 0.94, 0, m.wood, 0.005);
+        const hole = cyl(w * 0.12, w * 0.12, 0.003, 0, h * 0.39, d * 0.49, m.soil);
+        hole.rotation.x = Math.PI / 2;
+      } else if (name === "pedestal_fan") {
+        cyl(d * 0.45, d * 0.45, 0.04, 0, 0.02, 0, m.metal);
+        cyl(0.02, 0.025, h * 0.75, 0, h * 0.4, 0, m.metal);
+        const guard = new THREE.Mesh(
+          this.geometry("fan-guard", () => new THREE.TorusGeometry(w * 0.48, 0.008, 6, 32)),
+          m.metal,
+        );
+        guard.position.set(0, h - w / 2, 0);
+        group.add(guard);
+        for (let i = 0; i < 8; i += 1) {
+          const a = (i * Math.PI) / 4;
+          this.rod(
+            group,
+            [0, h - w / 2, 0.015],
+            [Math.cos(a) * w * 0.46, h - w / 2 + Math.sin(a) * w * 0.46, 0.015],
+            0.003,
+            m.metal,
+          );
+        }
+        this.sphere(group, 0, h - w / 2, 0.02, 0.035, 0.035, 0.018, m.white);
+      } else if (name === "robot_vacuum") {
+        cyl(w / 2, w / 2, h * 0.78, 0, h * 0.39, 0, m.white);
+        cyl(w * 0.12, w * 0.12, h * 0.22, 0, h * 0.89, 0, m.screen);
+      } else if (name === "air_quality_sensor" || name === "usb_charger") {
+        box(w, h, d, 0, h / 2, 0, m.white, 0.008);
+        box(w * 0.55, h * 0.2, 0.002, 0, h * 0.64, d / 2, m.screen, 0.001);
+      } else if (name === "water_glass" || name === "water_bottle") {
+        cyl(w * 0.45, w * 0.4, h * 0.78, 0, h * 0.39, 0, m.glass);
+        if (name === "water_bottle") {
+          cyl(w * 0.18, w * 0.4, h * 0.16, 0, h * 0.86, 0, m.glass);
+          cyl(w * 0.2, w * 0.2, h * 0.06, 0, h * 0.97, 0, m.metal);
+        }
+      } else if (name === "plate") {
+        cyl(w / 2, w * 0.43, h, 0, h / 2, 0, m.ceramic);
+      } else if (name === "suitcase") {
+        box(w, h * 0.88, d, 0, h * 0.44, 0, m.fabric, 0.035);
+        box(w * 0.32, h * 0.08, d * 0.2, 0, h * 0.94, 0, m.metal, 0.008);
       } else if (/book/u.test(name)) {
         box(w, h, d, 0, h / 2, 0, m.accent, 0.002);
         box(w - 0.01, h * 0.7, d - 0.01, 0, h / 2, 0, m.linen, 0);
@@ -1420,6 +1898,9 @@ const initializeStudio = async function initializeStudio() {
         group.rotation.y = THREE.MathUtils.degToRad(token.yaw);
         group.userData = { room, token };
         parent.add(group);
+        group.traverse((node) => {
+          if (node.isInstancedMesh) owned.push(node);
+        });
         objects.push(group);
         if (fixtureNames.has(token.name)) {
           const power = /wall/u.test(token.name) ? 6 : 15,
@@ -1505,7 +1986,14 @@ const initializeStudio = async function initializeStudio() {
           }
         }
         floor = new THREE.InstancedMesh(
-          library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
+          library.geometry("floor-plank", () => {
+            const geometry = new THREE.BoxGeometry(1, 1, 1),
+              uv = geometry.getAttribute("uv");
+            for (let i = 0; i < uv.count; i += 1) {
+              uv.setXY(i, uv.getX(i) * plankLength, uv.getY(i) * plankWidth);
+            }
+            return geometry;
+          }),
           m.wood,
           transforms.length,
         );
@@ -1690,9 +2178,21 @@ const initializeStudio = async function initializeStudio() {
         rail.rotation.y = turns[side];
         roomRoot.add(rail);
         box(rail, length, 0.045, 0.055, 0, 1.04, 0, m.darkWood);
-        for (let x = -length / 2; x <= length / 2; x += 0.16) {
-          box(rail, 0.016, 1, 0.016, x, 0.52, 0, m.metal, 0);
+        const count = Math.floor(length / 0.16) + 1,
+          posts = new THREE.InstancedMesh(
+            library.geometry("rail-post", () => new THREE.BoxGeometry(0.016, 1, 0.016)),
+            m.metal,
+            count,
+          ),
+          matrix = new THREE.Matrix4();
+        for (let i = 0; i < count; i += 1) {
+          matrix.makeTranslation(-length / 2 + i * 0.16, 0.52, 0);
+          posts.setMatrixAt(i, matrix);
         }
+        posts.castShadow = true;
+        posts.receiveShadow = true;
+        rail.add(posts);
+        owned.push(posts);
       }
       program.layouts[room.name].forEach((row, z) =>
         row.forEach((token, x) => {
@@ -1702,7 +2202,7 @@ const initializeStudio = async function initializeStudio() {
         }),
       );
       for (const mount of room.mounts) {
-        const [mw, md, mh] = catalog[mount.name],
+        const [mw, md, mh] = mount.dimensions,
           vertical = ["east", "west"].includes(mount.side),
           along = (mount.cell + 0.5) * program.grid,
           token = {
@@ -1721,7 +2221,7 @@ const initializeStudio = async function initializeStudio() {
             : mount.side === "south"
               ? d / 2 - md / 2 - 0.02
               : -d / 2 + md / 2 + 0.02;
-        addObject(token, [cx + x, y + Math.max(0.3, 1.5 - mh / 2), cz + z], room);
+        addObject(token, [cx + x, y + (mount.height ?? Math.max(0.3, 1.5 - mh / 2)), cz + z], room);
       }
       for (const light of room.lights) {
         const group = library.create(light.name),
@@ -1993,6 +2493,7 @@ const initializeStudio = async function initializeStudio() {
       this.sun.shadow.bias = -0.0002;
       this.sun.shadow.normalBias = 0.025;
       this.sun.shadow.radius = 3;
+      this.sun.shadow.autoUpdate = false;
       this.sun.shadow.intensity = 0.88;
       this.scene.add(this.sun, this.sun.target);
       const roomEnvironment = new RoomEnvironment(),
@@ -2075,6 +2576,7 @@ const initializeStudio = async function initializeStudio() {
       this.tour = undefined;
       this.disposeReflections();
       this.model = next;
+      this.sun.shadow.needsUpdate = true;
       this.scene.add(next.root);
       if (previous) {
         this.scene.remove(previous.root);
@@ -2542,6 +3044,7 @@ const initializeStudio = async function initializeStudio() {
     }
     updateSun(settings) {
       this.sunSettings = settings;
+      this.sun.shadow.needsUpdate = true;
       const date = new Date(
           Date.parse(`${settings.date}T${settings.time}:00Z`) - settings.offset * 3_600_000,
         ),
@@ -2593,6 +3096,14 @@ const initializeStudio = async function initializeStudio() {
     render() {
       this.renderer.info.reset();
       this.updateVisibility();
+      const shadowState =
+        JSON.stringify(this.options) +
+        this.mode +
+        this.model.walls.map((wall) => Number(wall.group.visible)).join("");
+      if (this.shadowState !== shadowState) {
+        this.shadowState = shadowState;
+        this.sun.shadow.needsUpdate = true;
+      }
       this.scene.updateMatrixWorld(true);
       this.camera.updateMatrixWorld(true);
       if (this.quality === "fast" || this.moving) {
@@ -2739,6 +3250,9 @@ const initializeStudio = async function initializeStudio() {
       } finally {
         this.renderer.setRenderTarget(null);
         target.dispose();
+        object.traverse((node) => {
+          if (node.isInstancedMesh) node.dispose();
+        });
         scene.clear();
         this.busy = false;
         this.requestRender();
@@ -2796,7 +3310,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -2850,6 +3364,7 @@ const initializeStudio = async function initializeStudio() {
       compiledSource = source;
       studio.render();
       ready = true;
+      renderProjectDetails();
       $("roomFocus").replaceChildren(
         new Option("Entire project", ""),
         ...program.rooms.map((r) => new Option(friendly(r.name), r.name)),
@@ -2891,6 +3406,35 @@ const initializeStudio = async function initializeStudio() {
       if (version === revision) {
         progress("");
       }
+    }
+  }
+  function renderProjectDetails() {
+    $("projectDetailsContent").replaceChildren();
+    $("projectDetailsButton").disabled = program.details.length === 0;
+    $("projectDetailsButton").hidden = program.details.length === 0;
+    const scopes = [...new Set(program.details.map((detail) => detail.room))];
+    for (const scope of scopes) {
+      const section = document.createElement("section"),
+        heading = document.createElement("h3"),
+        list = document.createElement("ul");
+      heading.textContent = scope === "project" ? "Project" : friendly(scope);
+      for (const detail of program.details.filter((item) => item.room === scope)) {
+        const item = document.createElement("li"),
+          text = document.createElement("span");
+        text.textContent = detail.text;
+        item.append(text);
+        if (detail.url) {
+          const link = document.createElement("a");
+          link.href = detail.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Product reference ↗";
+          item.append(link);
+        }
+        list.append(item);
+      }
+      section.append(heading, list);
+      $("projectDetailsContent").append(section);
     }
   }
   function clearSelection() {
@@ -3357,6 +3901,8 @@ const initializeStudio = async function initializeStudio() {
       showAssetResults();
       selectAsset(selectedAsset);
     });
+    $("projectDetailsButton").addEventListener("click", () => $("projectDetails").showModal());
+    $("closeProjectDetails").addEventListener("click", () => $("projectDetails").close());
     $("closeAssets").addEventListener("click", () => $("assetBrowser").close());
     $("assetBrowser").addEventListener("close", () => {
       previewRevision += 1;

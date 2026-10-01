@@ -161,3 +161,102 @@ test("mounts require wall fixtures or decorations", () => {
     /wall decoration/,
   );
 });
+
+test("mounted shelves preserve dimensions, children, links and bottom height", () => {
+  const p = parseProgram(
+    room().replace(
+      "LAYOUT main",
+      "MOUNT north 1 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://example.com/shelf> HEIGHT 1.2\nLAYOUT main",
+    ) + "\nLAYOUT laptop\nlaptop\nEND",
+  );
+  const mount = p.rooms[0].mounts[0];
+  assert.deepEqual(mount.dimensions, [0.52, 0.26, 0.08]);
+  assert.equal(mount.height, 1.2);
+  assert.equal(mount.child, "laptop");
+  assert.equal(mount.url, "https://example.com/shelf");
+  for (const token of [
+    "wall_shelf HEIGHT 9",
+    "wall_shelf HEIGHT 1..2",
+    "wall_shelf~north",
+    "wall_shelf@90",
+  ])
+    assert.throws(() =>
+      parseProgram(room().replace("LAYOUT main", `MOUNT north 1 ${token}\nLAYOUT main`)),
+    );
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace("LAYOUT main", "MOUNT north 1 wall_shelf(missing_on_top)\nLAYOUT main"),
+      ),
+    /Missing LAYOUT/,
+  );
+});
+
+test("mounted sub-layouts respect expanded asset and light budgets", () => {
+  const many = Array(33)
+    .fill("wall_shelf(items_on_top)")
+    .map((token) => `MOUNT north 1 ${token}`)
+    .join("\n");
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace("LAYOUT main", many + "\nLAYOUT main") +
+          "\nLAYOUT items\n" +
+          Array(33).fill("book").join(" | ") +
+          "\nEND",
+      ),
+    /expanded furniture/,
+  );
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace("LAYOUT main", "MOUNT north 1 wall_shelf(items_on_top)\nLAYOUT main") +
+          "\nLAYOUT items\n" +
+          Array(65).fill("table_lamp").join(" | ") +
+          "\nEND",
+      ),
+    /64 light fixtures/,
+  );
+});
+
+test("Kalamaria keeps all six spaces, exact balcony depth and raised product furniture", () => {
+  const p = parseProgram(examples["Καλαμαριά · apartment"]);
+  assert.equal(p.rooms.length, 6);
+  assert.equal(p.rooms.find((room) => room.kind === "balcony").rows * p.grid, 1.56);
+  assert.equal(p.rooms.find((room) => room.name === "study").mounts[0].height, 1.2);
+  assert.ok(
+    p.rooms
+      .find((room) => room.name === "living")
+      .mounts.some((mount) => mount.name === "tv_stand" && mount.height === 0.45),
+  );
+  assert.deepEqual(p.warnings, []);
+});
+
+test("project details preserve room inventory and safe links as parsed data", () => {
+  const p = parseProgram(examples["Καλαμαριά · apartment"]);
+  assert.ok(
+    p.details.some(
+      (detail) => detail.room === "kitchen" && detail.text.includes("πλυντήριο πιάτων"),
+    ),
+  );
+  assert.ok(
+    p.details.some((detail) => detail.room === "study" && detail.text.includes("CMOS ML1220")),
+  );
+  assert.ok(
+    p.details.some((detail) => detail.room === "balcony" && detail.url?.includes("freebox.gr")),
+  );
+  for (const source of Object.values(examples)) assert.ok(!/^\s*#/mu.test(source));
+  const detail = 'Quotes " and # signs <script> remain text';
+  const parsed = parseProgram(
+    room() + `\nDETAIL main ${JSON.stringify(detail)} <https://example.com/item#part>`,
+  );
+  assert.equal(parsed.details[0].text, detail);
+  assert.equal(parsed.details[0].url, "https://example.com/item#part");
+  for (const line of [
+    'DETAIL missing "Item"',
+    'DETAIL project "Item" <javascript:alert(1)>',
+    'DETAIL project ""',
+    'DETAIL project "\\q"',
+  ])
+    assert.throws(() => parseProgram(room() + "\n" + line));
+});

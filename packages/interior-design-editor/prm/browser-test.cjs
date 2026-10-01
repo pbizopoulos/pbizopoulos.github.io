@@ -50,13 +50,21 @@ async function run({ assetsOnly = false } = {}) {
     url.searchParams.set("example", "Bedroom");
     if (fallback) url.searchParams.set("backend", "webgl");
     const ready = () =>
-      page.waitForFunction(() => {
-        if (!window.interior?.ready) return false;
-        const studio = interior.studio;
-        return Math.abs(studio.perspective.aspect - studio.host.clientWidth / studio.host.clientHeight) < 1e-9;
-      }, null, {
-        timeout: 180000,
-      });
+      page.waitForFunction(
+        () => {
+          if (!window.interior?.ready) return false;
+          const studio = interior.studio;
+          return (
+            Math.abs(
+              studio.perspective.aspect - studio.host.clientWidth / studio.host.clientHeight,
+            ) < 1e-9
+          );
+        },
+        null,
+        {
+          timeout: 180000,
+        },
+      );
     await page.goto(url.href, { waitUntil: "domcontentloaded" });
     await ready();
     assert.equal(
@@ -129,6 +137,46 @@ async function run({ assetsOnly = false } = {}) {
       return result;
     };
     if (!assetsOnly) {
+      assert.equal(await page.evaluate(() => interior.studio.sun.shadow.autoUpdate), false);
+      const cache = await page.evaluate(async () => {
+        const s = interior.studio,
+          shadow = s.sun.shadow,
+          updateMatrices = shadow.updateMatrices,
+          originalQuality = s.quality,
+          originalSun = { ...s.sunSettings };
+        let updates = 0;
+        shadow.updateMatrices = function (...args) {
+          updates++;
+          return updateMatrices.apply(this, args);
+        };
+        try {
+          s.setQuality("fast");
+          shadow.needsUpdate = true;
+          await s.capture();
+          const initial = updates;
+          await s.capture();
+          const unchanged = updates;
+          s.options.walls = true;
+          await s.capture();
+          const visibility = updates;
+          s.options.walls = false;
+          s.updateSun({ ...originalSun, orientation: originalSun.orientation + 20 });
+          await s.capture();
+          const daylight = updates;
+          return { initial, unchanged, visibility, daylight };
+        } finally {
+          shadow.updateMatrices = updateMatrices;
+          s.options.walls = false;
+          s.updateSun(originalSun);
+          s.setQuality(originalQuality);
+        }
+      });
+      assert.ok(cache.initial > 0, "First image builds the sun shadow");
+      assert.equal(cache.unchanged, cache.initial, "Unchanged views reuse the sun shadow");
+      assert.ok(cache.visibility > cache.unchanged, "Wall visibility invalidates the sun shadow");
+      assert.ok(cache.daylight > cache.visibility, "Daylight invalidates the sun shadow");
+      await ready();
+      console.log("Sun shadow reuse / visibility + daylight invalidation PASS");
       const high = await capture("bedroom-high");
       assert.ok(await page.evaluate(() => interior.studio.renderer.getPixelRatio() >= 1.5));
       await page.selectOption("#renderQuality", "fast");
@@ -138,7 +186,10 @@ async function run({ assetsOnly = false } = {}) {
         Math.abs(high.luminance - fast.luminance) < 30,
         "PNG quality modes use the same display color space",
       );
-      assert.ok(high.corner.every((value, i) => Math.abs(value - fast.corner[i]) <= 2), "Fast PNG exports use the same tone mapping as high quality");
+      assert.ok(
+        high.corner.every((value, i) => Math.abs(value - fast.corner[i]) <= 2),
+        "Fast PNG exports use the same tone mapping as high quality",
+      );
       await page.selectOption("#renderQuality", "balanced");
       await ready();
       await capture("bedroom-balanced");
@@ -265,7 +316,7 @@ async function run({ assetsOnly = false } = {}) {
       assert.equal((await downloads).suggestedFilename(), "interior-design.png");
       await ready();
     }
-    for (const name of ["Bedroom", "Kitchen & dining", "Small apartment"]) {
+    for (const name of Object.keys(await page.evaluate(() => interior.examples))) {
       await page.selectOption("#exampleSelect", name);
       await ready();
       const floorBatches = await page.evaluate(() =>
@@ -293,6 +344,59 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(Math.abs(bounds.max[0] - bounds.min[0] - 3.996) < 0.001);
         assert.ok(Math.abs(bounds.max[2] - bounds.min[2] - 3.496) < 0.001);
       }
+      if (name === "Καλαμαριά · apartment") {
+        await page.click("#sceneOptions summary");
+        await page.click("#projectDetailsButton");
+        assert.equal(await page.locator("#projectDetails").evaluate((dialog) => dialog.open), true);
+        assert.match(await page.locator("#projectDetailsContent").textContent(), /CMOS ML1220/);
+        assert.match(
+          await page.locator("#projectDetailsContent").textContent(),
+          /πλυντήριο πιάτων/,
+        );
+        assert.equal(await page.locator('#projectDetailsContent a[href*="freebox.gr"]').count(), 1);
+        assert.ok(
+          await page
+            .locator("#projectDetailsContent a")
+            .evaluateAll((links) =>
+              links.every(
+                (link) => link.rel === "noopener noreferrer" && link.protocol === "https:",
+              ),
+            ),
+        );
+        await page.click("#closeProjectDetails");
+        await page.click("#sceneOptions summary");
+        const mounted = await page.evaluate(() =>
+          interior.studio.model.objects
+            .filter((group) => group.userData.token.mount && group.userData.token.child)
+            .map((group) => ({
+              name: group.userData.token.name,
+              y: group.position.y,
+              child: group.children.some((node) => node.userData.token?.name === "laptop"),
+            })),
+        );
+        assert.deepEqual(
+          mounted,
+          [{ name: "wall_shelf", y: 1.2, child: true }],
+          "Product shelf is raised and carries its laptop",
+        );
+        await page.evaluate(() =>
+          interior.selectObject(
+            interior.studio.model.objects.find(
+              (group) => group.userData.token.name === "wall_shelf",
+            ),
+          ),
+        );
+        assert.match(
+          await page.evaluate(() =>
+            interior.editor.state.sliceDoc(
+              interior.editor.state.selection.main.from,
+              interior.editor.state.selection.main.to,
+            ),
+          ),
+          /^wall_shelf\(laptop_on_top\)/,
+          "Clicking a mounted object selects its source token",
+        );
+      }
       await page.evaluate(() => {
         const s = interior.studio;
         interior.selectObject(s.model.objects.find((g) => g.userData.token.url));
@@ -302,16 +406,48 @@ async function run({ assetsOnly = false } = {}) {
         "noopener noreferrer",
       );
       assert.match(await page.locator("#selectionCard a").getAttribute("href"), /^https:\/\//);
-      if (!assetsOnly) await capture(name.toLowerCase().replaceAll(/[^a-z]+/g, "-"));
+      if (name === "Καλαμαριά · apartment") {
+        const instanceCounts = await page.evaluate(() => {
+          let rails = 0,
+            floors = 0,
+            fringes = 0;
+          window.retiredInstances = { expected: 0, disposed: 0 };
+          interior.studio.model.root.traverse((node) => {
+            if (!node.isInstancedMesh) return;
+            window.retiredInstances.expected++;
+            node.addEventListener("dispose", () => window.retiredInstances.disposed++);
+            if (node.geometry.parameters?.width === 0.016) rails++;
+            else if (node.parent.userData.room) floors++;
+            else fringes++;
+          });
+          return { rails, floors, fringes };
+        });
+        assert.equal(instanceCounts.rails, 3, "Three balcony rails each batch all posts");
+        assert.equal(instanceCounts.floors, 6, "Six spaces retain their floor batches");
+        assert.equal(instanceCounts.fringes, 1, "Apartment rug retains its fringe batch");
+      }
+      if (!assetsOnly)
+        await capture(
+          name === "Καλαμαριά · apartment"
+            ? "kalamaria-apartment"
+            : name.toLowerCase().replaceAll(/[^a-z]+/g, "-"),
+        );
       console.log("Scene / safe product link:", name);
     }
     await page.selectOption("#exampleSelect", "Bedroom");
     await ready();
+    const retired = await page.evaluate(() => window.retiredInstances);
+    assert.ok(retired.expected > 0);
+    assert.equal(
+      retired.disposed,
+      retired.expected,
+      "Scene replacement disposes every instanced buffer",
+    );
     const original = await page.evaluate(() => interior.editor.state.doc.toString());
     await page.locator(".cm-content").fill("ROOM broken");
     await page.locator(".cm-content").press("Control+Enter");
-    await page.waitForFunction(
-      () => document.querySelector("#message").classList.contains("error"),
+    await page.waitForFunction(() =>
+      document.querySelector("#message").classList.contains("error"),
     );
     assert.match(await page.locator("#message").textContent(), /last valid layout/);
     assert.equal(await page.getAttribute("#designStatus", "data-state"), "error");
@@ -391,6 +527,41 @@ async function run({ assetsOnly = false } = {}) {
       return empty;
     });
     assert.deepEqual(geometry, [], "Every catalog entry has geometry");
+    const details = await page.evaluate(() => {
+      const library = interior.studio.library,
+        rug = library.create("jute_rug"),
+        bed = library.create("bed");
+      let rugMeshes = 0,
+        fringes = 0,
+        cloth = 0;
+      rug.traverse((node) => {
+        if (node.isMesh) rugMeshes++;
+        if (node.isInstancedMesh) fringes += node.count;
+      });
+      bed.traverse((node) => {
+        if (node.geometry?.type === "PlaneGeometry") {
+          const normals = node.geometry.getAttribute("normal");
+          if ([...normals.array].every(Number.isFinite)) cloth++;
+        }
+      });
+      return {
+        rugMeshes,
+        fringes,
+        cloth,
+        standard:
+          library.material.wall.isMeshStandardNodeMaterial &&
+          !library.material.wall.isMeshPhysicalNodeMaterial,
+        glassCasts: library
+          .create("shower")
+          .getObjectsByProperty("isMesh", true)
+          .some((mesh) => mesh.material.transparent && mesh.castShadow),
+      };
+    });
+    assert.equal(details.rugMeshes, 2, "Rug body and all fringes need only two meshes");
+    assert.ok(details.fringes > 40, "Instanced fringe retains its visible detail");
+    assert.equal(details.cloth, 2, "Bedding has two draped surfaces with finite normals");
+    assert.equal(details.standard, true, "Matte plaster uses standard shading");
+    assert.equal(details.glassCasts, false, "Shower glass does not cast opaque shadows");
     await page.evaluate(async () => {
       const source =
         "GRID 1\nROOM main 4x4 AT 0,0\nWALLS north east south west\nMOUNT north 1 wall_lamp\nLAYOUT main\n. | . | . | .\n. | lamp | book | .\nEND";
@@ -531,8 +702,8 @@ async function run({ assetsOnly = false } = {}) {
     await unavailable.setViewportSize({ width: 390, height: 844 });
     await unavailable.route("**/three.webgpu.js", (route) => route.abort());
     await unavailable.goto(url.href, { waitUntil: "domcontentloaded" });
-    await unavailable.waitForFunction(
-      () => document.querySelector("#message").textContent.includes("Could not initialize the editor"),
+    await unavailable.waitForFunction(() =>
+      document.querySelector("#message").textContent.includes("Could not initialize the editor"),
     );
     assert.equal(
       await unavailable.locator("#message").isVisible(),
