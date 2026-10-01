@@ -50,7 +50,11 @@ async function run({ assetsOnly = false } = {}) {
     url.searchParams.set("example", "Bedroom");
     if (fallback) url.searchParams.set("backend", "webgl");
     const ready = () =>
-      page.waitForFunction(() => window.interior?.ready, null, {
+      page.waitForFunction(() => {
+        if (!window.interior?.ready) return false;
+        const studio = interior.studio;
+        return Math.abs(studio.perspective.aspect - studio.host.clientWidth / studio.host.clientHeight) < 1e-9;
+      }, null, {
         timeout: 180000,
       });
     await page.goto(url.href, { waitUntil: "domcontentloaded" });
@@ -83,12 +87,25 @@ async function run({ assetsOnly = false } = {}) {
           luminance += (data[i] + data[i + 1] + data[i + 2]) / 3;
           count++;
         }
+        // The empty upper corner must remain the same background on every row.
+        // Unaligned WebGPU readbacks used to turn it into colored horizontal bands.
+        let cornerVariation = 0;
+        for (let row = 1; row < 16; row++) {
+          for (let channel = 0; channel < 3; channel++) {
+            cornerVariation = Math.max(
+              cornerVariation,
+              Math.abs(data[row * canvas.width * 4 + channel] - data[channel]),
+            );
+          }
+        }
         return {
           url: canvas.toDataURL(),
           colors: colors.size,
           luminance: luminance / count,
           width: canvas.width,
           height: canvas.height,
+          cornerVariation,
+          corner: [...data.subarray(0, 3)],
         };
       });
       assert.ok(result.colors > 100, `${name} has rendered geometry: ${result.colors} colors`);
@@ -96,6 +113,7 @@ async function run({ assetsOnly = false } = {}) {
         result.luminance > 10 && result.luminance < 250,
         `${name} has usable exposure: ${result.luminance}`,
       );
+      assert.ok(result.cornerVariation <= 3, `${name} has correctly aligned PNG rows`);
       if (process.env.INTERIOR_SCREENSHOTS) {
         fs.mkdirSync(process.env.INTERIOR_SCREENSHOTS, { recursive: true });
         fs.writeFileSync(
@@ -120,6 +138,7 @@ async function run({ assetsOnly = false } = {}) {
         Math.abs(high.luminance - fast.luminance) < 30,
         "PNG quality modes use the same display color space",
       );
+      assert.ok(high.corner.every((value, i) => Math.abs(value - fast.corner[i]) <= 2), "Fast PNG exports use the same tone mapping as high quality");
       await page.selectOption("#renderQuality", "balanced");
       await ready();
       await capture("bedroom-balanced");
@@ -146,6 +165,22 @@ async function run({ assetsOnly = false } = {}) {
       await page.click("#topButton");
       await ready();
       assert.equal(await page.evaluate(() => interior.studio.camera.isOrthographicCamera), true);
+      const targetBeforePan = await page.evaluate(() => interior.studio.controls.target.toArray());
+      const canvasBox = await page.locator("#viewport canvas").boundingBox();
+      await page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        canvasBox.x + canvasBox.width / 2 + 30,
+        canvasBox.y + canvasBox.height / 2 + 20,
+        { steps: 3 },
+      );
+      await page.mouse.up();
+      await ready();
+      assert.notDeepEqual(
+        await page.evaluate(() => interior.studio.controls.target.toArray()),
+        targetBeforePan,
+        "Floor plan supports dragging to pan",
+      );
       await capture("floor-plan");
       const orbitExposure = await page.evaluate(() => interior.studio.renderer.toneMappingExposure);
       await page.click("#firstPersonButton");
@@ -233,6 +268,31 @@ async function run({ assetsOnly = false } = {}) {
     for (const name of ["Bedroom", "Kitchen & dining", "Small apartment"]) {
       await page.selectOption("#exampleSelect", name);
       await ready();
+      const floorBatches = await page.evaluate(() =>
+        interior.studio.model.roomGroups.map((group) => {
+          const floor = group.children.find((mesh) => mesh.isInstancedMesh);
+          return floor ? { count: floor.count, receivesShadow: floor.receiveShadow } : null;
+        }),
+      );
+      assert.ok(
+        floorBatches.every((floor) => floor?.count > 0 && floor.receivesShadow),
+        "Every room batches its floor without losing shadows",
+      );
+      if (name === "Kitchen & dining") {
+        assert.equal(floorBatches[0].count, 42, "Tile batching includes partial perimeter tiles");
+        const bounds = await page.evaluate(() => {
+          const floor = interior.studio.model.roomGroups[0].children.find(
+            (mesh) => mesh.isInstancedMesh,
+          );
+          floor.computeBoundingBox();
+          return {
+            min: floor.boundingBox.min.toArray(),
+            max: floor.boundingBox.max.toArray(),
+          };
+        });
+        assert.ok(Math.abs(bounds.max[0] - bounds.min[0] - 3.996) < 0.001);
+        assert.ok(Math.abs(bounds.max[2] - bounds.min[2] - 3.496) < 0.001);
+      }
       await page.evaluate(() => {
         const s = interior.studio;
         interior.selectObject(s.model.objects.find((g) => g.userData.token.url));
@@ -254,10 +314,12 @@ async function run({ assetsOnly = false } = {}) {
       () => document.querySelector("#message").classList.contains("error"),
     );
     assert.match(await page.locator("#message").textContent(), /last valid layout/);
+    assert.equal(await page.getAttribute("#designStatus", "data-state"), "error");
     assert.equal(await page.evaluate(() => interior.program.rooms[0].name), "main");
     await page.locator(".cm-content").fill(original);
     await page.locator(".cm-content").press("Control+Enter");
     await ready();
+    assert.equal(await page.getAttribute("#designStatus", "data-state"), "ready");
     await page.evaluate(() =>
       interior.selectObject(
         interior.studio.model.objects.find((g) => g.userData.token.name === "bed"),
@@ -393,6 +455,9 @@ async function run({ assetsOnly = false } = {}) {
       sourceBefore,
       "Share preserves the editable source",
     );
+    await page.selectOption("#exampleSelect", "Small apartment");
+    await ready();
+    const orbitBeforeResize = await page.evaluate(() => interior.studio.camera.position.toArray());
     await page.setViewportSize({ width: 390, height: 844 });
     await ready();
     assert.equal(
@@ -401,6 +466,10 @@ async function run({ assetsOnly = false } = {}) {
       "Mobile page has no horizontal overflow",
     );
     assert.equal(await page.locator("#layoutPanel").isVisible(), true);
+    assert.ok(
+      (await page.locator(".cm-layout-keyword").count()) > 0,
+      "Visible source has syntax highlighting",
+    );
     assert.equal(await page.locator("#viewport").isVisible(), true);
     assert.equal(await page.locator("#shareButton").isVisible(), true);
     await ready();
@@ -412,6 +481,51 @@ async function run({ assetsOnly = false } = {}) {
       ),
       true,
       "Resolution stays within its budget",
+    );
+    for (const width of [320, 801]) {
+      await page.setViewportSize({ width, height: 844 });
+      if (width === 801) {
+        await page.evaluate(() =>
+          document.querySelector(".workspace").style.setProperty("--editor-width", "55%"),
+        );
+      }
+      await ready();
+      const layout = await page.evaluate(() => {
+        const viewport = document.querySelector("#viewport").getBoundingClientRect();
+        const controls = [
+          ...document.querySelectorAll(
+            ".preview-bar button, .quality-control, .scene-toolbar > select:not([hidden]), .scene-toolbar > button, .scene-toolbar summary",
+          ),
+        ];
+        const tabs = [...document.querySelectorAll(".view-buttons button span")];
+        return {
+          contained: controls.every((control) => {
+            const rect = control.getBoundingClientRect();
+            return rect.left >= viewport.left && rect.right <= viewport.right;
+          }),
+          singleLineLabels: tabs.every(
+            (tab) =>
+              tab.getBoundingClientRect().height <=
+              parseFloat(getComputedStyle(tab).fontSize) * 1.6,
+          ),
+        };
+      });
+      assert.ok(layout.contained, `Controls fit the ${width}px layout, including a resized editor`);
+      assert.ok(layout.singleLineLabels, "Camera labels stay on one line");
+      await page.click("#sceneOptions summary");
+      assert.ok(await page.locator("#sceneOptions").evaluate((element) => element.open));
+      await page.locator("#sceneOptions summary").press("Escape");
+      assert.equal(await page.locator("#sceneOptions").evaluate((element) => element.open), false);
+    }
+    await page.evaluate(() =>
+      document.querySelector(".workspace").style.removeProperty("--editor-width"),
+    );
+    await page.setViewportSize({ width: 900, height: 700 });
+    await ready();
+    const orbitAfterResize = await page.evaluate(() => interior.studio.camera.position.toArray());
+    assert.ok(
+      orbitAfterResize.every((value, i) => Math.abs(value - orbitBeforeResize[i]) < 0.001),
+      `Resizing preserves the user's orbit and restores framing: ${orbitBeforeResize} → ${orbitAfterResize}`,
     );
     const unavailable = await context.newPage();
     await unavailable.setViewportSize({ width: 390, height: 844 });

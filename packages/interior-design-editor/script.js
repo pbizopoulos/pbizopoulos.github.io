@@ -802,7 +802,16 @@ const initializeStudio = async function initializeStudio() {
     { RoomEnvironment },
     { default: SunCalc },
     { EditorState },
-    { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine },
+    {
+      EditorView,
+      keymap,
+      lineNumbers,
+      drawSelection,
+      highlightActiveLine,
+      Decoration,
+      MatchDecorator,
+      ViewPlugin,
+    },
     { defaultKeymap, indentWithTab },
     { foldService, foldGutter, foldAll, unfoldAll, foldedRanges },
   ] = await Promise.all([
@@ -835,12 +844,16 @@ const initializeStudio = async function initializeStudio() {
             for (let x = 0; x < 256; x += 1) {
               seed = (Math.imul(seed, 1_664_525) + 1_013_904_223 + 4_294_967_296) % 4_294_967_296;
               const noise = seed / 4_294_967_296;
+              // Low-amplitude grain keeps close views tactile without
+              // adding textures or shimmering in distant, mipmapped views.
+              const warp = Math.sin((x / 256) * Math.PI * 2) * 2,
+                grain = (y / 256) * Math.PI * 24 + warp;
               const value =
                 kind === "wood"
-                  ? 208 + 18 * Math.sin(y * 0.48 + Math.sin(x * 0.024) * 3) + 11 * noise
+                  ? 225 + 7 * Math.sin(grain) + 3 * Math.sin(grain * 3) + 6 * noise
                   : kind === "fabric"
-                    ? 215 + 14 * Math.sin(x * Math.PI) + 14 * Math.cos(y * Math.PI) + 12 * noise
-                    : 225 + 25 * noise;
+                    ? 232 + 5 * Math.cos(x * Math.PI) * Math.cos(y * Math.PI) + 7 * noise
+                    : 237 + 10 * noise;
               const i = (y * 256 + x) * 4;
               pixels.data[i + 2] = value;
               pixels.data[i + 1] = pixels.data[i + 2];
@@ -860,17 +873,25 @@ const initializeStudio = async function initializeStudio() {
         weave = texture("fabric"),
         plaster = texture("plaster"),
         physical = (color, options = {}) =>
-          new THREE.MeshPhysicalNodeMaterial({ color, roughness: 0.7, ...options });
+          new THREE.MeshPhysicalNodeMaterial({
+            color,
+            roughness: 0.7,
+            ...options,
+          });
       this.material = {
         accent: physical("#b56e46", { map: weave, sheen: 0.5 }),
         brass: physical("#b69b60", { metalness: 0.85, roughness: 0.26 }),
-        ceramic: physical("#eee7d9", { clearcoat: 0.6, clearcoatRoughness: 0.2, roughness: 0.23 }),
+        ceramic: physical("#eee7d9", {
+          clearcoat: 0.6,
+          clearcoatRoughness: 0.2,
+          roughness: 0.23,
+        }),
         clay: physical("#ad6549", { roughness: 0.78 }),
         concrete: physical("#a5a59b", { map: plaster, roughness: 0.92 }),
         darkWood: physical("#62503e", { map: woodMap, roughness: 0.48 }),
         fabric: physical("#84968b", {
           bumpMap: weave,
-          bumpScale: 0.007,
+          bumpScale: 0.004,
           map: weave,
           sheen: 0.7,
           sheenColor: new THREE.Color("#b8c6ba"),
@@ -883,14 +904,32 @@ const initializeStudio = async function initializeStudio() {
           roughness: 0.06,
           transparent: true,
         }),
-        glow: physical("#fff2d8", { emissive: "#ffdfad", emissiveIntensity: 1.5, roughness: 0.5 }),
+        glow: physical("#fff2d8", {
+          emissive: "#ffdfad",
+          emissiveIntensity: 1.5,
+          roughness: 0.5,
+        }),
+        // A quiet studio backdrop needs no texture or bump sampling.
+        ground: new THREE.MeshStandardNodeMaterial({ color: "#e3dfd5", roughness: 1 }),
         grass: physical("#8a946d", { map: plaster, roughness: 1 }),
         leaf: physical("#435941", { roughness: 0.82, side: THREE.DoubleSide }),
-        leafLight: physical("#738261", { roughness: 0.85, side: THREE.DoubleSide }),
-        linen: physical("#e6ddcc", { bumpMap: weave, bumpScale: 0.008, map: weave, sheen: 0.6 }),
+        leafLight: physical("#738261", {
+          roughness: 0.85,
+          side: THREE.DoubleSide,
+        }),
+        linen: physical("#e6ddcc", {
+          bumpMap: weave,
+          bumpScale: 0.004,
+          map: weave,
+          sheen: 0.6,
+        }),
         metal: physical("#515855", { metalness: 0.85, roughness: 0.27 }),
         mirror: physical("#fafafa", { metalness: 1, roughness: 0.015 }),
-        rug: physical("#c2b496", { bumpMap: weave, bumpScale: 0.015, map: weave }),
+        rug: physical("#c2b496", {
+          bumpMap: weave,
+          bumpScale: 0.015,
+          map: weave,
+        }),
         screen: physical("#13242a", { metalness: 0.35, roughness: 0.17 }),
         soil: physical("#45362a"),
         stone: physical("#c5beb0", {
@@ -903,14 +942,14 @@ const initializeStudio = async function initializeStudio() {
         tile: physical("#d5d1c7", { clearcoat: 0.3, roughness: 0.24 }),
         wall: physical("#ebe4d9", {
           bumpMap: plaster,
-          bumpScale: 0.012,
+          bumpScale: 0.006,
           map: plaster,
           roughness: 0.94,
         }),
         white: physical("#f2efe7", { clearcoat: 0.25, roughness: 0.42 }),
         wood: physical("#b58a59", {
           bumpMap: woodMap,
-          bumpScale: 0.018,
+          bumpScale: 0.009,
           map: woodMap,
           roughness: 0.45,
         }),
@@ -1381,7 +1420,12 @@ const initializeStudio = async function initializeStudio() {
       }
     }
   }
-  const normals = { east: [1, 0, 0], north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0] },
+  const normals = {
+      east: [1, 0, 0],
+      north: [0, 0, -1],
+      south: [0, 0, 1],
+      west: [-1, 0, 0],
+    },
     turns = { east: -Math.PI / 2, north: 0, south: Math.PI, west: Math.PI / 2 };
   function buildScene(program, library) {
     const root = new THREE.Group(),
@@ -1504,25 +1548,47 @@ const initializeStudio = async function initializeStudio() {
         floor.receiveShadow = true;
         roomRoot.add(floor);
       } else {
-        const tileSize = finish === "tile" ? 0.6 : finish === "terracotta" ? 0.3 : 1.2;
-        const material = m[finish] || m.stone;
-        for (let x = -w / 2; x < w / 2 - 0.001; x += tileSize) {
-          for (let z = -d / 2; z < d / 2 - 0.001; z += tileSize) {
-            const width = Math.min(tileSize, w / 2 - x),
-              depth = Math.min(tileSize, d / 2 - z);
-            box(
-              roomRoot,
-              width - 0.004,
+        const tileSize = finish === "tile" ? 0.6 : finish === "terracotta" ? 0.3 : 1.2,
+          cols = Math.ceil((w - 0.001) / tileSize),
+          rows = Math.ceil((d - 0.001) / tileSize),
+          matrix = new THREE.Matrix4(),
+          color = new THREE.Color();
+        // One draw per room, including clipped perimeter tiles. Geometry and
+        // material remain shared; only the instance buffer belongs to the scene.
+        const floor = new THREE.InstancedMesh(
+          library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
+          m[finish] || m.stone,
+          cols * rows,
+        );
+        // Write straight into the buffer instead of retaining a Matrix4 per tile.
+        for (let col = 0; col < cols; col += 1) {
+          for (let row = 0; row < rows; row += 1) {
+            const width = Math.min(tileSize, w - col * tileSize),
+              depth = Math.min(tileSize, d - row * tileSize),
+              i = col * rows + row;
+            matrix.makeScale(
+              width - Math.min(0.004, width / 4),
               0.014,
-              depth - 0.004,
-              x + width / 2,
-              0.004,
-              z + depth / 2,
-              material,
-              0,
+              depth - Math.min(0.004, depth / 4),
             );
+            matrix.setPosition(
+              -w / 2 + col * tileSize + width / 2,
+              0.004,
+              -d / 2 + row * tileSize + depth / 2,
+            );
+            floor.setMatrixAt(i, matrix);
+            if (finish === "terracotta") {
+              floor.setColorAt(i, color.setScalar(0.94 + ((i * 17) % 7) * 0.01));
+            }
           }
         }
+        floor.instanceMatrix.needsUpdate = true;
+        if (floor.instanceColor) {
+          floor.instanceColor.needsUpdate = true;
+        }
+        floor.receiveShadow = true;
+        owned.push(floor);
+        roomRoot.add(floor);
       }
       if (room.kind === "room") {
         const ceiling = box(roomRoot, w, 0.1, d, 0, room.height + 0.05, 0, m.white, 0);
@@ -1713,7 +1779,12 @@ const initializeStudio = async function initializeStudio() {
     }
     for (const entry of walls) {
       const { group, room, side, length } = entry,
-        opposite = { east: "west", north: "south", south: "north", west: "east" }[side],
+        opposite = {
+          east: "west",
+          north: "south",
+          south: "north",
+          west: "east",
+        }[side],
         shared = entry.rooms.length > 1,
         door =
           room.doors.includes(side) || entry.rooms.slice(1).some((r) => r.doors.includes(opposite)),
@@ -1848,10 +1919,11 @@ const initializeStudio = async function initializeStudio() {
       0,
       Math.min(-0.3, ...program.rooms.map((r) => r.elevation - 0.3)),
       0,
-      m.stone,
+      m.ground,
       0,
     );
     ground.receiveShadow = true;
+    ground.castShadow = false;
     const grid = new THREE.GridHelper(
       Math.max(program.cols, program.rows) * program.grid,
       Math.max(program.cols, program.rows),
@@ -2095,11 +2167,20 @@ const initializeStudio = async function initializeStudio() {
         }
         face.castShadow = false;
         face.receiveShadow = false;
-        const reflected = reflector({ bounces: false, resolutionScale: 0.5, samples: 0 });
+        const reflected = reflector({
+          bounces: false,
+          resolutionScale: 0.5,
+          samples: 0,
+        });
         face.add(reflected.target);
         const material = new THREE.MeshBasicNodeMaterial();
         material.colorNode = reflected;
-        this.reflectors.push({ face, material, node: reflected, original: face.material });
+        this.reflectors.push({
+          face,
+          material,
+          node: reflected,
+          original: face.material,
+        });
       }
     }
     disposeReflections() {
@@ -2131,8 +2212,22 @@ const initializeStudio = async function initializeStudio() {
               : 1;
       this.renderer.setPixelRatio(Math.min(scale, Math.sqrt(3_500_000 / (width * height))));
       this.renderer.setSize(width, height);
-      this.perspective.aspect = width / height;
+      const aspect = width / height;
+      if (this.model && this.mode === "3d" && aspect !== this.perspective.aspect) {
+        // Preserve the orbit and the user's zoom while compensating for a
+        // narrower horizontal field of view after resizing the workspace.
+        const framing = Math.max(1, 1.15 / aspect) / Math.max(1, 1.15 / this.perspective.aspect);
+        this.perspective.position
+          .sub(this.controls.target)
+          .multiplyScalar(framing)
+          .add(this.controls.target);
+      }
+      this.perspective.aspect = aspect;
       this.perspective.updateProjectionMatrix();
+      if (this.model && this.mode === "top") {
+        const size = this.focusBounds().getSize(new THREE.Vector3());
+        this.topSize = Math.max(size.z, size.x / Math.max(0.25, aspect)) * 0.62;
+      }
       const half = this.topSize || 5;
       this.orthographic.left = (-half * width) / height;
       this.orthographic.right = (half * width) / height;
@@ -2181,6 +2276,8 @@ const initializeStudio = async function initializeStudio() {
       this.controls.object = this.camera;
       this.controls.enabled = mode !== "walk";
       this.controls.enableRotate = mode !== "top";
+      this.controls.mouseButtons.LEFT = mode === "top" ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+      this.controls.touches.ONE = mode === "top" ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
       if (mode === "walk") {
         this.camera.fov = 60;
         this.camera.rotation.order = "YXZ";
@@ -2195,6 +2292,9 @@ const initializeStudio = async function initializeStudio() {
           this.controls.object = previousCamera;
           this.controls.enabled = previousMode !== "walk";
           this.controls.enableRotate = previousMode !== "top";
+          this.controls.mouseButtons.LEFT =
+            previousMode === "top" ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+          this.controls.touches.ONE = previousMode === "top" ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
           throw error;
         }
         this.camera.position.set(spawn.x, spawn.y, spawn.z);
@@ -2607,17 +2707,28 @@ const initializeStudio = async function initializeStudio() {
       const size = this.renderer.getDrawingBufferSize(new THREE.Vector2()),
         width = Math.round(size.x),
         height = Math.round(size.y),
-        target = new THREE.RenderTarget(width, height, { type: THREE.UnsignedByteType });
-      target.texture.colorSpace =
-        this.quality === "fast" ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
-      const { moving } = this;
+        target = new THREE.RenderTarget(width, height, {
+          type: THREE.UnsignedByteType,
+        });
+      // Output passes already encode display colors. A linear attachment stores
+      // those bytes without an additional hardware sRGB conversion.
+      target.texture.colorSpace = THREE.LinearSRGBColorSpace;
+      const { moving } = this,
+        previousOutput = this.renderer.getOutputRenderTarget();
       this.moving = false;
       try {
+        if (this.quality === "fast") {
+          // Direct rendering otherwise treats this as an intermediate target
+          // and skips the tone mapping used by the live canvas.
+          this.renderer.setOutputRenderTarget(target);
+        }
         this.renderer.setRenderTarget(target);
         this.render();
         const pixels = await this.renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height),
           packed = new Uint8ClampedArray(width * height * 4),
-          stride = pixels.length / height;
+          // WebGPU pads each RGBA8 row to 256 bytes, except the final row.
+          // Dividing buffer length by height therefore corrupts unaligned widths.
+          stride = this.backend === "WebGPU" ? Math.ceil((width * 4) / 256) * 256 : width * 4;
         for (let row = 0; row < height; row += 1) {
           const source = this.backend === "WebGPU" ? row : height - 1 - row;
           packed.set(
@@ -2633,6 +2744,7 @@ const initializeStudio = async function initializeStudio() {
           canvas.toBlob(resolve, "image/png");
         });
       } finally {
+        this.renderer.setOutputRenderTarget(previousOutput);
         this.renderer.setRenderTarget(null);
         target.dispose();
         this.moving = moving;
@@ -2647,7 +2759,9 @@ const initializeStudio = async function initializeStudio() {
     }
     async previewImage(name) {
       this.busy = true;
-      const target = new THREE.RenderTarget(512, 384, { type: THREE.UnsignedByteType });
+      const target = new THREE.RenderTarget(512, 384, {
+        type: THREE.UnsignedByteType,
+      });
       target.texture.colorSpace = THREE.SRGBColorSpace;
       const scene = new THREE.Scene();
       scene.background = new THREE.Color("#e5e3db");
@@ -2673,7 +2787,7 @@ const initializeStudio = async function initializeStudio() {
         this.renderer.render(scene, camera);
         const pixels = await this.renderer.readRenderTargetPixelsAsync(target, 0, 0, 512, 384),
           packed = new Uint8ClampedArray(512 * 384 * 4),
-          stride = pixels.length / 384;
+          stride = 512 * 4;
         for (let row = 0; row < 384; row += 1) {
           const source = this.backend === "WebGPU" ? row : 383 - row;
           packed.set(pixels.subarray(source * stride, source * stride + 2048), row * 2048);
@@ -2725,6 +2839,39 @@ const initializeStudio = async function initializeStudio() {
       $("viewport").setAttribute("aria-busy", String(Boolean(text)));
     },
     friendly = (name) => name.replaceAll("_", " ");
+  const sourceMarks = Object.fromEntries(
+      ["comment", "keyword", "number", "link", "separator"].map((name) => [
+        name,
+        Decoration.mark({ class: `cm-layout-${name}` }),
+      ]),
+    ),
+    sourceMatcher = new MatchDecorator({
+      regexp:
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+      decoration: (match) =>
+        sourceMarks[
+          match[1]
+            ? "comment"
+            : match[2]
+              ? "link"
+              : match[3]
+                ? "keyword"
+                : match[4]
+                  ? "number"
+                  : "separator"
+        ],
+    }),
+    sourceHighlighting = ViewPlugin.fromClass(
+      class {
+        constructor(view) {
+          this.decorations = sourceMatcher.createDeco(view);
+        }
+        update(update) {
+          this.decorations = sourceMatcher.updateDeco(update, this.decorations);
+        }
+      },
+      { decorations: (plugin) => plugin.decorations },
+    );
   let compileTimer,
     compiledSource,
     editor,
@@ -2738,7 +2885,9 @@ const initializeStudio = async function initializeStudio() {
     studio;
   const doc = () => editor.state.doc.toString(),
     replaceSource = (source) =>
-      editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } }),
+      editor.dispatch({
+        changes: { from: 0, insert: source, to: editor.state.doc.length },
+      }),
     guarded =
       (action) =>
       (...args) =>
@@ -2784,6 +2933,14 @@ const initializeStudio = async function initializeStudio() {
       $("floorFocus").hidden = program.floors.length < 2;
       $("floorFocus").value = studio.options.floor;
       status(program.warnings.join(" "));
+      const area = program.rooms.reduce(
+        (total, room) => total + room.cols * room.rows * program.grid ** 2,
+        0,
+      );
+      $("projectSummary").textContent =
+        `${program.rooms.length} ${program.rooms.length === 1 ? "space" : "spaces"} · ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(area)} m²`;
+      $("designStatus").textContent = "Preview up to date";
+      $("designStatus").dataset.state = "ready";
       try {
         localStorage.setItem("interior-studio-draft", source);
       } catch {
@@ -2792,6 +2949,8 @@ const initializeStudio = async function initializeStudio() {
     } catch (error) {
       if (version === revision) {
         status(`${error.message}${program ? " · Showing the last valid layout." : ""}`, true);
+        $("designStatus").textContent = "Check layout source";
+        $("designStatus").dataset.state = "error";
       }
     } finally {
       if (version === revision) {
@@ -2822,11 +2981,28 @@ const initializeStudio = async function initializeStudio() {
       const line = editor.state.doc.line(token.line);
       editor.dispatch({
         effects: EditorView.scrollIntoView(line.from, { y: "nearest" }),
-        selection: { anchor: line.from + token.start, head: line.from + token.end },
+        selection: {
+          anchor: line.from + token.start,
+          head: line.from + token.end,
+        },
       });
     }
   }
   function syncView(mode) {
+    $("viewport").dataset.mode = mode;
+    const touch = matchMedia("(pointer:coarse)").matches;
+    $("navigationHint").textContent =
+      mode === "walk"
+        ? touch
+          ? "Drag to look · Use arrows to move"
+          : "Drag to look · WASD to move · Esc to leave"
+        : mode === "top"
+          ? touch
+            ? "Drag to pan · Pinch to zoom"
+            : "Drag to pan · Scroll to zoom · Click an object to find its source"
+          : touch
+            ? "Drag to orbit · Pinch to zoom"
+            : "Drag to orbit · Scroll to zoom · Click an object to find its source";
     for (const [id, value] of [
       ["resetButton", "3d"],
       ["topButton", "top"],
@@ -3005,7 +3181,11 @@ const initializeStudio = async function initializeStudio() {
           highlightActiveLine(),
           foldGutter(),
           folding,
-          EditorView.contentAttributes.of({ "aria-label": "Design source", spellcheck: "false" }),
+          sourceHighlighting,
+          EditorView.contentAttributes.of({
+            "aria-label": "Design source",
+            spellcheck: "false",
+          }),
           EditorState.tabSize.of(2),
           keymap.of([
             {
@@ -3021,6 +3201,8 @@ const initializeStudio = async function initializeStudio() {
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               ready = false;
+              $("designStatus").textContent = "Updating preview…";
+              $("designStatus").dataset.state = "pending";
               revision += 1;
               clearSelection();
               $("exampleSelect").value = "custom";
@@ -3035,6 +3217,8 @@ const initializeStudio = async function initializeStudio() {
       ready = false;
       progress("");
       status(error.message, true);
+      $("designStatus").textContent = "Preview unavailable";
+      $("designStatus").dataset.state = "error";
     });
     await studio.init();
     studio.onModeChange = (mode) => {
@@ -3286,6 +3470,7 @@ const initializeStudio = async function initializeStudio() {
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         clearSelection();
+        $("sceneOptions").open = false;
       }
       if (studio.mode === "walk" && event.key.toLowerCase() === "e" && event.target === canvas) {
         event.preventDefault();
@@ -3308,6 +3493,11 @@ const initializeStudio = async function initializeStudio() {
         $("floorFocus").value = String(floor);
         $("roomFocus").value = "";
         setView("walk");
+      }
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if ($("sceneOptions").open && !$("sceneOptions").contains(event.target)) {
+        $("sceneOptions").open = false;
       }
     });
     $("walkthroughButton").addEventListener(
@@ -3369,4 +3559,6 @@ initializeStudio()
     message.hidden = false;
     message.className = "message error";
     message.textContent = `Could not initialize the editor: ${error.message}. Reload to try again.`;
+    document.querySelector("#designStatus").textContent = "Studio unavailable";
+    document.querySelector("#designStatus").dataset.state = "error";
   });
