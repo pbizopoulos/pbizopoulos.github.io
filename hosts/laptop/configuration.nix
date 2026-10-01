@@ -185,7 +185,11 @@
       isNormalUser = true;
       packages = [
         (pkgs.google-chrome.override {
-          commandLineArgs = "--force-device-scale-factor=4";
+          commandLineArgs = [
+            "--force-device-scale-factor=4"
+            "--enable-unsafe-webgpu"
+            "--enable-features=Vulkan"
+          ];
         })
         (pkgs.vim.customize {
           vimrcConfig.customRC = "filetype plugin indent on";
