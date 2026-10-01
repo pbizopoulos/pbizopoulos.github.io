@@ -219,10 +219,10 @@ test("mounted sub-layouts respect expanded asset and light budgets", () => {
   );
 });
 
-test("Kalamaria keeps all six spaces, exact balcony depth and raised product furniture", () => {
-  const p = parseProgram(examples["Καλαμαριά · apartment"]);
-  assert.equal(p.rooms.length, 6);
-  assert.equal(p.rooms.find((room) => room.kind === "balcony").rows * p.grid, 1.56);
+test("Apartment keeps mapped rooms and passages, exact balcony depth and raised product furniture", () => {
+  const p = parseProgram(examples["Apartment"]);
+  assert.equal(p.rooms.length, 7);
+  assert.equal(p.rooms.find((room) => room.kind === "balcony").cols * p.grid, 1.56);
   assert.equal(p.rooms.find((room) => room.name === "study").mounts[0].height, 1.2);
   assert.ok(
     p.rooms
@@ -233,10 +233,10 @@ test("Kalamaria keeps all six spaces, exact balcony depth and raised product fur
 });
 
 test("project details preserve room inventory and safe links as parsed data", () => {
-  const p = parseProgram(examples["Καλαμαριά · apartment"]);
+  const p = parseProgram(examples["Apartment"]);
   assert.ok(
     p.details.some(
-      (detail) => detail.room === "kitchen" && detail.text.includes("πλυντήριο πιάτων"),
+      (detail) => detail.room === "living" && detail.text.includes("πλυντήριο πιάτων"),
     ),
   );
   assert.ok(
@@ -259,4 +259,19 @@ test("project details preserve room inventory and safe links as parsed data", ()
     'DETAIL project "\\q"',
   ])
     assert.throws(() => parseProgram(room() + "\n" + line));
+});
+
+test("apartment matches the supplied map and the balcony continues beside the bedroom", () => {
+  const p = parseProgram(examples.Apartment),
+    rooms = Object.fromEntries(p.rooms.map((room) => [room.name, room]));
+  assert.ok(rooms.study.z + rooms.study.rows === rooms.living.z);
+  assert.ok(rooms.bathroom.z < rooms.living.z);
+  assert.ok(rooms.bedroom.z > rooms.living.z + rooms.living.rows);
+  assert.equal(rooms.balcony.x, rooms.living.x + rooms.living.cols);
+  assert.equal(rooms.balcony.x, rooms.bedroom.x + rooms.bedroom.cols);
+  assert.equal(rooms.balcony.z + rooms.balcony.rows, rooms.bedroom.z + rooms.bedroom.rows);
+  assert.ok(!p.rooms.some((room) => room.name === "kitchen"));
+  assert.ok(p.layouts.living.flat().some((token) => token?.name === "stove"));
+  assert.ok(p.layouts.living.flat().some((token) => token?.name === "grey_sofa"));
+  assert.ok(!Object.keys(examples).some((name) => name.includes("Καλαμαριά")));
 });

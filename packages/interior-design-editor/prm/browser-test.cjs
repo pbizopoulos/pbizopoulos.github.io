@@ -344,7 +344,7 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(Math.abs(bounds.max[0] - bounds.min[0] - 3.996) < 0.001);
         assert.ok(Math.abs(bounds.max[2] - bounds.min[2] - 3.496) < 0.001);
       }
-      if (name === "Καλαμαριά · apartment") {
+      if (name === "Apartment") {
         await page.click("#sceneOptions summary");
         await page.click("#projectDetailsButton");
         assert.equal(await page.locator("#projectDetails").evaluate((dialog) => dialog.open), true);
@@ -365,6 +365,32 @@ async function run({ assetsOnly = false } = {}) {
         );
         await page.click("#closeProjectDetails");
         await page.click("#sceneOptions summary");
+        const connections = await page.evaluate(() => {
+          const s = interior.studio;
+          return s.model.walls
+            .filter((wall) => wall.rooms.length > 1 && wall.opening?.bottom === 0)
+            .map((wall) => ({
+              pair: wall.rooms
+                .map((room) => room.name)
+                .sort()
+                .join("/"),
+              clear: Boolean(s.canStand(wall.position.x, wall.position.z)),
+            }));
+        });
+        for (const pair of [
+          "bathroom/living",
+          "living/study",
+          "balcony/living",
+          "balcony/bedroom",
+          "bedroom/hall",
+          "hall/living",
+          "entry/hall",
+        ]) {
+          assert.ok(
+            connections.some((connection) => connection.pair === pair && connection.clear),
+            `The ${pair} doorway is shared and clear of furniture`,
+          );
+        }
         const mounted = await page.evaluate(() =>
           interior.studio.model.objects
             .filter((group) => group.userData.token.mount && group.userData.token.child)
@@ -406,7 +432,7 @@ async function run({ assetsOnly = false } = {}) {
         "noopener noreferrer",
       );
       assert.match(await page.locator("#selectionCard a").getAttribute("href"), /^https:\/\//);
-      if (name === "Καλαμαριά · apartment") {
+      if (name === "Apartment") {
         const instanceCounts = await page.evaluate(() => {
           let rails = 0,
             floors = 0,
@@ -423,14 +449,16 @@ async function run({ assetsOnly = false } = {}) {
           return { rails, floors, fringes };
         });
         assert.equal(instanceCounts.rails, 3, "Three balcony rails each batch all posts");
-        assert.equal(instanceCounts.floors, 6, "Six spaces retain their floor batches");
+        assert.equal(
+          instanceCounts.floors,
+          7,
+          "Mapped rooms and passages retain their floor batches",
+        );
         assert.equal(instanceCounts.fringes, 1, "Apartment rug retains its fringe batch");
       }
       if (!assetsOnly)
         await capture(
-          name === "Καλαμαριά · apartment"
-            ? "kalamaria-apartment"
-            : name.toLowerCase().replaceAll(/[^a-z]+/g, "-"),
+          name === "Apartment" ? "apartment" : name.toLowerCase().replaceAll(/[^a-z]+/g, "-"),
         );
       console.log("Scene / safe product link:", name);
     }

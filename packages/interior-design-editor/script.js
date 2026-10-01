@@ -178,10 +178,266 @@
         woven_pendant: [0.58, 0.58, 2.7],
       },
       examples = {
-        Bedroom: `DETAIL project "Bedroom: 3.5 × 4 m. GRID is metres per cell."DETAIL project "Furniture: asset[width x depth x height]~wall<product URL>."DETAIL project "Links are product references; the renderer uses generic shapes."GRID 0.5ROOM main 7x8 AT 0,0WALLS north east south westDOORS southWINDOWS northSURFACE woodMOUNT east 4 mirrorLIGHT ceiling_light AT 3,4 POWER 18LAYOUT main. | . | . | . | . | . | .. | . | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .. | . | . | . | . | . | .. | . | . | . | . | . | .. | . | . | . | . | . | .. | side_table[0.55x0.55x0.45]<https://www.ikea.com/us/en/p/lack-side-table-white-30449908/> | . | . | . | . | .. | . | . | . | . | dresser~east | .. | . | . | . | . | . | .END`,
-        "Kitchen & dining": `DETAIL project "Kitchen: 4 × 3.5 m. @ rotates furniture in degrees."DETAIL project "Append <https://...> to furniture to keep its product link."GRID 0.5ROOM main 8x7 AT 0,0WALLS north east south westDOORS southWINDOWS eastSURFACE tileLIGHT ceiling_light AT 4,3 POWER 18LAYOUT main. | . | . | . | . | . | . | .. | fridge~north | . | . | kitchen_counter[1.35x0.62x0.9]~north | . | stove~north | .. | . | . | . | . | . | . | .. | . | . | . | kitchen_chair | . | . | .. | . | . | . | . | . | . | .. | . | kitchen_chair@90 | . | kitchen_table[1.4x0.78x0.74]<https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/> | . | kitchen_chair@270 | .. | . | . | . | . | . | . | .END`,
-        "Small apartment": `DETAIL project "A 27 m² apartment: living/kitchen, bedroom and bathroom."DETAIL project "AT places rooms in grid cells; matching DOORS connect rooms."DETAIL project "Append <https://...> to furniture; click it to open the product."DETAIL project "Rendered furniture is generic. Set dimensions to your actual item."GRID 0.5ROOM living 8x6 AT 0,0WALLS north east south westDOORS east southWINDOWS north westSURFACE woodLIGHT ceiling_light AT 3,5 POWER 18ROOM bedroom 6x6 AT 8,0WALLS north east south westDOORS west southWINDOWS north eastSURFACE woodLIGHT ceiling_light AT 3,4 POWER 12ROOM bathroom 6x4 AT 8,6WALLS north east south westDOORS northWINDOWS noneSURFACE tileLIGHT ceiling_light AT 3,2 POWER 12LAYOUT living. | . | . | . | . | . | . | .. | fridge~north | . | . | . | kitchenette[2.1x0.65x2.25]~north | . | .. | . | . | . | . | desk[1x0.6x0.74]<https://www.ikea.com/us/en/p/linnmon-adils-table-white-s29932181/> | . | .. | sofa~west | . | . | . | . | . | .. | . | . | . | coffee_table | . | . | .. | . | . | . | . | . | . | .ENDLAYOUT bedroom. | . | . | . | . | .. | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .. | . | . | . | . | .. | . | . | . | . | .. | . | . | . | . | .. | . | . | . | . | .ENDLAYOUT bathroom. | . | . | . | . | .. | shower~west | . | . | toilet~east | .. | . | . | . | . | .. | bathroom_vanity~south | . | . | . | .END`,
-        "Καλαμαριά · apartment": `DETAIL project "Καλαμαριά · Κρεβατοκάμαρα, μπαλκόνι, σαλόνι, κουζίνα, δωμάτιο, μπάνιο."DETAIL project "Ενδεικτική κάτοψη — δεν δόθηκαν πραγματικές διαστάσεις δωματίων."DETAIL project "GRID 0.26 m. Μπαλκόνι: 6 × 0.26 = 1.56 m βάθος."DETAIL project "Γενικά μοντέλα, όχι ακριβή αντίγραφα προϊόντων. Κλικ για σύνδεσμο."DETAIL project "Επιβεβαιωμένα: GEDVED 154×84×85, UDSBJERG 66×68×84 cm;"DETAIL project "HÖGSTEN 73×65×83, SUNDSÖ 65×65×71 cm. Τα υπόλοιπα είναι προσεγγίσεις."DETAIL project "Κρεβάτι 160×200 cm από το μέγεθος GRUSNARV· πάχος στρώματος ενδεικτικό."GRID 0.26ROOM living 16x14 AT 0,0WALLS north east south westDOORS north east southWINDOWS westSURFACE woodMOUNT east 3 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45MOUNT east 3 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>MOUNT west 11 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>LIGHT ceiling_light AT 8,7 POWER 18ROOM kitchen 12x14 AT 16,0WALLS north east south westDOORS west southWINDOWS eastSURFACE tileLIGHT ceiling_light AT 6,7 POWER 18ROOM bedroom 16x14 AT 0,14WALLS north east south westDOORS northWINDOWS westSURFACE woodLIGHT ceiling_light AT 10,7 POWER 12ROOM study 12x8 AT 16,14WALLS north east south westMOUNT north 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2DOORS north southWINDOWS eastSURFACE woodLIGHT ceiling_light AT 6,4 POWER 12ROOM bathroom 12x6 AT 16,22WALLS north east south westDOORS northWINDOWS eastSURFACE tileMOUNT south 8 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>LIGHT ceiling_light AT 6,3 POWER 12BALCONY balcony 28x6 AT 0,-6WALLS noneRAILS north east westSURFACE tileDETAIL living "ΣΑΛΟΝΙ — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."DETAIL living "Aristo: επιτοίχιο 135×31.6×25 cm, ενδεικτικό ύψος βάσης 45 cm."DETAIL living "HAMA 220810 (στήριξη TV)" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>DETAIL living "Εκκρεμεί ντίζα μανιβέλας" <https://karol.gr/product/ntiza-manivelas-exagoni/>DETAIL living "Αντικατάσταση: Ξενοφώντος 8–10 Καλαμαριά" <https://www.avraampanagiotidis.gr/>LAYOUT living....... | . | grey_sofa[1.54x0.84x0.85]~west<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> | . | . | . | jute_rug[1.6x2x0.018].... | . | . | . | . | . | coffee_table[0.9x0.5x0.4] | . | . | . | grey_armchair[0.66x0.68x0.84]@-35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>.. | . | . | . | . | . | . | . | . | . | . | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>.ENDDETAIL kitchen "ΚΟΥΖΙΝΑ — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."DETAIL kitchen "Απορροφητήρας Franke" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>DETAIL kitchen "Ανταλλακτικό GEYSER ARAGON EH" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>DETAIL kitchen "Έρευνα αγοράς: πλυντήριο πιάτων — δεν έχει επιλεγεί, δεν τοποθετήθηκε."LAYOUT kitchen.. | . | fridge[0.6x0.66x1.86]~north<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> | . | . | . | sink[1.05x0.6x0.9]~north<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | . | stove[0.6x0.6x0.88]~north<https://manuall.gr/franke-ca-52-m-xs-fournos/>....... | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>.....ENDLAYOUT tablewareplate<https://www.ikea.gr/proioda/fargklar-piato-mat-4-tem-26-cm/70479644/> | water_bottle<https://www.e-jumbo.gr/kouzina/potiria-boukalia-koupes/gyalina-boukalia-nerou/boukalia-vidota/boukalia-vidota-diafana/boukali-nerou-gyalino-kymatisto-schedio-metalliko-kapaki-1.25lt_1642315/> | water_glass<https://www.ikea.com/lt/en/p/ikea-365-glass-clear-glass-60279711/>ENDDETAIL bedroom "ΚΡΕΒΑΤΟΚΑΜΑΡΑ — Grecostrom Structure."DETAIL bedroom "GRUSNARV (προστατευτικό στρώματος)" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>DETAIL bedroom "Εκκρεμότητες: αλλαγή ανεμιστήρα με του Πευκοχωρίου, διάφανες IKEA με γάντζο."DETAIL bedroom "Ο Morris και οι κουρτίνες τοποθετήθηκαν ως ενδεικτικά υπάρχοντα/μελλοντικά."LAYOUT bedroom.. | . | nightstand(bedside_on_top)~north. | . | . | . | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>....curtain_pair[1.8x0.12x2.5]~west... | . | pedestal_fan<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>. | . | . | . | . | . | . | . | . | . | . | . | . | wardrobe~east..ENDLAYOUT bedsideair_quality_sensor<https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/> | usb_charger<https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>ENDDETAIL study "ΔΩΜΑΤΙΟ — Dell XPS 13 9343, κλασική κιθάρα, ρούχα, βαλίτσα/back-packs."DETAIL study "VATTENKAR 52×26 cm ως ράφι, ενδεικτικό ύψος βάσης 1.20 m."DETAIL study "Δεν τοποθετήθηκε γραφείο· τελικά επιλέχθηκε το stand ως ράφι."DETAIL study "Εκκρεμεί: CMOS ML1220 με καλώδια/φις, εσώρουχα Tezenis (Cosmos), χορδές κιθάρας."DETAIL study "Έρευνα shelf bracket· ο δοσμένος σύνδεσμος αφορά steppers" <https://www.skroutz.gr/c/811/steppers.html>DETAIL study "Προηγούμενες επιλογές γραφείου, όχι επιλεγμένες" <https://www.skroutz.gr/s/55807212/Grafeio-Ravan-Xylino-sapphire-oak-me-Metallika-Podia-72x45x29ek-GP041-0079-2.html?product_id=271186251>DETAIL study "Προηγούμενη επιλογή γραφείου" <https://www.skroutz.gr/s/60752062/grafeio-xylino-leyko-80x40ek-02842134.html>LAYOUT study.... | garment_rack~west.. | . | . | . | . | . | . | . | . | . | guitar~east. | suitcase~west.ENDLAYOUT laptoplaptop<https://web.archive.org/web/20260422013443/https://dl.dell.com/manuals/all-products/esuprt_laptop/esuprt_xps_laptop/xps-13-9343-laptop_reference%20guide_en-us.pdf>ENDDETAIL bathroom "ΜΠΑΝΙΟ — πλυντήριο (manual), καθρέπτης Drop Gusto Wood Cut 60 cm."LAYOUT bathroom.. | . | . | . | . | . | . | . | . | washing_machine[0.6x0.6x0.85]~east<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>. | shower[0.8x0.8x2.05]~west.. | . | . | . | toilet~south | . | . | . | bathroom_vanity~south.ENDDETAIL balcony "ΜΠΑΛΚΟΝΙ — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί, παραμένει κενός χώρος δεξιά."DETAIL balcony "MADORA" <https://www.leroymerlin.gr/gr/epipla-diamorfosi-exoterikou-horou/epipla-kipou-axesouar/kounies/kounia-dithesia-madora-alouminiowicker-se-kafe-hroma-86492377>DETAIL balcony "HM5905.02, 150×90×128h cm" <https://www.freebox.gr/en/product/hanging-nest-for-2-hm5905-02-cappuccino-rope-cream-cushions-150x90x128hcm/>DETAIL balcony "Βάθος 1.56 m: το σώμα 0.90 m αφήνει 0.66 m συνολικά, πριν από βάση/αιώρηση."DETAIL balcony "Απαιτούνται πραγματικές διαστάσεις βάσης και περιθώρια κατασκευαστή για έλεγχο."LAYOUT balcony... | . | . | outdoor_chair[0.73x0.65x0.83]@90<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/> | . | . | . | folding_table[0.65x0.65x0.71]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/> | . | . | . | outdoor_chair[0.73x0.65x0.83]@270<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>...ENDDETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>`,
+        Bedroom: `DETAIL project "Bedroom: 3.5 × 4 m. GRID is metres per cell."
+DETAIL project "Furniture: asset[width x depth x height]~wall<product URL>."
+DETAIL project "Links are product references; the renderer uses generic shapes."
+GRID 0.5
+ROOM main 7x8 AT 0,0
+WALLS north east south west
+DOORS south
+WINDOWS north
+SURFACE wood
+MOUNT east 4 mirror
+LIGHT ceiling_light AT 3,4 POWER 18
+LAYOUT main
+. | . | . | . | . | . | .
+. | . | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .
+. | . | . | . | . | . | .
+. | . | . | . | . | . | .
+. | . | . | . | . | . | .
+. | side_table[0.55x0.55x0.45]<https://www.ikea.com/us/en/p/lack-side-table-white-30449908/> | . | . | . | . | .
+. | . | . | . | . | dresser~east | .
+. | . | . | . | . | . | .
+END`,
+        "Kitchen & dining": `DETAIL project "Kitchen: 4 × 3.5 m. @ rotates furniture in degrees."
+DETAIL project "Append <https://...> to furniture to keep its product link."
+GRID 0.5
+ROOM main 8x7 AT 0,0
+WALLS north east south west
+DOORS south
+WINDOWS east
+SURFACE tile
+LIGHT ceiling_light AT 4,3 POWER 18
+LAYOUT main
+. | . | . | . | . | . | . | .
+. | fridge~north | . | . | kitchen_counter[1.35x0.62x0.9]~north | . | stove~north | .
+. | . | . | . | . | . | . | .
+. | . | . | . | kitchen_chair | . | . | .
+. | . | . | . | . | . | . | .
+. | . | kitchen_chair@90 | . | kitchen_table[1.4x0.78x0.74]<https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/> | . | kitchen_chair@270 | .
+. | . | . | . | . | . | . | .
+END`,
+        "Small apartment": `DETAIL project "A 27 m² apartment: living/kitchen, bedroom and bathroom."
+DETAIL project "AT places rooms in grid cells; matching DOORS connect rooms."
+DETAIL project "Append <https://...> to furniture; click it to open the product."
+DETAIL project "Rendered furniture is generic. Set dimensions to your actual item."
+GRID 0.5
+ROOM living 8x6 AT 0,0
+WALLS north east south west
+DOORS east south
+WINDOWS north west
+SURFACE wood
+LIGHT ceiling_light AT 3,5 POWER 18
+ROOM bedroom 6x6 AT 8,0
+WALLS north east south west
+DOORS west south
+WINDOWS north east
+SURFACE wood
+LIGHT ceiling_light AT 3,4 POWER 12
+ROOM bathroom 6x4 AT 8,6
+WALLS north east south west
+DOORS north
+WINDOWS none
+SURFACE tile
+LIGHT ceiling_light AT 3,2 POWER 12
+LAYOUT living
+. | . | . | . | . | . | . | .
+. | fridge~north | . | . | . | kitchenette[2.1x0.65x2.25]~north | . | .
+. | . | . | . | . | desk[1x0.6x0.74]<https://www.ikea.com/us/en/p/linnmon-adils-table-white-s29932181/> | . | .
+. | sofa~west | . | . | . | . | . | .
+. | . | . | . | coffee_table | . | . | .
+. | . | . | . | . | . | . | .
+END
+LAYOUT bedroom
+. | . | . | . | . | .
+. | . | bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+. | . | . | . | . | .
+END
+LAYOUT bathroom
+. | . | . | . | . | .
+. | shower~west | . | . | toilet~east | .
+. | . | . | . | . | .
+. | bathroom_vanity~south | . | . | . | .
+END`,
+        Apartment: `DETAIL project "Κρεβατοκάμαρα, μπαλκόνι, σαλόνι, κουζίνα, δωμάτιο, μπάνιο."
+DETAIL project "Διάταξη από τον χάρτη: room1 δωμάτιο, room2 μπαλκόνι, room3 σαλόνι/κουζίνα, room4 κρεβατοκάμαρα· μπάνιο πάνω."
+DETAIL project "Οι αναλογίες ακολουθούν τον χάρτη. Τα μήκη είναι προσεγγιστικά, με βάθος μπαλκονιού 1.56 m."
+DETAIL project "Γενικά μοντέλα, όχι ακριβή αντίγραφα προϊόντων. Κλικ για σύνδεσμο."
+DETAIL project "Επιβεβαιωμένα: GEDVED 154×84×85, UDSBJERG 66×68×84 cm;"
+DETAIL project "HÖGSTEN 73×65×83, SUNDSÖ 65×65×71 cm. Τα υπόλοιπα είναι προσεγγίσεις."
+DETAIL project "Κρεβάτι 160×200 cm από το μέγεθος GRUSNARV· πάχος στρώματος ενδεικτικό."
+DETAIL living "ΣΑΛΟΝΙ — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."
+DETAIL living "Aristo: επιτοίχιο 135×31.6×25 cm, ενδεικτικό ύψος βάσης 45 cm."
+DETAIL living "HAMA 220810 (στήριξη TV)" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>
+DETAIL living "Εκκρεμεί ντίζα μανιβέλας" <https://karol.gr/product/ntiza-manivelas-exagoni/>
+DETAIL living "Αντικατάσταση: Ξενοφώντος 8–10 Καλαμαριά" <https://www.avraampanagiotidis.gr/>
+DETAIL living "ΚΟΥΖΙΝΑ — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."
+DETAIL living "Απορροφητήρας Franke" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>
+DETAIL living "Ανταλλακτικό GEYSER ARAGON EH" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>
+DETAIL living "Έρευνα αγοράς: πλυντήριο πιάτων — δεν έχει επιλεγεί, δεν τοποθετήθηκε."
+DETAIL bedroom "ΚΡΕΒΑΤΟΚΑΜΑΡΑ — Grecostrom Structure."
+DETAIL bedroom "GRUSNARV (προστατευτικό στρώματος)" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>
+DETAIL bedroom "Εκκρεμότητες: αλλαγή ανεμιστήρα με του Πευκοχωρίου, διάφανες IKEA με γάντζο."
+DETAIL bedroom "Ο Morris και οι κουρτίνες τοποθετήθηκαν ως ενδεικτικά υπάρχοντα/μελλοντικά."
+DETAIL study "ΔΩΜΑΤΙΟ — Dell XPS 13 9343, κλασική κιθάρα, ρούχα, βαλίτσα/back-packs."
+DETAIL study "VATTENKAR 52×26 cm ως ράφι, ενδεικτικό ύψος βάσης 1.20 m."
+DETAIL study "Δεν τοποθετήθηκε γραφείο· τελικά επιλέχθηκε το stand ως ράφι."
+DETAIL study "Εκκρεμεί: CMOS ML1220 με καλώδια/φις, εσώρουχα Tezenis (Cosmos), χορδές κιθάρας."
+DETAIL study "Έρευνα shelf bracket· ο δοσμένος σύνδεσμος αφορά steppers" <https://www.skroutz.gr/c/811/steppers.html>
+DETAIL study "Προηγούμενες επιλογές γραφείου, όχι επιλεγμένες" <https://www.skroutz.gr/s/55807212/Grafeio-Ravan-Xylino-sapphire-oak-me-Metallika-Podia-72x45x29ek-GP041-0079-2.html?product_id=271186251>
+DETAIL study "Προηγούμενη επιλογή γραφείου" <https://www.skroutz.gr/s/60752062/grafeio-xylino-leyko-80x40ek-02842134.html>
+DETAIL bathroom "ΜΠΑΝΙΟ — πλυντήριο (manual), καθρέπτης Drop Gusto Wood Cut 60 cm."
+DETAIL balcony "ΜΠΑΛΚΟΝΙ — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."
+DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί, παραμένει κενός χώρος δεξιά."
+DETAIL balcony "MADORA" <https://www.leroymerlin.gr/gr/epipla-diamorfosi-exoterikou-horou/epipla-kipou-axesouar/kounies/kounia-dithesia-madora-alouminiowicker-se-kafe-hroma-86492377>
+DETAIL balcony "HM5905.02, 150×90×128h cm" <https://www.freebox.gr/en/product/hanging-nest-for-2-hm5905-02-cappuccino-rope-cream-cushions-150x90x128hcm/>
+DETAIL balcony "Βάθος 1.56 m: το σώμα 0.90 m αφήνει 0.66 m συνολικά, πριν από βάση/αιώρηση."
+DETAIL balcony "Απαιτούνται πραγματικές διαστάσεις βάσης και περιθώρια κατασκευαστή για έλεγχο."
+DETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>
+GRID 0.312
+ROOM living 15x11 AT 0,9
+WALLS north east south west
+DOORS north east south
+WINDOWS none
+SURFACE wood
+MOUNT east 2 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45
+MOUNT east 2 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>
+MOUNT west 9 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>
+LIGHT ceiling_light AT 9,5 POWER 18
+ROOM study 10x7 AT 5,2
+WALLS north east south west
+DOORS south east
+WINDOWS north
+SURFACE wood
+MOUNT north 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2
+LIGHT ceiling_light AT 5,3 POWER 12
+ROOM bathroom 5x9 AT 0,0
+WALLS north east south west
+DOORS south
+WINDOWS north
+SURFACE tile
+MOUNT east 7 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>
+LIGHT ceiling_light AT 2,4 POWER 12
+ROOM bedroom 12x8 AT 3,22
+WALLS north east south west
+DOORS west east
+WINDOWS south
+SURFACE wood
+LIGHT ceiling_light AT 8,4 POWER 12
+ROOM hall 3x6 AT 0,20
+WALLS north east south west
+DOORS north east west
+WINDOWS none
+SURFACE wood
+ROOM entry 3x3 AT -3,22
+WALLS north east south west
+DOORS east west
+WINDOWS none
+SURFACE wood
+BALCONY balcony 5x28 AT 15,2
+WALLS west
+DOORS west
+WINDOWS none
+SURFACE tile
+RAILS north east south
+LAYOUT living
+.
+. | . | . | . | . | . | . | . | . | . | . | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>
+fridge[0.6x0.66x1.86]~west<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>
+. | . | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>
+. | . | . | . | . | . | . | . | . | . | . | . | grey_armchair[0.66x0.68x0.84]<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>
+sink[1.05x0.6x0.9]~west<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2>
+. | . | . | . | . | . | . | . | . | . | coffee_table[0.9x0.5x0.4]
+. | . | . | . | . | . | . | . | . | . | jute_rug[1.6x1.6x0.018]
+stove[0.6x0.6x0.88]~west<https://manuall.gr/franke-ca-52-m-xs-fournos/>
+.
+. | . | . | . | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]~south<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>
+END
+LAYOUT study
+.
+.
+garment_rack~west
+.
+.
+suitcase~west | . | . | . | . | . | . | . | . | guitar~east
+.
+END
+LAYOUT bathroom
+. | shower[0.8x0.8x2.05]~north
+.
+.
+. | . | . | . | washing_machine[0.6x0.6x0.85]~east<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>
+.
+.
+toilet~west
+. | . | . | . | bathroom_vanity[0.6x0.45x0.85]~east
+.
+END
+LAYOUT bedroom
+. | . | . | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf> | . | . | . | nightstand(bedside_on_top)~north
+.
+.
+.
+.
+wardrobe~west
+. | . | . | . | . | . | . | . | . | . | . | pedestal_fan~east<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>
+. | . | . | . | . | . | . | curtain_pair[1.8x0.12x2.5]~south
+END
+LAYOUT balcony
+.
+.
+.
+.
+.
+.
+.
+.
+. | . | outdoor_chair[0.73x0.65x0.83]@180<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+.
+.
+. | . | folding_table[0.65x0.65x0.71]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/>
+.
+.
+. | . | outdoor_chair[0.73x0.65x0.83]<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+END
+LAYOUT hall
+.
+.
+.
+.
+.
+.
+END
+LAYOUT entry
+.
+.
+.
+END
+LAYOUT tableware
+plate<https://www.ikea.gr/proioda/fargklar-piato-mat-4-tem-26-cm/70479644/> | water_bottle<https://www.e-jumbo.gr/kouzina/potiria-boukalia-koupes/gyalina-boukalia-nerou/boukalia-vidota/boukalia-vidota-diafana/boukali-nerou-gyalino-kymatisto-schedio-metalliko-kapaki-1.25lt_1642315/> | water_glass<https://www.ikea.com/lt/en/p/ikea-365-glass-clear-glass-60279711/>
+END
+LAYOUT bedside
+air_quality_sensor<https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/> | usb_charger<https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>
+END
+LAYOUT laptop
+laptop<https://web.archive.org/web/20260422013443/https://dl.dell.com/manuals/all-products/esuprt_laptop/esuprt_xps_laptop/xps-13-9343-laptop_reference%20guide_en-us.pdf>
+END`,
       },
       fixtureNames = new Set(
         Object.keys(catalog).filter((name) => /light|lamp|pendant|lantern/u.test(name)),
@@ -2008,12 +2264,77 @@ const initializeStudio = async function initializeStudio() {
         fixtures.push({ light: point, power: light.power * 0.9 });
       }
     }
+    const wallLines = new Map();
+    for (const entry of walls) {
+      const vertical = ["east", "west"].includes(entry.side),
+        axis = vertical ? "z" : "x",
+        key = [entry.room.floor, axis, entry.position[vertical ? "x" : "z"].toFixed(6)].join(":"),
+        span = {
+          entry,
+          min: entry.position[axis] - entry.length / 2,
+          max: entry.position[axis] + entry.length / 2,
+        };
+      if (!wallLines.has(key)) wallLines.set(key, { axis, spans: [] });
+      wallLines.get(key).spans.push(span);
+      root.remove(entry.group);
+    }
+    walls.length = 0;
+    for (const { axis, spans } of wallLines.values()) {
+      const cuts = [
+        ...new Set(
+          spans.flatMap((span) => [span.min, span.max]).map((value) => Number(value.toFixed(6))),
+        ),
+      ].sort((a, b) => a - b);
+      for (let i = 1; i < cuts.length; i += 1) {
+        const min = cuts[i - 1],
+          max = cuts[i],
+          covering = spans.filter((span) => span.min <= min + 0.00001 && span.max >= max - 0.00001);
+        if (!covering.length || max - min < 0.00001) continue;
+        const original = covering[0].entry,
+          position = original.position.clone(),
+          group = new THREE.Group(),
+          sides = new Map();
+        position[axis] = (min + max) / 2;
+        for (const { entry } of covering) {
+          for (const room of entry.rooms) {
+            sides.set(
+              room,
+              room === entry.room
+                ? entry.side
+                : { north: "south", south: "north", east: "west", west: "east" }[entry.side],
+            );
+          }
+        }
+        group.position.copy(position);
+        group.rotation.copy(original.group.rotation);
+        group.userData.room = original.room;
+        root.add(group);
+        walls.push({
+          ...original,
+          axis,
+          group,
+          position,
+          length: max - min,
+          rooms: [...sides.keys()],
+          sides,
+          hasSharedSpan:
+            spans.some(
+              (span) =>
+                span.entry !== original &&
+                span.min < covering[0].max - 0.00001 &&
+                span.max > covering[0].min + 0.00001,
+            ) || original.rooms.length > 1,
+        });
+      }
+    }
     for (const entry of walls) {
       const { group, room, side, length } = entry,
         opposite = { east: "west", north: "south", south: "north", west: "east" }[side],
         shared = entry.rooms.length > 1,
         door =
-          room.doors.includes(side) || entry.rooms.slice(1).some((r) => r.doors.includes(opposite)),
+          (shared || !entry.hasSharedSpan) &&
+          (room.doors.includes(side) ||
+            entry.rooms.slice(1).some((r) => r.doors.includes(opposite))),
         window = !door && !shared && room.windows.includes(side),
         t = shared ? program.interiorWallThickness : program.exteriorWallThickness,
         { height } = room;
@@ -2769,7 +3090,9 @@ const initializeStudio = async function initializeStudio() {
         }
         const wall = this.model.walls.find(
           (entry) =>
-            entry.rooms.includes(object.userData.room) && entry.side === object.userData.token.side,
+            entry.sides.get(object.userData.room) === object.userData.token.side &&
+            Math.abs(object.position[entry.axis] - entry.position[entry.axis]) <=
+              entry.length / 2 + 0.00001,
         );
         if (wall && !wall.group.visible) {
           object.visible = false;
