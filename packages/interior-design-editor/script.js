@@ -2738,9 +2738,7 @@ const initializeStudio = async function initializeStudio() {
     studio;
   const doc = () => editor.state.doc.toString(),
     replaceSource = (source) =>
-      editor.dispatch({
-        changes: { from: 0, insert: source, to: editor.state.doc.length },
-      }),
+      editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } }),
     guarded =
       (action) =>
       (...args) =>
@@ -2824,10 +2822,7 @@ const initializeStudio = async function initializeStudio() {
       const line = editor.state.doc.line(token.line);
       editor.dispatch({
         effects: EditorView.scrollIntoView(line.from, { y: "nearest" }),
-        selection: {
-          anchor: line.from + token.start,
-          head: line.from + token.end,
-        },
+        selection: { anchor: line.from + token.start, head: line.from + token.end },
       });
     }
   }
@@ -3010,10 +3005,7 @@ const initializeStudio = async function initializeStudio() {
           highlightActiveLine(),
           foldGutter(),
           folding,
-          EditorView.contentAttributes.of({
-            "aria-label": "Design source",
-            spellcheck: "false",
-          }),
+          EditorView.contentAttributes.of({ "aria-label": "Design source", spellcheck: "false" }),
           EditorState.tabSize.of(2),
           keymap.of([
             {
