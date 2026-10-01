@@ -50,7 +50,9 @@ async function run({ assetsOnly = false } = {}) {
     url.searchParams.set("example", "Bedroom");
     if (fallback) url.searchParams.set("backend", "webgl");
     const ready = () =>
-      page.waitForFunction(() => window.interior?.ready, null, { timeout: 180000 });
+      page.waitForFunction(() => window.interior?.ready, null, {
+        timeout: 180000,
+      });
     await page.goto(url.href, { waitUntil: "domcontentloaded" });
     await ready();
     assert.equal(
@@ -261,19 +263,36 @@ async function run({ assetsOnly = false } = {}) {
         interior.studio.model.objects.find((g) => g.userData.token.name === "bed"),
       ),
     );
-    await page.fill("#selectionCard input[name=width]", "1.4");
-    await page.click("#selectionCard button[type=submit]");
-    await ready();
-    assert.match(
-      await page.evaluate(() => interior.editor.state.doc.toString()),
-      /bed\[1.4x2x0.56\]/,
+    assert.equal(await page.locator("#selectionCard input, #selectionCard form").count(), 0);
+    assert.equal(await page.evaluate(() => interior.editor.state.doc.toString()), original);
+    assert.equal(
+      await page.evaluate(() => {
+        const { doc, selection } = interior.editor.state;
+        return doc.sliceString(selection.main.from, selection.main.to);
+      }),
+      "bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/>",
+      "Selecting an object highlights its source without editing it",
     );
-    await page.evaluate(() => {
-      const editor = interior.editor,
-        source = editor.state.doc.toString(),
-        offset = source.indexOf(". | . | . | . | . | . | .");
-      editor.dispatch({ selection: { anchor: offset } });
-    });
+    assert.equal(await page.locator("#selectionCard > *").count(), 1);
+    assert.equal(await page.locator("#selectionCard a").textContent(), "Product reference ↗");
+    await page.evaluate(() =>
+      interior.selectObject(interior.studio.model.objects.find((g) => !g.userData.token.url)),
+    );
+    assert.equal(await page.locator("#selectionCard").isVisible(), false);
+    assert.equal(await page.locator("#undoButton, #redoButton").count(), 0);
+    await page.locator(".cm-content").fill(original.replace("bed[1.5x2x0.56]", "bed[1.4x2x0.56]"));
+    await page.locator(".cm-content").press("Control+Enter");
+    await ready();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          interior.studio.model.objects.find((g) => g.userData.token.name === "bed").userData.token
+            .dimensions[0],
+      ),
+      1.4,
+      "Dimensions are edited through the source editor",
+    );
+    const beforeBrowsing = await page.evaluate(() => interior.editor.state.doc.toString());
     await page.click("#assetsButton");
     await page.fill("#assetSearch", "plant");
     await page.click("[data-asset=plant]");
@@ -281,9 +300,21 @@ async function run({ assetsOnly = false } = {}) {
       () => document.querySelector("#assetPreview img")?.naturalWidth === 512,
     );
     assert.equal(await page.locator("#assetPreview img").evaluate((img) => img.naturalWidth), 512);
-    await page.click("#insertAsset");
+    assert.equal(await page.locator("#insertAsset").count(), 0);
+    await page.click("#copyAsset");
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "plant");
+    await page.click("#closeAssets");
+    assert.equal(await page.evaluate(() => interior.editor.state.doc.toString()), beforeBrowsing);
+    await page
+      .locator(".cm-content")
+      .fill(beforeBrowsing.replace(". | . | . | . | . | . | .", "plant | . | . | . | . | . | ."));
+    await page.locator(".cm-content").press("Control+Enter");
     await ready();
-    assert.match(await page.evaluate(() => interior.editor.state.doc.toString()), /plant/);
+    assert.ok(
+      await page.evaluate(() =>
+        interior.studio.model.objects.some((g) => g.userData.token.name === "plant"),
+      ),
+    );
     const geometry = await page.evaluate(() => {
       const library = interior.studio.library,
         empty = [];
@@ -302,7 +333,11 @@ async function run({ assetsOnly = false } = {}) {
       const source =
         "GRID 1\nROOM main 4x4 AT 0,0\nWALLS north east south west\nMOUNT north 1 wall_lamp\nLAYOUT main\n. | . | . | .\n. | lamp | book | .\nEND";
       interior.editor.dispatch({
-        changes: { from: 0, to: interior.editor.state.doc.length, insert: source },
+        changes: {
+          from: 0,
+          to: interior.editor.state.doc.length,
+          insert: source,
+        },
       });
       await interior.compile(true);
       interior.studio.options.lights = true;
@@ -325,13 +360,15 @@ async function run({ assetsOnly = false } = {}) {
         interior.studio.model.objects.find((group) => group.userData.token.name === "book"),
       ),
     );
-    assert.equal(
-      await page.locator("#selectionCard form").evaluate((form) => form.checkValidity()),
-      true,
-      "Catalog dimensions with three decimal places are editable",
-    );
-    await page.fill("#selectionCard input[name=width]", "0.24");
-    await page.click("#selectionCard button[type=submit]");
+    assert.equal(await page.locator("#selectionCard input, #selectionCard form").count(), 0);
+    await page
+      .locator(".cm-content")
+      .fill(
+        await page.evaluate(() =>
+          interior.editor.state.doc.toString().replace("book |", "book[0.24x0.17x0.045] |"),
+        ),
+      );
+    await page.locator(".cm-content").press("Control+Enter");
     await ready();
     assert.equal(
       await page.evaluate(

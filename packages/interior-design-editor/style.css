@@ -151,11 +151,6 @@ h2 {
   padding: 6px 9px;
   letter-spacing: 0;
 }
-.editor-toolbar div > button:first-child,
-.editor-toolbar div > button:nth-child(2) {
-  font-size: 20px;
-  padding: 0 8px;
-}
 #editor {
   flex: 1;
   min-height: 0;
@@ -416,63 +411,16 @@ h2 {
   position: absolute;
   top: 139px;
   right: 24px;
-  width: 245px;
-  background: #faf9f5f7;
-  border: 1px solid #fff9;
-  box-shadow: 0 5px 24px #343b3320;
-  padding: 18px;
-  border-radius: 7px;
-  font-size: 12px;
-  max-height: calc(100% - 210px);
-  overflow: auto;
-}
-.selection-card h3 {
-  font-family: Georgia, serif;
-  font-size: 20px;
-  font-weight: 400;
-  margin: 2px 0 8px;
-  line-height: 1.2;
-}
-.selection-card p {
+  max-width: calc(100% - 48px);
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: #faf9f5e8;
   font-size: 11px;
-  line-height: 1.6;
-  color: #8a8b7e;
-  margin: 6px 0 13px;
 }
 .selection-card a {
-  display: block;
   color: #506743;
-  font-size: 11px;
-  margin: 12px 0;
-  overflow-wrap: anywhere;
-}
-.selection-card .close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  border: 0;
-  background: none;
-  padding: 2px 5px;
-}
-.selection-card form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.selection-card label {
-  display: grid;
-  gap: 4px;
-  font-size: 9px;
-  color: #7d846f;
-}
-.selection-card input {
-  width: 100%;
-  font-size: 11px;
-  padding: 7px;
-}
-.selection-card button[type="submit"] {
-  grid-column: 1/-1;
-  margin-top: 5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .walk-lens {
   position: absolute;
@@ -603,9 +551,6 @@ dialog header button {
 .asset-detail button {
   margin-top: 10px;
 }
-.asset-detail #insertAsset {
-  width: 100%;
-}
 #assetPreview {
   height: 230px;
   overflow: hidden;
@@ -701,9 +646,7 @@ dialog header button {
   .selection-card {
     top: 108px;
     right: 12px;
-    width: 210px;
-    padding: 14px;
-    max-height: calc(100% - 160px);
+    max-width: calc(100% - 24px);
   }
   .touch-navigation {
     right: 12px;
@@ -746,9 +689,6 @@ dialog header button {
   }
   .asset-detail p {
     margin: 0;
-  }
-  .asset-detail #insertAsset {
-    grid-column: 1/-1;
   }
   .asset-filters {
     margin: 16px 0 10px;
@@ -827,4 +767,22 @@ dialog header button {
     font-size: 10px;
     padding: 8px;
   }
+}
+
+button.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px 8px;
+}
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

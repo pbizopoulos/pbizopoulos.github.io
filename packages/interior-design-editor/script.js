@@ -803,7 +803,7 @@ const initializeStudio = async function initializeStudio() {
     { default: SunCalc },
     { EditorState },
     { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine },
-    { history, defaultKeymap, historyKeymap, indentWithTab, undo, redo },
+    { defaultKeymap, indentWithTab },
     { foldService, foldGutter, foldAll, unfoldAll, foldedRanges },
   ] = await Promise.all([
     import("three/webgpu"),
@@ -2725,8 +2725,7 @@ const initializeStudio = async function initializeStudio() {
       $("viewport").setAttribute("aria-busy", String(Boolean(text)));
     },
     friendly = (name) => name.replaceAll("_", " ");
-  let assetCell,
-    compileTimer,
+  let compileTimer,
     compiledSource,
     editor,
     folded = false,
@@ -2735,12 +2734,13 @@ const initializeStudio = async function initializeStudio() {
     program,
     ready = false,
     revision = 0,
-    _selected,
     selectedAsset = "sofa",
     studio;
   const doc = () => editor.state.doc.toString(),
     replaceSource = (source) =>
-      editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } }),
+      editor.dispatch({
+        changes: { from: 0, insert: source, to: editor.state.doc.length },
+      }),
     guarded =
       (action) =>
       (...args) =>
@@ -2802,98 +2802,34 @@ const initializeStudio = async function initializeStudio() {
     }
   }
   function clearSelection() {
-    _selected = undefined;
     $("selectionCard").hidden = true;
-    if (studio?.selectionOutline) {
-      studio.scene.remove(studio.selectionOutline);
-      studio.selectionOutline.geometry.dispose();
-      studio.selectionOutline.material.dispose();
-      studio.selectionOutline = undefined;
-      studio.requestRender();
-    }
   }
   function selectObject(group) {
     clearSelection();
     if (!group) {
       return;
     }
-    _selected = group;
-    const { token, room } = group.userData,
-      card = $("selectionCard");
-    card.replaceChildren();
-    card.hidden = false;
-    const close = document.createElement("button");
-    close.textContent = "✕";
-    close.className = "close";
-    close.setAttribute("aria-label", "Close object details");
-    close.addEventListener("click", clearSelection);
-    const heading = document.createElement("h3");
-    heading.textContent = friendly(token.name);
-    const info = document.createElement("p");
-    info.textContent = `${friendly(room.name)} · ${token.dimensions.map((v) => v.toFixed(2)).join(" × ")} m`;
-    card.append(close, heading, info);
-    const link = document.createElement(token.url ? "a" : "p");
+    const { token } = group.userData;
     if (token.url) {
+      const link = document.createElement("a");
       link.href = token.url;
       link.rel = "noopener noreferrer";
       link.target = "_blank";
-      link.textContent = "View product reference ↗";
-    } else {
-      link.textContent = "No product link";
+      link.textContent = "Product reference ↗";
+      link.setAttribute("aria-label", `View product reference for ${friendly(token.name)}`);
+      $("selectionCard").replaceChildren(link);
+      $("selectionCard").hidden = false;
     }
-    card.append(link);
     if (token.text && doc() === compiledSource) {
-      const form = document.createElement("form");
-      ["Width", "Depth", "Height", "Rotation"].forEach((label, i) => {
-        const wrapper = document.createElement("label"),
-          input = document.createElement("input");
-        wrapper.textContent = label + (i < 3 ? " · m" : " · °");
-        input.type = "number";
-        input.name = label.toLowerCase();
-        input.value = String(i < 3 ? token.dimensions[i] : token.yaw);
-        input.min = i < 3 ? "0.01" : "-360";
-        input.max = i < 3 ? "10" : "360";
-        input.step = "any";
-        input.required = true;
-        if (i === 3 && token.wall) {
-          input.disabled = true;
-        }
-        wrapper.append(input);
-        form.append(wrapper);
-      });
-      const apply = document.createElement("button");
-      apply.type = "submit";
-      apply.textContent = "Apply dimensions";
-      form.append(apply);
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (doc() !== compiledSource) {
-          status("Wait for the layout to update before changing this object.", true);
-          return;
-        }
-        const values = [...form.querySelectorAll("input")].map((i) => Number(i.value)),
-          replacement = `${token.name}[${values.slice(0, 3).join("x")}]${token.wall ? `~${token.wall}` : `@${values[3]}`}${token.child ? `(${token.child}_on_top)` : ""}${token.url ? `<${token.url}>` : ""}`,
-          line = editor.state.doc.line(token.line);
-        editor.dispatch({
-          changes: {
-            from: line.from + token.start,
-            insert: replacement,
-            to: line.from + token.end,
-          },
-        });
-      });
-      card.append(form);
       const line = editor.state.doc.line(token.line);
       editor.dispatch({
         effects: EditorView.scrollIntoView(line.from, { y: "nearest" }),
-        selection: { anchor: line.from + token.start, head: line.from + token.end },
+        selection: {
+          anchor: line.from + token.start,
+          head: line.from + token.end,
+        },
       });
     }
-    studio.selectionOutline = new THREE.BoxHelper(group, "#738b58");
-    studio.selectionOutline.material.depthTest = false;
-    studio.selectionOutline.renderOrder = 100;
-    studio.scene.add(studio.selectionOutline);
-    studio.requestRender();
   }
   function syncView(mode) {
     for (const [id, value] of [
@@ -3008,10 +2944,8 @@ const initializeStudio = async function initializeStudio() {
     $("assetName").textContent = friendly(name);
     $("assetDimensions").textContent = `${catalog[name].join(" × ")} m · Width × depth × height`;
     $("assetToken").textContent = name;
-    $("assetContext").textContent = assetCell
-      ? "Replaces the cell at your editor cursor."
-      : "Place the editor cursor in a layout cell, then open the library.";
-    $("insertAsset").disabled = !assetCell;
+    $("assetContext").textContent =
+      "Copy a token and edit the design source to place or change assets.";
     const version = previewRevision + 1;
     previewRevision = version;
     $("assetPreview").textContent = "Rendering preview…";
@@ -3033,30 +2967,6 @@ const initializeStudio = async function initializeStudio() {
         $("assetPreview").textContent = `Preview unavailable: ${error.message}`;
       }
     }
-  }
-  function cursorCell() {
-    const position = editor.state.selection.main.head,
-      line = editor.state.doc.lineAt(position);
-    let inLayout = false;
-    for (let n = 1; n < line.number; n += 1) {
-      const text = editor.state.doc.line(n).text.trim();
-      if (/^LAYOUT\b/iu.test(text)) {
-        inLayout = true;
-      }
-      if (/^END\b/iu.test(text)) {
-        inLayout = false;
-      }
-    }
-    if (!inLayout || /^\s*(END|#)/iu.test(line.text)) {
-      return;
-    }
-    const tokens = [...line.text.matchAll(/(?:[^\s|<]+(?:<[^<>]*>)?)/gu)],
-      match = tokens.find(
-        (m) => position - line.from >= m.index && position - line.from <= m.index + m[0].length,
-      );
-    return match
-      ? { from: line.from + match.index, to: line.from + match.index + match[0].length }
-      : undefined;
   }
   async function startStudio() {
     for (const name of Object.keys(examples)) {
@@ -3098,10 +3008,12 @@ const initializeStudio = async function initializeStudio() {
           lineNumbers(),
           drawSelection(),
           highlightActiveLine(),
-          history(),
           foldGutter(),
           folding,
-          EditorView.contentAttributes.of({ "aria-label": "Design source", spellcheck: "false" }),
+          EditorView.contentAttributes.of({
+            "aria-label": "Design source",
+            spellcheck: "false",
+          }),
           EditorState.tabSize.of(2),
           keymap.of([
             {
@@ -3113,7 +3025,6 @@ const initializeStudio = async function initializeStudio() {
             },
             indentWithTab,
             ...defaultKeymap,
-            ...historyKeymap,
           ]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
@@ -3221,8 +3132,6 @@ const initializeStudio = async function initializeStudio() {
         }
       }),
     );
-    $("undoButton").addEventListener("click", () => undo(editor));
-    $("redoButton").addEventListener("click", () => redo(editor));
     $("foldButton").addEventListener("click", () => {
       folded = foldedRanges(editor.state).size > 0;
       if (folded) {
@@ -3230,7 +3139,10 @@ const initializeStudio = async function initializeStudio() {
       } else {
         foldAll(editor);
       }
-      $("foldButton").textContent = folded ? "Fold" : "Unfold";
+      const label = folded ? "Fold layout sections" : "Unfold layout sections";
+      $("foldButton").setAttribute("aria-label", label);
+      $("foldButton").title = label;
+      $("foldButton").setAttribute("aria-pressed", String(!folded));
     });
     for (const [id, mode] of [
       ["resetButton", "3d"],
@@ -3335,7 +3247,6 @@ const initializeStudio = async function initializeStudio() {
     });
     $("assetsButton").disabled = false;
     $("assetsButton").addEventListener("click", () => {
-      assetCell = cursorCell();
       studio.keys.clear();
       $("assetBrowser").showModal();
       showAssetResults();
@@ -3351,14 +3262,6 @@ const initializeStudio = async function initializeStudio() {
     });
     $("assetSearch").addEventListener("input", showAssetResults);
     $("assetCategory").addEventListener("change", showAssetResults);
-    $("insertAsset").addEventListener("click", () => {
-      if (!assetCell) {
-        return;
-      }
-      editor.dispatch({ changes: { ...assetCell, insert: selectedAsset } });
-      $("assetBrowser").close();
-      editor.focus();
-    });
     $("copyAsset").addEventListener(
       "click",
       guarded(async () => {
