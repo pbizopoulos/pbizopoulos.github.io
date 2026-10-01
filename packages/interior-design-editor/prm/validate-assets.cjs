@@ -55,7 +55,8 @@ async function check(variant) {
     await page.waitForFunction(() => assetQuality.material.wood.map.image.width === 512, null, { timeout: 15000 });
     if (!wallOnly && !exposureOnly) {
       await page.click('#assetsButton');
-      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine', 'shower', 'frameless_shower', 'toilet']) {
+      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine', 'shower', 'frameless_shower', 'toilet', 'toilet_open']) {
+        if (variant === 'before' && !await page.evaluate((asset) => Boolean(assetQuality.catalog[asset]), name)) continue;
         await page.fill('#assetSearch', name);
         await page.click(`[data-asset="${name}"]`);
         const data = await page.evaluate((name) => {
@@ -68,7 +69,7 @@ async function check(variant) {
               if (!attribute.array.every(Number.isFinite)) throw new Error(`${name} has invalid geometry`);
             }
           });
-          const ray = new THREE.Raycaster(new THREE.Vector3(name === 'kitchenette' ? -0.48 : 0, name === 'kitchenette' ? 1.4 : h + 2, name === 'toilet' ? 0.06 : 0), new THREE.Vector3(0, -1, 0));
+          const ray = new THREE.Raycaster(new THREE.Vector3(name === 'kitchenette' ? -0.48 : 0, name === 'kitchenette' ? 1.4 : h + 2, name.startsWith('toilet') ? 0.06 : 0), new THREE.Vector3(0, -1, 0));
           const hit = ray.intersectObject(group, true)[0];
           const panes = [];
           if (['shower', 'frameless_shower'].includes(name)) group.traverse((node) => {
@@ -76,7 +77,7 @@ async function check(variant) {
           });
           const doorRay = name === 'washing_machine' ? new THREE.Raycaster(new THREE.Vector3(0, h * 0.435, 1), new THREE.Vector3(0, 0, -1)) : undefined;
           const opaque = doorRay?.intersectObject(group, true).find((entry) => !entry.object.material.transparent);
-          const bounds = ['washing_machine', 'toilet'].includes(name) ? new THREE.Box3().setFromObject(group) : undefined;
+          const bounds = ['washing_machine', 'toilet', 'toilet_open'].includes(name) ? new THREE.Box3().setFromObject(group) : undefined;
           return { height: h, hit: hit?.point.y, panes: panes.length ? panes : undefined, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
         }, name);
         if (variant === 'after' && ['sink', 'vanity', 'bathroom_vanity', 'kitchenette'].includes(name)) {
@@ -100,10 +101,10 @@ async function check(variant) {
           assert.ok(data.bounds.max[2] <= 0.325, 'The washer door must fit its declared depth');
           assert.ok(data.bounds.max[1] <= 0.855, 'The washer must fit its declared height');
         }
-        if (variant === 'after' && name === 'toilet') {
+        if (variant === 'after' && name.startsWith('toilet')) {
           assert.ok(data.hit < 0.3, 'The toilet seat must leave its recessed bowl open');
           assert.ok(Math.abs(data.bounds.min[1]) < 0.001, 'The toilet pedestal must meet the floor');
-          assert.ok(data.bounds.max[1] <= data.height + 0.001, 'The cistern must fit its declared height');
+          assert.ok(data.bounds.max[1] <= data.height + 0.001, 'The toilet assembly must fit its declared height');
           assert.ok(Math.max(Math.abs(data.bounds.min[0]), Math.abs(data.bounds.max[0])) <= 0.216, 'The toilet must fit its declared width');
           assert.ok(Math.max(Math.abs(data.bounds.min[2]), Math.abs(data.bounds.max[2])) <= 0.326, 'The toilet must fit its declared depth');
         }

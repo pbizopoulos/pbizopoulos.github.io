@@ -1540,7 +1540,7 @@
           [
             [0, 2, "bathroom_vanity~west"],
             [3, 1, "frameless_shower"],
-            [2, 3, "toilet~south"],
+            [2, 3, "toilet_open~south"],
             [2, 2, "floor_drain"],
             [4, 3, "towel_rail[0.6x0.14x1.25]~east"],
           ],
@@ -4721,6 +4721,7 @@
       table_lamp: [0.28, 0.28, 0.4],
       telescope: [1.1, 1.2, 1.65],
       toilet: [0.43, 0.65, 0.72],
+      toilet_open: [0.43, 0.65, 0.94],
       towel_rack: [0.65, 0.32, 0.95],
       track_light: [1.2, 0.22, 2.7],
       treadmill: [0.9, 1.8, 1.3],
@@ -8628,7 +8629,8 @@
           }
           break;
         }
-        case "toilet": {
+        case "toilet":
+        case "toilet_open": {
           const profile = [
               [0, 0],
               [0.1, 0],
@@ -8676,6 +8678,24 @@
           seat.castShadow = true;
           seat.receiveShadow = true;
           group.add(seat);
+          if (name === "toilet_open") {
+            const lidOutline = seatOutline.clone();
+            lidOutline.holes = [];
+            const lidGeometry = new THREE.ExtrudeGeometry(lidOutline, {
+                bevelEnabled: true,
+                bevelSegments: 1,
+                bevelSize: 0.002,
+                bevelThickness: 0.002,
+                curveSegments: 12,
+                depth: 0.012,
+                steps: 1,
+              }),
+              lid = new THREE.Mesh(lidGeometry, material.white);
+            lid.position.set(0, 0.683, -0.133);
+            lid.castShadow = true;
+            lid.receiveShadow = true;
+            group.add(lid);
+          }
           const water = new THREE.Mesh(new THREE.CircleGeometry(0.065, 24), material.basinWater);
           water.rotation.x = -Math.PI / 2;
           water.scale.y = 1.23;
