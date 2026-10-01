@@ -2789,7 +2789,7 @@ const initializeStudio = async function initializeStudio() {
       try {
         localStorage.setItem("interior-studio-draft", source);
       } catch {
-        // Sharing remains available when browser storage is disabled.
+        status("Browser storage unavailable. Use Share design to save your design.");
       }
     } catch (error) {
       if (version === revision) {
