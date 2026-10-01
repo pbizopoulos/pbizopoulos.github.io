@@ -6686,6 +6686,7 @@
     colors = {
       amber: "#edb956",
       ash: "#77766d",
+      basinWater: "#a3b8b5",
       brass: "#bca46b",
       brushedSteel: "#929a9d",
       cabinetGlass: "#b9c5bb",
@@ -7161,6 +7162,11 @@
   material.metal.roughness = 0.27;
   material.screen.roughness = 0.16;
   material.screen.metalness = 0.18;
+  material.basinWater.transparent = true;
+  material.basinWater.opacity = 0.36;
+  material.basinWater.depthWrite = false;
+  material.basinWater.roughness = 0.12;
+  material.basinWater.envMapIntensity = 0.6;
   material.water.roughness = 0.12;
   material.water.metalness = 0.35;
   material.glow.emissive.set("#a0f8da");
@@ -8624,7 +8630,8 @@
         }
         case "toilet": {
           const profile = [
-              [0.1, 0.02],
+              [0, 0],
+              [0.1, 0],
               [0.115, 0.07],
               [0.105, 0.2],
               [0.17, 0.32],
@@ -8633,7 +8640,7 @@
               [0.185, 0.41],
               [0.16, 0.34],
               [0.09, 0.25],
-              [0.035, 0.24],
+              [0, 0.235],
             ],
             bowl = new THREE.Mesh(
               new THREE.LatheGeometry(
@@ -8642,24 +8649,41 @@
               ),
               material.porcelain,
             );
-          bowl.scale.z = 1.25;
-          bowl.position.z = 0.08;
+          bowl.scale.z = 1.23;
+          bowl.position.z = 0.06;
           bowl.castShadow = true;
           bowl.receiveShadow = true;
           group.add(bowl);
           box(group, 0.37, 0.33, 0.17, 0, 0.535, -0.23, material.porcelain);
-          box(group, 0.39, 0.028, 0.185, 0, 0.71, -0.23, material.porcelain);
-          const seat = new THREE.Mesh(new THREE.TorusGeometry(0.187, 0.018, 6, 32), material.white);
-          seat.rotation.x = Math.PI / 2;
-          seat.scale.y = 1.27;
-          seat.position.set(0, 0.431, 0.08);
+          box(group, 0.39, 0.028, 0.185, 0, 0.7, -0.23, material.porcelain);
+          const seatOutline = new THREE.Shape(),
+            seatOpening = new THREE.Path();
+          seatOutline.absellipse(0, 0, 0.207, 0.248, 0, Math.PI * 2, false, 0);
+          seatOpening.absellipse(0, 0, 0.151, 0.194, 0, Math.PI * 2, true, 0);
+          seatOutline.holes.push(seatOpening);
+          const seatGeometry = new THREE.ExtrudeGeometry(seatOutline, {
+              bevelEnabled: true,
+              bevelSegments: 1,
+              bevelSize: 0.002,
+              bevelThickness: 0.002,
+              curveSegments: 12,
+              depth: 0.022,
+              steps: 1,
+            }),
+            seat = new THREE.Mesh(seatGeometry, material.white);
+          seatGeometry.rotateX(-Math.PI / 2);
+          seat.position.set(0, 0.416, 0.06);
           seat.castShadow = true;
           seat.receiveShadow = true;
           group.add(seat);
-          cylinder(group, 0.065, 0.065, 0.004, 0, 0.253, 0.08, material.water, 20).scale.z = 1.25;
-          cylinder(group, 0.025, 0.025, 0.006, 0.07, 0.728, -0.23, material.metal, 16);
+          const water = new THREE.Mesh(new THREE.CircleGeometry(0.065, 24), material.basinWater);
+          water.rotation.x = -Math.PI / 2;
+          water.scale.y = 1.23;
+          water.position.set(0, 0.252, 0.06);
+          group.add(water);
+          cylinder(group, 0.025, 0.025, 0.006, 0.07, 0.717, -0.23, material.metal, 16);
           for (const x of [-0.11, 0.11]) {
-            box(group, 0.045, 0.016, 0.04, x, 0.435, -0.15, material.metal);
+            box(group, 0.045, 0.016, 0.04, x, 0.419, -0.15, material.metal);
           }
           break;
         }
