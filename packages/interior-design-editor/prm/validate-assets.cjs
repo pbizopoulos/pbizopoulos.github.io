@@ -53,7 +53,7 @@ async function check(variant) {
     await page.waitForFunction(() => assetQuality.material.wood.map.image.width === 512, null, { timeout: 15000 });
     if (!wallOnly) {
       await page.click('#assetsButton');
-      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine']) {
+      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine', 'shower', 'frameless_shower']) {
         await page.fill('#assetSearch', name);
         await page.click(`[data-asset="${name}"]`);
         const data = await page.evaluate((name) => {
@@ -68,14 +68,29 @@ async function check(variant) {
           });
           const ray = new THREE.Raycaster(new THREE.Vector3(name === 'kitchenette' ? -0.48 : 0, name === 'kitchenette' ? 1.4 : h + 2, 0), new THREE.Vector3(0, -1, 0));
           const hit = ray.intersectObject(group, true)[0];
+          const panes = [];
+          if (['shower', 'frameless_shower'].includes(name)) group.traverse((node) => {
+            if (node.material?.transparent) panes.push({ triangles: node.geometry.index.count / 3, opacity: node.material.opacity * (node.geometry.attributes.color?.itemSize === 4 ? node.geometry.attributes.color.getW(5) : 1), edgeOpacity: node.material.opacity * (node.geometry.attributes.color?.itemSize === 4 ? node.geometry.attributes.color.getW(0) : 1), doubleSided: node.material.side === THREE.DoubleSide, singlePass: node.material.forceSinglePass, shadow: node.castShadow });
+          });
           const doorRay = name === 'washing_machine' ? new THREE.Raycaster(new THREE.Vector3(0, h * 0.435, 1), new THREE.Vector3(0, 0, -1)) : undefined;
           const opaque = doorRay?.intersectObject(group, true).find((entry) => !entry.object.material.transparent);
           const bounds = name === 'washing_machine' ? new THREE.Box3().setFromObject(group) : undefined;
-          return { height: h, hit: hit?.point.y, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
+          return { height: h, hit: hit?.point.y, panes: panes.length ? panes : undefined, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
         }, name);
         if (variant === 'after' && ['sink', 'vanity', 'bathroom_vanity', 'kitchenette'].includes(name)) {
           const limit = name === 'kitchenette' ? 0.85 : data.height - (name === 'bathroom_vanity' ? 0.08 : 0.09);
           assert.ok(data.hit < limit, `${name} must have an unobstructed recessed bowl`);
+        }
+        if (variant === 'after' && ['shower', 'frameless_shower'].includes(name)) {
+          assert.equal(data.panes.length, 3, 'The enclosure must have a front and two side panes');
+          for (const pane of data.panes) {
+            assert.equal(pane.triangles, 18, 'Glass must use a single flat grid per pane');
+            assert.ok(pane.edgeOpacity > pane.opacity, 'Exposed glass edges must remain legible');
+            assert.ok(pane.opacity < 0.2, 'Enclosure glass must preserve interior clarity');
+            assert.equal(pane.doubleSided, true, 'Glass must be visible from both sides');
+            assert.equal(pane.singlePass, true, 'Flat glass must render in one pass');
+            assert.equal(pane.shadow, false, 'Clear glass must not cast an opaque shadow');
+          }
         }
         if (variant === 'after' && name === 'washing_machine') {
           assert.ok(data.cavity < 0.2, 'The washer door must reveal its recessed drum');

@@ -1,6 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ (async () => {
   const defaultRoomHeight = 2.6,
     walkEyeHeight = 1.8,
+    showerGlassOpacity = { edge: 0.36, face: 0.13 },
     roomStyles = ["warm", "blue", "neutral", "liminal", "industrial", "aquatic", "mediterranean"],
     floorFinishes = ["auto", "tile", "stone", "grass", "terracotta", "wood", "concrete"];
   const referenceCatalog = {
@@ -438,16 +439,19 @@
       b(0.07, 0.012, 0.022, 0.025, h + 0.04, -0.2, m.metal);
     } else if (name === "frameless_shower") {
       b(w, 0.028, d, 0, 0.014, 0, m.stone);
-      const glass = mat("#d5e2dc", 0.09);
-      glass.transparent = true;
-      glass.opacity = 0.13;
-      glass.depthWrite = false;
-      glass.side = THREE.DoubleSide;
       for (const side of [-1, 1]) {
-        b(0.012, h, d, side * (w / 2 - 0.006), h / 2, 0, glass).castShadow = false;
+        addGlassPane(
+          group,
+          d,
+          h - 0.028,
+          side * (w / 2 - 0.006),
+          h / 2 + 0.014,
+          0,
+          (side * Math.PI) / 2,
+        );
         rod([(side * w) / 2, h, -d / 2], [(side * w) / 2, h, d / 2], 0.006, m.metal);
       }
-      b(w, h - 0.025, 0.012, 0, h / 2 + 0.013, d / 2, glass).castShadow = false;
+      addGlassPane(group, w - 0.012, h - 0.028, 0, h / 2 + 0.014, d / 2 - 0.006);
       for (const y of [0.3, 1.7]) {
         b(0.025, 0.045, 0.018, -w / 2 + 0.015, y, d / 2 + 0.008, m.metal);
       }
@@ -942,6 +946,8 @@
           new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.009, 6, false),
           m.metal,
         );
+      hose.castShadow = true;
+      hose.receiveShadow = true;
       group.add(hose);
     } else if (name === "dumbbells") {
       for (const z of [-0.14, 0.14]) {
@@ -6696,6 +6702,7 @@
       rug: "#aa7055",
       screen: "#16232b",
       sea: "#567873",
+      showerGlass: "#d5e2dc",
       slate: "#655f54",
       soil: "#6b5845",
       stone: "#c9c1b2",
@@ -7114,6 +7121,14 @@
   material.brushedSteel.metalness = 0.9;
   material.brushedSteel.roughness = 0.42;
   material.brushedSteel.envMapIntensity = 0.65;
+  material.showerGlass.transparent = true;
+  material.showerGlass.opacity = showerGlassOpacity.edge;
+  material.showerGlass.vertexColors = true;
+  material.showerGlass.depthWrite = false;
+  material.showerGlass.roughness = 0.09;
+  material.showerGlass.envMapIntensity = 0.9;
+  material.showerGlass.side = THREE.DoubleSide;
+  material.showerGlass.forceSinglePass = true;
   material.washerGlass.transparent = true;
   material.washerGlass.opacity = 0.42;
   material.washerGlass.depthWrite = false;
@@ -7509,6 +7524,35 @@
     box(parent, w - 0.05, height, 0.025, 0, bottom + height / 2, z - d / 2 + 0.0125, finish, false);
     box(parent, w - 0.05, 0.025, d - 0.025, 0, bottom + 0.0125, z + 0.0125, finish, false);
     box(parent, w - 0.05, 0.05, 0.025, 0, top - 0.025, z + d / 2 - 0.0125, finish, false);
+  }
+  function addGlassPane(parent, width, height, x, y, z, yaw = 0) {
+    const geometry = new THREE.PlaneGeometry(width, height, 3, 3),
+      edgeWidth = Math.min(0.003, width / 4, height / 4),
+      xStops = [-width / 2, -width / 2 + edgeWidth, width / 2 - edgeWidth, width / 2],
+      yStops = [height / 2, height / 2 - edgeWidth, -height / 2 + edgeWidth, -height / 2],
+      vertexColors = [];
+    for (let i = 0; i < geometry.attributes.position.count; i += 1) {
+      const row = Math.floor(i / 4),
+        column = i % 4,
+        edgeVertex = row === 0 || row === 3 || column === 0 || column === 3;
+      geometry.attributes.position.setXY(i, xStops[column], yStops[row]);
+      geometry.attributes.uv.setXY(
+        i,
+        (xStops[column] + width / 2) / width,
+        (yStops[row] + height / 2) / height,
+      );
+      vertexColors.push(
+        ...(edgeVertex
+          ? [0.72, 0.83, 0.78, 1]
+          : [1, 1, 1, showerGlassOpacity.face / showerGlassOpacity.edge]),
+      );
+    }
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(vertexColors, 4));
+    const pane = new THREE.Mesh(geometry, material.showerGlass);
+    pane.position.set(x, y, z);
+    pane.rotation.y = yaw;
+    parent.add(pane);
+    return pane;
   }
   function piercedPanelGeometry(width, height, thickness, opening) {
     const shape = new THREE.Shape();
@@ -8616,39 +8660,42 @@
           break;
         }
         case "shower": {
-          box(group, cw, 0.08, cd, 0, 0.04, 0, material.white);
-          for (const x of [-1, 1]) {
-            for (const z of [-1, 1]) {
-              box(
-                group,
-                0.025,
-                ch - 0.08,
-                0.025,
-                x * (cw / 2 - 0.04),
-                ch / 2 + 0.04,
-                z * (cd / 2 - 0.04),
-                material.metal,
-              );
+          box(group, cw, 0.035, cd, 0, 0.0175, 0, material.white);
+          for (const side of [-1, 1]) {
+            box(group, 0.025, 0.028, cd, side * (cw / 2 - 0.0125), 0.049, 0, material.white);
+            box(group, cw - 0.05, 0.028, 0.025, 0, 0.049, side * (cd / 2 - 0.0125), material.white);
+          }
+          const glassBottom = 0.064,
+            glassTop = ch - 0.018,
+            glassHeight = glassTop - glassBottom,
+            glassY = (glassTop + glassBottom) / 2,
+            frontZ = cd / 2 - 0.035,
+            backZ = -cd / 2 + 0.018,
+            sideDepth = frontZ - backZ,
+            sideZ = (frontZ + backZ) / 2;
+          for (const side of [-1, 1]) {
+            const x = side * (cw / 2 - 0.018);
+            addGlassPane(group, sideDepth, glassHeight, x, glassY, sideZ, (side * Math.PI) / 2);
+            for (const z of [frontZ, backZ]) {
+              box(group, 0.018, glassHeight + 0.018, 0.018, x, glassY + 0.009, z, material.metal);
+            }
+            for (const y of [glassBottom, glassTop]) {
+              box(group, 0.018, 0.018, sideDepth, x, y, sideZ, material.metal);
             }
           }
-          const glass = mat("#c5dadd", 0.2);
-          glass.transparent = true;
-          glass.opacity = 0.32;
-          glass.depthWrite = false;
-          box(group, cw - 0.06, ch - 0.18, 0.018, 0, ch / 2, cd / 2 - 0.03, glass).castShadow =
-            false;
-          cylinder(
-            group,
-            0.02,
-            0.02,
-            ch * 0.72,
-            -cw * 0.31,
-            ch * 0.42,
-            -cd * 0.28,
-            material.metal,
-            10,
-          );
-          cylinder(group, 0.11, 0.11, 0.025, -cw * 0.31, ch * 0.79, -cd * 0.28, material.metal, 16);
+          addGlassPane(group, cw - 0.036, glassHeight, 0, glassY, frontZ);
+          for (const y of [glassBottom, glassTop]) {
+            box(group, cw - 0.018, 0.018, 0.018, 0, y, frontZ, material.metal);
+          }
+          for (const y of [0.35, ch - 0.35]) {
+            box(group, 0.033, 0.045, 0.024, -cw / 2 + 0.035, y, frontZ + 0.005, material.metal);
+          }
+          pullHandle(group, 0.18, cw / 2 - 0.11, 1.04, frontZ, true);
+          const fixtures = new THREE.Group();
+          addReferenceAsset("shower_set", fixtures);
+          fixtures.position.set(0, 0.064, -cd / 2 + 0.065);
+          group.add(fixtures);
+          cylinder(group, 0.037, 0.037, 0.004, 0.13, 0.039, -cd * 0.23, material.metal, 16);
           break;
         }
         case "ottoman": {
