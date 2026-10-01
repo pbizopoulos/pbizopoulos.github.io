@@ -3037,8 +3037,12 @@
         effects = { ambient, antialias, filtered, processing, scenePass };
       }
       renderer.getDrawingBufferSize(size);
-      effects.ambient.resolutionScale = Math.min(0.5, Math.sqrt(500_000 / (size.x * size.y)));
-      effects.ambient.samples.value = quality === "high" ? 24 : 12;
+      const high = quality === "high";
+      effects.ambient.resolutionScale = Math.min(
+        high ? 1 : 0.5,
+        Math.sqrt((high ? 1_500_000 : 500_000) / (size.x * size.y)),
+      );
+      effects.ambient.samples.value = high ? 32 : 12;
       effects.processing.render();
     };
   }
@@ -4546,9 +4550,9 @@
     qualityControl = document.createElement("label");
   qualityControl.className = "quality-control";
   qualityControl.innerHTML =
-    'Quality <select id="renderQuality" aria-label="Render quality"><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select>';
+    'Quality <select id="renderQuality" aria-label="Render quality"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="high" selected>High</option></select>';
   qualityControl.title =
-    "Fast: lower resolution · Balanced: contact shading at rest · High: sharper shadows and more resolution";
+    "Fast: lower resolution · Balanced: contact shading at rest · High: supersampling, detailed contact shading, sharper shadows and mirrors";
   primaryTools.append(
     document.querySelector(".view-buttons"),
     qualityControl,
@@ -5115,7 +5119,7 @@
       }
       const controls = new OrbitControls(camera, renderer.domElement);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMapping = THREE.AgXToneMapping;
       renderer.toneMappingExposure = 1.05;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       const environmentRoom = new RoomEnvironment(),
@@ -6138,7 +6142,7 @@
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = THREE.AgXToneMapping;
   renderer.toneMappingExposure = 1.05;
   const reflectionRoom = new RoomEnvironment(),
     reflectionGenerator = new THREE.PMREMGenerator(renderer),
@@ -6148,6 +6152,11 @@
   reflectionRoom.dispose();
   reflectionGenerator.dispose();
   viewport.prepend(renderer.domElement);
+  const nativeWebGPU = renderer.backend.isWebGPUBackend === true;
+  $("renderBackend").textContent = nativeWebGPU ? "WebGPU" : "WebGL 2 fallback";
+  $("renderBackend").title = nativeWebGPU
+    ? "Native WebGPU backend active."
+    : "WebGPU is unavailable in this browser. Using the compatible WebGL 2 backend.";
   const controls = new OrbitControls(camera, renderer.domElement),
     lookControls = new PointerLockControls(camera, renderer.domElement);
   lookControls.enabled = false;
@@ -6165,7 +6174,11 @@
   const sunlight = new THREE.DirectionalLight("#ffedd3", 2.4);
   sunlight.castShadow = true;
   sunlight.shadow.autoUpdate = false;
-  sunlight.shadow.mapSize.set(2048, 2048);
+  const initialShadowSize = Math.min(
+    4096,
+    renderer.backend.device?.limits.maxTextureDimension2D ?? 4096,
+  );
+  sunlight.shadow.mapSize.set(initialShadowSize, initialShadowSize);
   sunlight.shadow.camera.left = -12;
   sunlight.shadow.camera.right = 12;
   sunlight.shadow.camera.top = 12;
@@ -6596,10 +6609,32 @@
     mat = (color, roughness = 0.82, metalness = 0) =>
       new THREE.MeshStandardMaterial({ color, envMapIntensity: 0.45, metalness, roughness }),
     material = Object.fromEntries(
-      Object.entries(colors).map(([k, v]) => [
-        k,
-        mat(v, k === "screen" ? 0.32 : 0.84, k === "metal" ? 0.55 : 0),
-      ]),
+      Object.entries(colors).map(([k, v]) => {
+        if (["fabric", "fabricDark", "cream", "curtain", "linen", "stripedLinen"].includes(k)) {
+          return [
+            k,
+            new THREE.MeshPhysicalMaterial({
+              color: v,
+              roughness: 0.9,
+              sheen: 0.45,
+              sheenColor: new THREE.Color(v),
+              sheenRoughness: 0.8,
+            }),
+          ];
+        }
+        if (["porcelain", "enamel", "earthenware"].includes(k)) {
+          return [
+            k,
+            new THREE.MeshPhysicalMaterial({
+              clearcoat: 0.35,
+              clearcoatRoughness: 0.22,
+              color: v,
+              roughness: 0.32,
+            }),
+          ];
+        }
+        return [k, mat(v, k === "screen" ? 0.32 : 0.84, k === "metal" ? 0.55 : 0)];
+      }),
     ),
     sharedMaterials = new Set(Object.values(material)),
     furnitureTemplates = new Map(),
@@ -10210,7 +10245,11 @@
     camera.updateProjectionMatrix();
     const profile = qualityProfiles[$("renderQuality").value],
       pixelBudget = motionResolution ? Math.min(profile.pixels, 1_000_000) : profile.pixels,
-      ratio = Math.min(devicePixelRatio, profile.ratio, Math.sqrt(pixelBudget / (w * h)));
+      displayRatio =
+        !motionResolution && $("renderQuality").value === "high"
+          ? Math.max(devicePixelRatio, 1.5)
+          : devicePixelRatio,
+      ratio = Math.min(displayRatio, profile.ratio, Math.sqrt(pixelBudget / (w * h)));
     if (renderer.getPixelRatio() !== ratio) {
       renderer.setPixelRatio(ratio);
     }

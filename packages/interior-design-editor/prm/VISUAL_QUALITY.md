@@ -95,8 +95,9 @@ Three.js [GTAONode](https://threejs.org/docs/pages/GTAONode.html) and DenoiseNod
 replace the WebGL effect pass and manual compositor. They reuse the beauty pass's
 depth and reconstruct normals from it. The scene pass disables multisampling
 so its depth can be sampled; FXAANode antialiases the final composition. Balanced uses 12 AO
-samples; High uses 24. Both run at no more than half linear resolution and
-500,000 pixels. Moving and Fast views bypass it; switching to Fast releases
+samples at no more than half linear resolution and 500,000 pixels. High uses 32
+samples at up to full linear resolution, capped at 1,500,000 pixels.
+Moving and Fast views bypass it; switching to Fast releases
 its targets. Quality switching returns to stable geometry/texture counts and
 still views stop drawing. The compositor keeps AO bounded to avoid black halos.
 
@@ -318,3 +319,31 @@ triangle counts as the cabinet pass in all three representative examples.
 Placement warnings, browser errors and settled renderer sleep checks passed.
 The critic approved the final portrait tiles, visible pale joints and refrigerator
 seal, with no apparent alignment or readability defects.
+
+## High-quality default
+
+The viewport now starts in High. Still views supersample at a minimum requested
+1.5× linear resolution even on a 1× display, subject to the existing four-million
+pixel budget. Movement retains the one-million-pixel budget and bypasses AO and
+mirrors until the camera settles. The initial sun shadow map matches High's 4096
+size rather than waiting for a quality-selection change.
+
+Both the viewport and live asset studio use AgX tone mapping to handle bright
+sunlight and preserve highlight color. Upholstery and linen use physical sheen;
+porcelain, enamel and earthenware use a restrained clearcoat. The existing daylight
+material conversion preserves those physical properties. The Scene controls show
+the actual initialized backend, either WebGPU or WebGL 2 fallback.
+
+High's denoised GTAO uses 32 samples and up to 1.5 million AO pixels. Normals remain
+reconstructed from depth: an additional normal attachment in pinned r181 exposed
+pipeline validation errors with this scene's transparent and reflective materials.
+No temporal accumulation is required, so exports and idle views finish in one
+detailed frame.
+
+Focused native WebGPU offscreen and visible WebGL 2 checks passed quality modes,
+representative daylight scenes, mirrors, effect disposal, small-scene night
+lighting, asset previews, PNG export, idle sleep, mobile layout and invalid-source
+recovery. The complete large-apartment night stress run remains unverified after
+a local-server interruption and a software-GPU action timeout. Browser actions now
+use the same timeout allowance as initialization. Hardware canvas presentation
+and hardware performance remain unverified on this software-GPU machine.

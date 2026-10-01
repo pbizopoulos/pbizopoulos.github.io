@@ -187,16 +187,19 @@
                   </p>
                   <output id="sunStatus" aria-live="polite"></output>
                   <output id="indoorLights" aria-live="polite">Automatic fixture lighting</output>
+                  <output id="renderBackend" aria-label="Rendering backend"
+                    >Preparing renderer…</output
+                  >
                   <output id="renderStats" title="Scene rendering workload"
                     >Preparing scene…</output
                   >
                   <p>
                     Defaults to Athens. Match the location, date, local time, and UTC offset to the
                     property. The sun and sky follow these settings; fixtures switch on at night.
-                    Exposure changes brightness. Moving views temporarily reduce resolution.
-                    Balanced refines contact shading when you stop; High adds sharper shadows,
-                    mirror reflections, and resolution. Saved images use the selected quality. Still
-                    views pause rendering.
+                    Exposure changes brightness. Moving views temporarily reduce resolution. High is
+                    the default: supersampled edges, detailed contact shading, sharper shadows and
+                    mirror reflections. Balanced and Fast reduce GPU work. Saved images use the
+                    selected quality. Still views pause rendering.
                   </p>
                 </form>
               </details>

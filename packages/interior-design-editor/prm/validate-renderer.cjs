@@ -19,6 +19,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 760 } });
+    page.setDefaultTimeout(fallback ? 240000 : 120000);
     const errors = [];
     page.on('pageerror', (error) => { if (!errors.includes(error.message)) { errors.push(error.message); console.error(error.stack); } });
     page.on('console', (message) => {
@@ -44,6 +45,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.goto(process.argv[2] || 'http://localhost:8765/packages/interior-design-editor/?example=Bedroom');
     await ready();
     assert.equal(await page.evaluate(() => renderCheck.renderer.backend.isWebGPUBackend === true), !fallback, 'Actual renderer backend');
+    assert.equal(await page.inputValue('#renderQuality'), 'high', 'High quality is the initial experience');
+    assert.equal(await page.locator('#renderBackend').textContent(), fallback ? 'WebGL 2 fallback' : 'WebGPU', 'Backend disclosure matches the initialized renderer');
+    assert.equal(await page.evaluate(() => renderCheck.renderer.toneMapping === renderCheck.THREE.AgXToneMapping), true, 'AgX highlight handling');
+    assert.equal(await page.evaluate(() => renderCheck.material.fabric.isMeshPhysicalMaterial && renderCheck.material.fabric.sheen > 0 && renderCheck.material.porcelain.clearcoat > 0), true, 'Physical textile and glazed finishes');
     await page.waitForFunction(() => renderCheck.material.wood.map.image.width === 512, null, { timeout: 20000 });
     await ready();
     const verifyImage = async () => {
@@ -86,6 +91,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     };
     for (const quality of ['fast', 'balanced', 'high']) {
       await page.selectOption('#renderQuality', quality); await ready();
+      if (quality === 'high') {
+        assert.ok(await page.evaluate(() => renderCheck.renderer.getPixelRatio() >= 1.5), 'High supersamples a 1× display');
+        assert.ok(await page.evaluate(() => renderCheck.renderer.domElement.width * renderCheck.renderer.domElement.height <= 4_000_000), 'High retains its pixel budget');
+      }
       await verifyImage(); await capture(`bedroom-${quality}`);
       console.log('Quality', quality);
     }
