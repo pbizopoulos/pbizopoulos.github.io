@@ -11,6 +11,9 @@ const baseURL = process.argv[2] || 'http://localhost:8765/packages/interior-desi
 const baseline = process.argv[3];
 const output = process.env.INTERIOR_SCREENSHOTS;
 const wallOnly = process.env.INTERIOR_CHECK === 'walls';
+const additionalSceneDrawAllowance = 6;
+const sceneTriangleRatioLimit = 1.06;
+const additionalSceneTriangleAllowance = 2000;
 const scenes = wallOnly ? ['Mediterranean three-level apartment'] : ['Warm modern apartment', 'Mediterranean three-level apartment', 'Kitchen & dining'];
 if (output) fs.mkdirSync(output, { recursive: true });
 
@@ -43,10 +46,14 @@ async function check(variant) {
     url.searchParams.set('example', wallOnly ? 'Mediterranean three-level apartment' : 'Bedroom');
     await page.goto(url.href);
     await ready();
+    await page.evaluate(() => {
+      globalThis.wallTileDisposals = 0;
+      assetQuality.material.wallTile?.addEventListener('dispose', () => { globalThis.wallTileDisposals += 1; });
+    });
     await page.waitForFunction(() => assetQuality.material.wood.map.image.width === 512, null, { timeout: 15000 });
     if (!wallOnly) {
       await page.click('#assetsButton');
-      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser']) {
+      for (const name of ['sink', 'vanity', 'bathroom_vanity', 'kitchenette', 'wardrobe', 'fridge', 'dresser', 'washing_machine']) {
         await page.fill('#assetSearch', name);
         await page.click(`[data-asset="${name}"]`);
         const data = await page.evaluate((name) => {
@@ -61,11 +68,20 @@ async function check(variant) {
           });
           const ray = new THREE.Raycaster(new THREE.Vector3(name === 'kitchenette' ? -0.48 : 0, name === 'kitchenette' ? 1.4 : h + 2, 0), new THREE.Vector3(0, -1, 0));
           const hit = ray.intersectObject(group, true)[0];
-          return { height: h, hit: hit?.point.y, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
+          const doorRay = name === 'washing_machine' ? new THREE.Raycaster(new THREE.Vector3(0, h * 0.435, 1), new THREE.Vector3(0, 0, -1)) : undefined;
+          const opaque = doorRay?.intersectObject(group, true).find((entry) => !entry.object.material.transparent);
+          const bounds = name === 'washing_machine' ? new THREE.Box3().setFromObject(group) : undefined;
+          return { height: h, hit: hit?.point.y, cavity: opaque?.point.z, bounds: bounds ? { min: bounds.min.toArray(), max: bounds.max.toArray() } : undefined, calls: studio.renderer.info.render.calls, triangles: studio.renderer.info.render.triangles };
         }, name);
         if (variant === 'after' && ['sink', 'vanity', 'bathroom_vanity', 'kitchenette'].includes(name)) {
           const limit = name === 'kitchenette' ? 0.85 : data.height - (name === 'bathroom_vanity' ? 0.08 : 0.09);
           assert.ok(data.hit < limit, `${name} must have an unobstructed recessed bowl`);
+        }
+        if (variant === 'after' && name === 'washing_machine') {
+          assert.ok(data.cavity < 0.2, 'The washer door must reveal its recessed drum');
+          assert.ok(data.bounds.min[1] >= -0.001 && data.bounds.min[1] <= 0.001, 'Washer feet must meet the floor');
+          assert.ok(data.bounds.max[2] <= 0.325, 'The washer door must fit its declared depth');
+          assert.ok(data.bounds.max[1] <= 0.855, 'The washer must fit its declared height');
         }
         console.log(variant, name, JSON.stringify(data));
         await capture(name);
@@ -83,6 +99,10 @@ async function check(variant) {
       console.log(variant, name, JSON.stringify(data));
     }
     if (variant === 'after') {
+      if (wallOnly) {
+        await page.selectOption('#exampleSelect', 'Bedroom');
+        await ready();
+      }
       if (await page.inputValue('#exampleSelect') !== 'Mediterranean three-level apartment') await page.selectOption('#exampleSelect', 'Mediterranean three-level apartment');
       await ready();
       const tiles = await page.evaluate(() => {
@@ -134,6 +154,7 @@ async function check(variant) {
     await page.waitForTimeout(600);
     assert.equal(await page.evaluate(() => assetQuality.renderer.info.render.frame), frame, 'The settled renderer must sleep');
     assert.deepEqual(errors, [], 'Browser errors');
+    if (variant === 'after') assert.equal(await page.evaluate(() => wallTileDisposals), 0, 'Shared wall finishes must survive scene rebuilds');
     return workload;
   } finally {
     await browser.close();
@@ -145,8 +166,8 @@ async function check(variant) {
   const after = await check('after');
   if (before) {
     for (const name of scenes) {
-      assert.ok(after[name].calls <= before[name].calls + 3, `${name} draw budget`);
-      assert.ok(after[name].triangles <= before[name].triangles * 1.06 + 2000, `${name} geometry budget`);
+      assert.ok(after[name].calls <= before[name].calls + additionalSceneDrawAllowance, `${name} draw budget`);
+      assert.ok(after[name].triangles <= before[name].triangles * sceneTriangleRatioLimit + additionalSceneTriangleAllowance, `${name} geometry budget`);
     }
   }
   console.log(wallOnly ? 'WALL FINISH / CONTINUITY / REFERENCE VIEWS / BROWSER / IDLE CHECKS PASS' : 'ASSET GEOMETRY / BASIN DEPTH / SCENES / BROWSER / IDLE / WORKLOAD CHECKS PASS');

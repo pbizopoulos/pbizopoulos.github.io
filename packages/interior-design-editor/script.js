@@ -6660,6 +6660,7 @@
       amber: "#edb956",
       ash: "#77766d",
       brass: "#bca46b",
+      brushedSteel: "#929a9d",
       cabinetGlass: "#b9c5bb",
       ceiling: "#f5f2eb",
       chrome: "#e1e3e1",
@@ -6701,6 +6702,7 @@
       stripedLinen: "#ffffff",
       terracotta: "#ad6442",
       wall: "#d4d0c7",
+      washerGlass: "#596b73",
       water: "#42bfd1",
       white: "#ebe9e2",
       wicker: "#b49464",
@@ -6992,6 +6994,7 @@
   material.wallTile.bumpScale = 0.0008;
   material.wallTile.userData.textureScale = 4.8;
   material.wallTile.userData.textureAspect = 0.5;
+  sharedMaterials.add(material.wallTile);
   const pavingCanvas = document.createElement("canvas");
   pavingCanvas.width = 512;
   pavingCanvas.height = 512;
@@ -7108,6 +7111,14 @@
   material.cabinetGlass.opacity = 0.25;
   material.cabinetGlass.depthWrite = false;
   material.cabinetGlass.roughness = 0.12;
+  material.brushedSteel.metalness = 0.9;
+  material.brushedSteel.roughness = 0.42;
+  material.brushedSteel.envMapIntensity = 0.65;
+  material.washerGlass.transparent = true;
+  material.washerGlass.opacity = 0.42;
+  material.washerGlass.depthWrite = false;
+  material.washerGlass.roughness = 0.16;
+  material.washerGlass.envMapIntensity = 0.6;
   material.rubber.roughness = 0.95;
   material.rubber.envMapIntensity = 0.2;
   material.metal.metalness = 0.85;
@@ -7499,19 +7510,19 @@
     box(parent, w - 0.05, 0.025, d - 0.025, 0, bottom + 0.0125, z + 0.0125, finish, false);
     box(parent, w - 0.05, 0.05, 0.025, 0, top - 0.025, z + d / 2 - 0.0125, finish, false);
   }
-  function cutWorktop(parent, w, d, thickness, x, y, z, finish, opening) {
+  function piercedPanelGeometry(width, height, thickness, opening) {
     const shape = new THREE.Shape();
-    shape.moveTo(-w / 2, -d / 2);
-    shape.lineTo(w / 2, -d / 2);
-    shape.lineTo(w / 2, d / 2);
-    shape.lineTo(-w / 2, d / 2);
+    shape.moveTo(-width / 2, -height / 2);
+    shape.lineTo(width / 2, -height / 2);
+    shape.lineTo(width / 2, height / 2);
+    shape.lineTo(-width / 2, height / 2);
     shape.closePath();
     const hole = new THREE.Path();
     hole.absellipse(
       opening.x,
-      -opening.z,
+      opening.y,
       opening.w * 0.48,
-      opening.d * 0.48,
+      opening.h * 0.48,
       0,
       Math.PI * 2,
       true,
@@ -7526,6 +7537,15 @@
       curveSegments: 12,
       depth: thickness,
       steps: 1,
+    });
+    return geometry;
+  }
+  function cutWorktop(parent, w, d, thickness, x, y, z, finish, opening) {
+    const geometry = piercedPanelGeometry(w, d, thickness, {
+      h: opening.d,
+      w: opening.w,
+      x: opening.x,
+      y: -opening.z,
     });
     geometry.rotateX(-Math.PI / 2);
     surfaceUVs(geometry, finish, w, thickness, d);
@@ -8851,14 +8871,158 @@
           break;
         }
         case "washing_machine": {
-          box(group, cw, ch, cd - 0.04, 0, ch / 2, -0.02, material.white);
-          box(group, cw - 0.04, 0.11, 0.025, 0, 0.755, 0.292, material.metal);
-          box(group, 0.18, 0.05, 0.01, -0.13, 0.755, 0.308, material.screen);
-          const rim = cylinder(group, 0.22, 0.22, 0.035, 0, 0.37, 0.302, material.metal),
-            glass = cylinder(group, 0.175, 0.175, 0.012, 0, 0.37, 0.314, material.screen),
-            dial = cylinder(group, 0.032, 0.032, 0.02, 0.18, 0.755, 0.31, material.white);
-          for (const part of [rim, glass, dial]) {
-            part.rotation.x = Math.PI / 2;
+          cabinetShell(group, cw, cd - 0.08, 0.025, ch - 0.025, material.white, -0.04);
+          box(group, cw, 0.025, cd, 0, ch - 0.0125, 0, material.white);
+          box(group, cw - 0.055, 0.032, 0.018, 0, 0.041, cd / 2 - 0.065, material.rubber);
+          for (const x of [-1, 1]) {
+            for (const z of [-1, 1]) {
+              cylinder(
+                group,
+                0.018,
+                0.018,
+                0.025,
+                x * (cw / 2 - 0.06),
+                0.0125,
+                z * (cd / 2 - 0.055),
+                material.rubber,
+                8,
+              );
+            }
+          }
+          const doorY = ch * 0.435,
+            faceY = ch / 2 + 0.005,
+            front = new THREE.Mesh(
+              piercedPanelGeometry(cw - 0.012, ch - 0.045, 0.028, {
+                h: 0.39,
+                w: 0.39,
+                x: 0,
+                y: doorY - faceY,
+              }),
+              material.white,
+            );
+          front.position.set(0, faceY, cd / 2 - 0.072);
+          front.castShadow = true;
+          front.receiveShadow = true;
+          group.add(front);
+          const drum = new THREE.Mesh(
+            new THREE.LatheGeometry(
+              [
+                [0, -0.105],
+                [0.174, -0.105],
+                [0.174, 0.105],
+                [0.168, 0.105],
+                [0.168, -0.099],
+                [0, -0.099],
+              ].map(([r, y]) => new THREE.Vector2(r, y)),
+              24,
+            ),
+            material.brushedSteel,
+          );
+          drum.rotation.x = Math.PI / 2;
+          drum.position.set(0, doorY, cd / 2 - 0.14);
+          drum.castShadow = true;
+          drum.receiveShadow = true;
+          group.add(drum);
+          const back = cylinder(
+            group,
+            0.14,
+            0.14,
+            0.002,
+            0,
+            doorY,
+            cd / 2 - 0.237,
+            material.rubber,
+            24,
+          );
+          back.rotation.x = Math.PI / 2;
+          for (let i = 0; i < 3; i += 1) {
+            const angle = (i * Math.PI * 2) / 3,
+              drumLifter = box(
+                group,
+                0.03,
+                0.02,
+                0.14,
+                Math.sin(angle) * 0.153,
+                doorY + Math.cos(angle) * 0.153,
+                cd / 2 - 0.13,
+                material.brushedSteel,
+                false,
+              );
+            drumLifter.rotation.z = -angle;
+          }
+          for (const [radius, tube, ringZ, finish] of [
+            [0.182, 0.012, cd / 2 - 0.055, material.rubber],
+            [0.204, 0.017, cd / 2 - 0.029, material.white],
+          ]) {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 6, 32), finish);
+            ring.position.set(0, doorY, ringZ);
+            ring.castShadow = true;
+            ring.receiveShadow = true;
+            group.add(ring);
+          }
+          const glass = new THREE.Mesh(
+            new THREE.SphereGeometry(0.179, 24, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+            material.washerGlass,
+          );
+          glass.scale.y = 0.17;
+          glass.rotation.x = Math.PI / 2;
+          glass.position.set(0, doorY, cd / 2 - 0.037);
+          group.add(glass);
+          box(group, 0.021, 0.068, 0.018, 0.207, doorY, cd / 2 - 0.02, material.white);
+          const controlsY = ch - 0.09;
+          box(
+            group,
+            0.16,
+            0.003,
+            0.003,
+            -cw * 0.28,
+            controlsY + 0.03,
+            cd / 2 - 0.042,
+            material.rubber,
+            false,
+          );
+          box(
+            group,
+            0.085,
+            0.034,
+            0.004,
+            cw * 0.28,
+            controlsY,
+            cd / 2 - 0.041,
+            material.screen,
+            false,
+          );
+          for (const [radius, depth, z, finish] of [
+            [0.033, 0.007, cd / 2 - 0.038, material.brushedSteel],
+            [0.028, 0.018, cd / 2 - 0.027, material.white],
+          ]) {
+            const dial = cylinder(group, radius, radius, depth, 0.018, controlsY, z, finish, 16);
+            dial.rotation.x = Math.PI / 2;
+          }
+          box(
+            group,
+            0.002,
+            0.012,
+            0.003,
+            0.018,
+            controlsY + 0.012,
+            cd / 2 - 0.016,
+            material.rubber,
+            false,
+          );
+          for (let i = 0; i < 3; i += 1) {
+            const button = cylinder(
+              group,
+              0.004,
+              0.004,
+              0.004,
+              cw * 0.22 + i * 0.024,
+              controlsY - 0.034,
+              cd / 2 - 0.038,
+              material.white,
+              8,
+            );
+            button.rotation.x = Math.PI / 2;
           }
           break;
         }
