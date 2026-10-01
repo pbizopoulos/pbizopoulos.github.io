@@ -6410,7 +6410,6 @@
   }
   function updateIndoorLights() {
     renderDirty = true;
-    renderer.shadowMap.needsUpdate = true;
     const enabled = fixtureOverride ?? sunlight.intensity === 0,
       button = $("lightsButton"),
       label = enabled ? "Turn all fixture lights off" : "Turn all fixture lights on";
@@ -6425,7 +6424,11 @@
         if (node.userData.litIntensity === undefined) {
           node.userData.litIntensity = node.intensity;
         }
-        node.intensity = enabled ? node.userData.litIntensity : 0;
+        const intensity = enabled ? node.userData.litIntensity : 0;
+        if (node.intensity !== intensity || node.visible !== enabled) {
+          renderer.shadowMap.needsUpdate = true;
+        }
+        node.intensity = intensity;
         node.visible = enabled;
       }
       for (const item of [node.material].flat().filter(Boolean)) {
