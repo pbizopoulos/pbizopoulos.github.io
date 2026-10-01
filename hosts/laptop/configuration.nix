@@ -187,8 +187,7 @@
         (pkgs.google-chrome.override {
           commandLineArgs = [
             "--force-device-scale-factor=4"
-            "--enable-unsafe-webgpu"
-            "--enable-features=Vulkan"
+            "--use-angle=vulkan"
           ];
         })
         (pkgs.vim.customize {
