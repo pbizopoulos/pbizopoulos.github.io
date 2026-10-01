@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f5f3ed" />
-    <title>Interior Design Editor · Spatial studio</title>
+    <title>Interior Design Editor</title>
     <link rel="stylesheet" href="./style.css" />
     <script type="importmap">
       {
@@ -25,77 +25,23 @@
     </script>
   </head>
   <body>
-    <header class="app-header">
-      <a class="brand" href="./" aria-label="Interior design editor home"
-        ><span class="brand-mark" aria-hidden="true">◱</span
-        ><span>Spatial <em>studio</em><small>INTERIOR DESIGN EDITOR</small></span></a
-      >
-      <div class="project-picker">
-        <label for="exampleSelect">Project</label
-        ><select id="exampleSelect"></select>
-      </div>
-      <div class="header-actions">
-        <button id="layoutToggle" aria-expanded="true" aria-controls="layoutPanel">
-          Hide layout</button
-        ><button id="shareButton">Share design ↗</button
-        ><button id="saveViewButton" class="primary">Export image</button>
-      </div>
-    </header>
     <main class="workspace">
       <section id="layoutPanel" class="editor-panel" aria-label="Layout editor">
-        <div class="panel-heading">
-          <div>
-            <span class="eyebrow">01 / DESIGN</span>
-            <h1>Your space, in a few lines.</h1>
-          </div>
-          <button id="assetsButton" title="Browse furniture" disabled>+ Assets</button>
+        <div class="editor-heading">
+          <h1>Interior Design Editor</h1>
+          <select id="exampleSelect" aria-label="Design"></select>
         </div>
         <div class="editor-toolbar">
-          <span>LAYOUT</span>
           <div>
-            <button id="undoButton" aria-label="Undo edit" title="Undo">↶</button
-            ><button id="redoButton" aria-label="Redo edit" title="Redo">↷</button
-            ><button id="foldButton" title="Fold layout sections">Fold</button
-            ><button id="copyButton">Copy</button>
+            <button id="undoButton" aria-label="Undo edit" title="Undo">↶</button>
+            <button id="redoButton" aria-label="Redo edit" title="Redo">↷</button>
+            <button id="foldButton" title="Fold layout sections">Fold</button>
+            <button id="copyButton">Copy</button>
           </div>
+          <button id="assetsButton" title="Browse furniture" disabled>Assets</button>
         </div>
         <div id="editor" aria-label="Design source"></div>
-        <div class="editor-footer">
-          <span id="editorState">INITIALIZING</span><span>metres · live preview</span>
-        </div>
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-        <details class="syntax-help">
-          <summary>Layout reference <span>↗</span></summary>
-          <div>
-            <p>
-              <code>GRID 0.5</code> sets metres per cell.<br /><code>ROOM living 8x6 AT 0,0</code>
-              defines a room.
-            </p>
-            <p>
-              Set <code>WALLS</code>, <code>WINDOWS</code>, and <code>DOORS</code> with north, east,
-              south, west, or none. Openings sit at the wall centre.
-            </p>
-            <p>
-              <code>LAYOUT living</code> begins the furniture grid. Separate cells with
-              <code>|</code>, use <code>.</code> for empty space, finish with <code>END</code>.
-            </p>
-            <p>
-              <code>sofa[1.8x0.9x0.8]@90</code> sets width × depth × height and rotation.
-              <code>bed~north</code> places furniture against a wall. Add
-              <code>&lt;https://…&gt;</code> for a product link.
-            </p>
-            <p>
-              <code>SURFACE wood</code> sets flooring. <code>HEIGHT 2.8</code> sets ceiling height.
-              <code>FLOOR 1</code> begins the upper storey at 3 m.
-              <code>LIGHT ceiling_light AT 3,3 POWER 18</code> adds a fixture.
-            </p>
-            <p>
-              Use <code>BALCONY</code> or <code>GARDEN</code> for outdoor areas.
-              <code>SITE grass 5</code>, <code>FACADE plaster</code>, and <code>ROOF flat</code> set
-              the exterior. <code>coffee_table(objects_on_top)</code> uses a child layout.
-            </p>
-          </div>
-        </details>
       </section>
       <div
         id="layoutDivider"
@@ -127,6 +73,8 @@
         <div class="scene-toolbar">
           <select id="roomFocus" aria-label="Focus room"></select
           ><select id="floorFocus" aria-label="Visible floor" hidden></select>
+          <button id="shareButton">Share design</button>
+          <button id="saveViewButton">Export image</button>
           <details id="sceneOptions">
             <summary>Scene settings</summary>
             <div class="scene-settings">
@@ -138,7 +86,7 @@
                 ><button id="lightsButton" aria-pressed="false">Lights on</button
                 ><button id="cutawayButton" aria-pressed="false">Hide terrain</button>
               </div>
-              <span class="eyebrow">DAYLIGHT / ATHENS BY DEFAULT</span>
+              <span class="eyebrow">DAYLIGHT</span>
               <form id="sunSettings">
                 <label>Date<input id="sunDate" type="date" value="2026-06-21" required /></label
                 ><label>Local time<input id="sunTime" type="time" value="15:30" required /></label>
@@ -194,23 +142,15 @@
                   </select></label
                 >
                 <output id="sunStatus"></output>
-                <p>
-                  Orientation is the north wall’s bearing. Set the UTC offset for your location and
-                  date, including daylight saving. Fixtures switch on after sunset.
-                </p>
               </form>
               <button id="fullscreenButton">Fullscreen ↗</button
               ><button id="walkthroughButton">Walkthrough</button>
-              <p>
-                High adds supersampling, contact shading and planar mirror reflections. Furniture is
-                a dimensional study model; product links are references.
-              </p>
             </div>
           </details>
         </div>
         <div id="renderProgress" class="render-progress" role="status">
           <span class="spinner" aria-hidden="true"></span
-          ><span id="renderProgressText">Preparing your studio…</span>
+          ><span id="renderProgressText">Loading…</span>
         </div>
         <div id="selectionCard" class="selection-card" hidden></div>
         <div id="walkLensControl" class="walk-lens" hidden>
@@ -227,24 +167,12 @@
           ><button data-walk-key="s" aria-label="Move backward">↓</button
           ><button data-walk-key="d" aria-label="Move right">→</button>
         </div>
-        <div class="preview-footer">
-          <div>
-            <span class="status-dot"></span><output id="renderBackend">Connecting renderer</output
-            ><span class="footer-divider">/</span><output id="sceneMetrics"></output>
-          </div>
-          <output id="renderStats"></output>
-        </div>
-        <div id="navigationHint" class="navigation-hint">
-          Drag to orbit · Scroll to zoom · Right drag to pan
-        </div>
-        <div class="compass" aria-hidden="true"><span>N</span>↑</div>
       </section>
     </main>
     <dialog id="assetBrowser" aria-labelledby="assetBrowserTitle">
       <header>
         <div>
-          <span class="eyebrow">THE MATERIAL LIBRARY</span>
-          <h2 id="assetBrowserTitle">Make room for something new.</h2>
+          <h2 id="assetBrowserTitle">Assets</h2>
         </div>
         <button id="closeAssets" aria-label="Close asset library">✕</button>
       </header>

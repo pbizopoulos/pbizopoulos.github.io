@@ -54,7 +54,7 @@ async function run({ assetsOnly = false } = {}) {
     await page.goto(url.href, { waitUntil: "domcontentloaded" });
     await ready();
     assert.equal(
-      await page.locator("#renderBackend").textContent(),
+      await page.evaluate(() => interior.studio.backend),
       fallback ? "WebGL 2 fallback" : "WebGPU",
     );
     assert.equal(
@@ -249,7 +249,7 @@ async function run({ assetsOnly = false } = {}) {
     await page.locator(".cm-content").fill("ROOM broken");
     await page.locator(".cm-content").press("Control+Enter");
     await page.waitForFunction(
-      () => document.querySelector("#editorState").textContent === "CHECK LAYOUT",
+      () => document.querySelector("#message").classList.contains("error"),
     );
     assert.match(await page.locator("#message").textContent(), /last valid layout/);
     assert.equal(await page.evaluate(() => interior.program.rooms[0].name), "main");
@@ -363,11 +363,9 @@ async function run({ assetsOnly = false } = {}) {
       true,
       "Mobile page has no horizontal overflow",
     );
-    if ((await page.getAttribute("#layoutToggle", "aria-expanded")) === "true")
-      await page.click("#layoutToggle");
-    await page.click("#layoutToggle");
-    assert.equal(await page.getAttribute("#layoutToggle", "aria-expanded"), "true");
-    await page.click("#layoutToggle");
+    assert.equal(await page.locator("#layoutPanel").isVisible(), true);
+    assert.equal(await page.locator("#viewport").isVisible(), true);
+    assert.equal(await page.locator("#shareButton").isVisible(), true);
     await ready();
     assert.equal(
       await page.evaluate(
@@ -383,7 +381,7 @@ async function run({ assetsOnly = false } = {}) {
     await unavailable.route("**/three.webgpu.js", (route) => route.abort());
     await unavailable.goto(url.href, { waitUntil: "domcontentloaded" });
     await unavailable.waitForFunction(
-      () => document.querySelector("#editorState").textContent === "UNAVAILABLE",
+      () => document.querySelector("#message").textContent.includes("Could not initialize the editor"),
     );
     assert.equal(
       await unavailable.locator("#message").isVisible(),

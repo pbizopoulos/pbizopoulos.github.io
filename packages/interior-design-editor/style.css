@@ -1,12 +1,12 @@
 :root {
   font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  Inter,
+  ui-sans-serif,
+  system-ui,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  sans-serif;
   color: #343b33;
   background: #f5f3ed;
   font-synthesis: none;
@@ -47,8 +47,8 @@ button {
   padding: 9px 12px;
   font-size: 12px;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+  background 0.15s,
+  border-color 0.15s;
 }
 button:hover,
 summary:hover {
@@ -96,61 +96,8 @@ select {
 [hidden] {
   display: none !important;
 }
-.app-header {
-  height: 84px;
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  padding: 0 28px;
-  border-bottom: 1px solid var(--line);
-  background: var(--paper);
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 230px;
-  text-decoration: none;
-  color: var(--ink);
-  font-size: 23px;
-  letter-spacing: -1px;
-  font-weight: 600;
-}
-.brand em {
-  font-family: Georgia, serif;
-  font-weight: 400;
-}
-.brand small {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 2.3px;
-  color: var(--muted);
-  margin-top: 5px;
-  font-weight: 500;
-}
-.brand-mark {
-  font-size: 42px;
-  font-weight: 300;
-  color: var(--green);
-}
-.project-picker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  font-size: 11px;
-  color: var(--muted);
-}
-.project-picker select {
-  width: 190px;
-  background: transparent;
-}
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
 .workspace {
-  height: calc(100dvh - 84px);
+  height: 100dvh;
   display: grid;
   grid-template-columns: minmax(300px, var(--editor-width)) 5px minmax(0, 1fr);
 }
@@ -160,13 +107,6 @@ select {
   min-width: 0;
   flex-direction: column;
   background: var(--paper);
-}
-.panel-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 26px 22px 24px;
-  gap: 12px;
 }
 .eyebrow {
   display: block;
@@ -185,21 +125,12 @@ h2 {
   line-height: 1.2;
   margin: 0;
 }
-h1 {
-  max-width: 240px;
-}
 h2 {
   font-size: 29px;
-}
-.panel-heading button {
-  white-space: nowrap;
-  font-size: 11px;
-  padding: 8px;
 }
 .editor-toolbar {
   height: 42px;
   flex-shrink: 0;
-  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
@@ -220,8 +151,8 @@ h2 {
   padding: 6px 9px;
   letter-spacing: 0;
 }
-.editor-toolbar button:first-child,
-.editor-toolbar button:nth-child(2) {
+.editor-toolbar div > button:first-child,
+.editor-toolbar div > button:nth-child(2) {
   font-size: 20px;
   padding: 0 8px;
 }
@@ -238,10 +169,10 @@ h2 {
 .cm-scroller {
   overflow: auto !important;
   font:
-    11px/1.95 ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace !important;
+  11px/1.95 ui-monospace,
+  SFMono-Regular,
+  Consolas,
+  monospace !important;
 }
 .cm-gutters {
   background: #f3f2eb !important;
@@ -266,20 +197,6 @@ h2 {
 .cm-selectionBackground {
   background: #d5dec9 !important;
 }
-.editor-footer {
-  padding: 13px 17px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  letter-spacing: 0.5px;
-}
-#editorState {
-  color: var(--green);
-  font-weight: 600;
-  letter-spacing: 1px;
-}
 .message {
   padding: 12px 17px;
   background: #e7eddf;
@@ -292,30 +209,6 @@ h2 {
 .message.error {
   color: #944534;
   background: #f7eae3;
-}
-.syntax-help {
-  padding: 14px 18px;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
-}
-.syntax-help summary {
-  display: flex;
-  justify-content: space-between;
-  color: #707b63;
-  list-style: none;
-}
-.syntax-help div {
-  max-height: 230px;
-  overflow: auto;
-  line-height: 1.7;
-  font-size: 11px;
-}
-.syntax-help p {
-  margin: 12px 0;
-}
-.syntax-help code {
-  color: #4c6945;
-  font-size: 10px;
 }
 .layout-divider {
   background: var(--line);
@@ -401,6 +294,8 @@ h2 {
   top: 82px;
   display: flex;
   align-items: start;
+  flex-wrap: wrap;
+  right: 24px;
   gap: 7px;
 }
 .scene-toolbar > select,
@@ -432,7 +327,7 @@ h2 {
   box-shadow: 0 12px 32px #272b2529;
   border: 1px solid #dedfd5;
   border-radius: 8px;
-  max-height: calc(100dvh - 245px);
+  max-height: calc(100dvh - 145px);
   overflow: auto;
 }
 .toggle-grid {
@@ -517,65 +412,6 @@ h2 {
     transform: rotate(360deg);
   }
 }
-.preview-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 15px 22px;
-  border-top: 1px solid #f7f5ec88;
-  background: #e7e6dde0;
-  font-size: 9px;
-  letter-spacing: 0.4px;
-  color: #717767;
-}
-.preview-footer > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.status-dot {
-  width: 5px;
-  height: 5px;
-  background: #758668;
-  border-radius: 50%;
-}
-.footer-divider {
-  color: #b8baab;
-  padding: 0 3px;
-}
-.navigation-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 64px;
-  transform: translateX(-50%);
-  font-size: 10px;
-  color: #707664;
-  background: #f4f3ebe0;
-  padding: 9px 13px;
-  border-radius: 4px;
-  text-align: center;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.compass {
-  position: absolute;
-  bottom: 74px;
-  right: 26px;
-  font-size: 26px;
-  color: #6d7662;
-  text-align: center;
-  pointer-events: none;
-}
-.compass span {
-  font-size: 9px;
-  display: block;
-  margin-bottom: 3px;
-}
 .selection-card {
   position: absolute;
   top: 139px;
@@ -640,7 +476,7 @@ h2 {
 }
 .walk-lens {
   position: absolute;
-  bottom: 110px;
+  bottom: 16px;
   left: 24px;
   display: flex;
   align-items: center;
@@ -657,7 +493,7 @@ h2 {
 }
 .touch-navigation {
   position: absolute;
-  bottom: 111px;
+  bottom: 16px;
   right: 22px;
   display: grid;
   grid-template-columns: repeat(3, 38px);
@@ -675,13 +511,6 @@ h2 {
 }
 .touch-navigation button:nth-child(2) {
   grid-column: 1;
-}
-.scene-first {
-  grid-template-columns: minmax(0, 1fr);
-}
-.scene-first .editor-panel,
-.scene-first .layout-divider {
-  display: none;
 }
 dialog {
   width: min(940px, calc(100vw - 40px));
@@ -798,37 +627,14 @@ dialog header button {
   .cm-scroller {
     font-size: 12px !important;
   }
-  .panel-heading {
-    padding: 30px;
-  }
   .workspace {
     grid-template-columns: minmax(360px, var(--editor-width)) 5px minmax(0, 1fr);
   }
 }
 @media (max-width: 1100px) {
-  .app-header {
-    padding: 0 18px;
-    gap: 15px;
-  }
-  .brand {
-    min-width: 190px;
-    font-size: 21px;
-  }
-  .project-picker label {
-    display: none;
-  }
-  .project-picker select {
-    width: 150px;
-  }
-  .panel-heading {
-    padding: 20px 15px;
-    align-items: start;
-  }
-  h1 {
-    font-size: 21px;
-  }
   .scene-settings {
-    left: -80px;
+    left: auto;
+    right: 0;
   }
   .preview-bar {
     left: 16px;
@@ -837,76 +643,24 @@ dialog header button {
   .scene-toolbar {
     left: 16px;
   }
-  .header-actions button {
-    padding: 8px;
-    font-size: 11px;
-  }
 }
 @media (max-width: 800px) {
-  .app-header {
-    height: 100px;
-    flex-wrap: wrap;
-    padding: 12px 16px;
-    gap: 10px;
-    align-content: center;
-  }
-  .brand {
-    min-width: 0;
-    flex: 1;
-    font-size: 20px;
-  }
-  .brand-mark {
-    font-size: 32px;
-  }
-  .brand small {
-    font-size: 7px;
-    letter-spacing: 1.7px;
-  }
-  .project-picker {
-    flex: 0;
-  }
-  .project-picker select {
-    width: 135px;
-  }
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-    gap: 6px;
-  }
-  .header-actions button {
-    padding: 6px 10px;
-    font-size: 10px;
-  }
-  .header-actions #layoutToggle {
-    margin-right: auto;
-  }
   .workspace {
-    height: calc(100dvh - 100px);
+    height: 100dvh;
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(200px, 37%) minmax(0, 1fr);
+    grid-template-rows: minmax(180px, 37%) minmax(0, 1fr);
   }
   .editor-panel {
     border-bottom: 1px solid var(--line);
   }
-  .panel-heading {
-    display: none;
-  }
-  .layout-divider,
-  .syntax-help {
+  .layout-divider {
     display: none;
   }
   .editor-toolbar {
     height: 31px;
   }
-  .editor-footer {
-    padding: 7px 12px;
-    font-size: 8px;
-  }
   .cm-content {
     padding: 5px 0 !important;
-  }
-  .scene-first {
-    grid-template-rows: 1fr;
   }
   .preview-bar {
     top: 12px;
@@ -939,28 +693,10 @@ dialog header button {
   .scene-settings {
     position: fixed;
     left: 12px;
-    top: 210px;
-    max-height: calc(100dvh - 225px);
+    top: auto;
+    bottom: 12px;
+    max-height: calc(63dvh - 100px);
     width: min(320px, calc(100vw - 24px));
-  }
-  .preview-footer {
-    padding: 12px;
-    font-size: 8px;
-  }
-  .preview-footer #renderStats {
-    display: none;
-  }
-  .navigation-hint {
-    font-size: 9px;
-    bottom: 53px;
-    max-width: calc(100% - 34px);
-    white-space: normal;
-    width: max-content;
-  }
-  .compass {
-    right: 15px;
-    bottom: 97px;
-    font-size: 20px;
   }
   .selection-card {
     top: 108px;
@@ -971,11 +707,11 @@ dialog header button {
   }
   .touch-navigation {
     right: 12px;
-    bottom: 102px;
+    bottom: 12px;
   }
   .walk-lens {
     left: 12px;
-    bottom: 103px;
+    bottom: 12px;
   }
   dialog {
     padding: 18px;
@@ -1048,5 +784,48 @@ dialog header button {
 @media (max-width: 800px) {
   .scene-toolbar > select {
     max-width: 145px;
+  }
+}
+
+.editor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.editor-heading h1 {
+  flex: 1 1 100%;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.editor-heading select {
+  width: 100%;
+}
+.scene-toolbar > button {
+  font-size: 11px;
+  padding: 9px 11px;
+}
+@media (max-width: 800px) {
+  .editor-heading {
+    padding: 6px 12px;
+  }
+  .editor-heading h1 {
+    flex: 1;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  .editor-heading select {
+    width: 135px;
+  }
+  .scene-toolbar {
+    right: 12px;
+  }
+  .scene-toolbar > button {
+    font-size: 10px;
+    padding: 8px;
   }
 }

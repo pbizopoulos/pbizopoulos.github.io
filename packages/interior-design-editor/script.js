@@ -2752,10 +2752,9 @@ const initializeStudio = async function initializeStudio() {
     const source = doc(),
       version = revision + 1;
     revision = version;
-    $("editorState").textContent = "UPDATING";
     try {
       const parsed = parseProgram(source);
-      progress("Building your space…");
+      progress("Rendering…");
       await new Promise((resolve) => {
         requestAnimationFrame(resolve);
       });
@@ -2769,9 +2768,6 @@ const initializeStudio = async function initializeStudio() {
       compiledSource = source;
       studio.render();
       ready = true;
-      const area = program.rooms.reduce((sum, r) => sum + r.cols * r.rows * program.grid ** 2, 0);
-      $("sceneMetrics").textContent =
-        `${area.toFixed(1)} m² · ${program.rooms.length} ${program.rooms.length === 1 ? "space" : "spaces"}`;
       $("roomFocus").replaceChildren(
         new Option("Entire project", ""),
         ...program.rooms.map((r) => new Option(friendly(r.name), r.name)),
@@ -2789,18 +2785,14 @@ const initializeStudio = async function initializeStudio() {
       );
       $("floorFocus").hidden = program.floors.length < 2;
       $("floorFocus").value = studio.options.floor;
-      $("editorState").textContent = program.warnings.length > 0 ? "CHECK PLACEMENT" : "LIVE";
       status(program.warnings.join(" "));
       try {
         localStorage.setItem("interior-studio-draft", source);
       } catch {
-        $("editorState").title =
-          "Browser storage is unavailable; use a share link to keep your design.";
+        // Sharing remains available when browser storage is disabled.
       }
     } catch (error) {
       if (version === revision) {
-        setLayoutVisible(true);
-        $("editorState").textContent = "CHECK LAYOUT";
         status(`${error.message}${program ? " · Showing the last valid layout." : ""}`, true);
       }
     } finally {
@@ -2914,12 +2906,6 @@ const initializeStudio = async function initializeStudio() {
     }
     $("walkLensControl").hidden = mode !== "walk";
     $("touchNavigation").hidden = mode !== "walk" || !matchMedia("(pointer:coarse)").matches;
-    $("navigationHint").textContent =
-      mode === "walk"
-        ? "Drag to look · WASD / arrows to move · Esc to exit · E to change floor"
-        : mode === "top"
-          ? "Drag to pan · Scroll to zoom"
-          : "Drag to orbit · Scroll to zoom · Right drag to pan";
   }
   function setView(mode) {
     clearSelection();
@@ -2950,12 +2936,6 @@ const initializeStudio = async function initializeStudio() {
     const sun = studio.updateSun(readSun());
     $("sunStatus").textContent =
       `${sun.altitude > 0 ? "Daylight" : "Night · fixtures on"} · Elevation ${sun.altitude.toFixed(1)}° · Bearing ${sun.bearing.toFixed(1)}°`;
-  }
-  function setLayoutVisible(visible) {
-    document.querySelector(".workspace").classList.toggle("scene-first", !visible);
-    $("layoutToggle").textContent = visible ? "Hide layout" : "Edit layout";
-    $("layoutToggle").setAttribute("aria-expanded", String(visible));
-    editor?.requestMeasure();
   }
   function category(name) {
     if (/light|lamp|pendant|lantern/u.test(name)) {
@@ -3082,7 +3062,10 @@ const initializeStudio = async function initializeStudio() {
     for (const name of Object.keys(examples)) {
       $("exampleSelect").add(new Option(name, name));
     }
-    $("exampleSelect").add(new Option("Custom design", "custom"));
+    const editedDesign = new Option("Edited design", "custom");
+    editedDesign.disabled = true;
+    editedDesign.hidden = true;
+    $("exampleSelect").add(editedDesign);
     const folding = foldService.of((state, from) => {
         const line = state.doc.lineAt(from);
         if (!/^LAYOUT\b/iu.test(line.text.trim())) {
@@ -3138,7 +3121,6 @@ const initializeStudio = async function initializeStudio() {
               revision += 1;
               clearSelection();
               $("exampleSelect").value = "custom";
-              $("editorState").textContent = "EDITING";
               clearTimeout(compileTimer);
               compileTimer = setTimeout(() => compile(), 300);
             }
@@ -3146,23 +3128,15 @@ const initializeStudio = async function initializeStudio() {
         ],
       }),
     });
-    setLayoutVisible(!matchMedia("(max-width:800px)").matches);
     studio = new InteriorRenderer($("viewport"), (error) => {
       ready = false;
       progress("");
       status(error.message, true);
-      setLayoutVisible(true);
-      $("editorState").textContent = "RENDER ERROR";
     });
     await studio.init();
-    $("renderBackend").textContent = studio.backend;
     studio.onModeChange = (mode) => {
       syncView(mode);
       updateSun();
-    };
-    studio.onRender = (stats) => {
-      $("renderStats").textContent =
-        `${stats.triangles.toLocaleString()} triangles · ${stats.calls} draws`;
     };
     for (const key of [
       "Date",
@@ -3193,9 +3167,6 @@ const initializeStudio = async function initializeStudio() {
         compile(true);
       }
     });
-    $("layoutToggle").addEventListener("click", () =>
-      setLayoutVisible($("layoutToggle").getAttribute("aria-expanded") !== "true"),
-    );
     $("copyButton").addEventListener(
       "click",
       guarded(async () => {
@@ -3455,7 +3426,6 @@ const initializeStudio = async function initializeStudio() {
             requestAnimationFrame(resolve);
           });
           studio.planTour();
-          $("navigationHint").textContent = "Walkthrough · WASD or Esc to take control";
         } finally {
           progress("");
         }
@@ -3500,10 +3470,8 @@ initializeStudio()
   .catch((error) => {
     document.querySelector("#renderProgress").hidden = true;
     document.querySelector("#viewport").setAttribute("aria-busy", "false");
-    document.querySelector(".workspace").classList.remove("scene-first");
     const message = document.querySelector("#message");
     message.hidden = false;
     message.className = "message error";
-    message.textContent = `Could not initialize the studio: ${error.message}. Reload to try again.`;
-    document.querySelector("#editorState").textContent = "UNAVAILABLE";
+    message.textContent = `Could not initialize the editor: ${error.message}. Reload to try again.`;
   });
