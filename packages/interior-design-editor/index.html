@@ -212,12 +212,6 @@
               >
                 Cutaway
               </button>
-              <select
-                id="photoView"
-                class="room-focus"
-                aria-label="Photo viewpoint"
-                hidden
-              ></select>
               <select id="roomFocus" class="room-focus" aria-label="Focus room" hidden></select
               ><button
                 id="gridButton"
@@ -381,6 +375,10 @@
           <option value="decor">Decor &amp; architecture</option>
         </select>
       </label>
+      <p class="asset-link-hint">
+        Append <code>&lt;https://...&gt;</code> to a furniture token to save its product link.
+        Click furniture in the scene to view it.
+      </p>
       <output id="assetCount" aria-live="polite"></output>
       <div id="assetResults" class="asset-results" aria-label="Available assets"></div>
       <div class="asset-detail">

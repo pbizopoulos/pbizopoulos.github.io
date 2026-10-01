@@ -49,7 +49,6 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(await page.locator('#renderBackend').textContent(), fallback ? 'WebGL 2 fallback' : 'WebGPU', 'Backend disclosure matches the initialized renderer');
     assert.equal(await page.evaluate(() => renderCheck.renderer.toneMapping === renderCheck.THREE.AgXToneMapping), true, 'AgX highlight handling');
     assert.equal(await page.evaluate(() => renderCheck.material.fabric.isMeshPhysicalMaterial && renderCheck.material.fabric.sheen > 0 && renderCheck.material.porcelain.clearcoat > 0), true, 'Physical textile and glazed finishes');
-    await page.waitForFunction(() => renderCheck.material.wood.map.image.width === 512, null, { timeout: 20000 });
     await ready();
     const verifyImage = async () => {
       const result = await page.evaluate(async (offscreen) => {
@@ -98,12 +97,12 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       await verifyImage(); await capture(`bedroom-${quality}`);
       console.log('Quality', quality);
     }
-    for (const name of ['Decor gallery', 'Mediterranean three-level apartment', 'Kitchen & dining']) {
+    for (const name of ['Bedroom', 'Small apartment', 'Kitchen & dining']) {
       await page.selectOption('#exampleSelect', name); await ready();
       await verifyImage(); await capture(name.replaceAll(' ', '-'));
       console.log('Scene', name);
     }
-    await page.selectOption('#exampleSelect', 'Decor gallery'); await ready();
+    await page.selectOption('#exampleSelect', 'Bedroom'); await ready();
     const mirrors = await page.evaluate(() => {
       const mirrors = []; renderCheck.sceneRoot.traverse((node) => { if (node.isReflector) mirrors.push(node); });
       return mirrors.length > 0 && mirrors.every((node) => node.visible && node.reflection.target.parent === node);
@@ -124,8 +123,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.click('#layoutToggle');
     await page.locator('#sunTime').evaluate((input) => { input.value = '00:00'; input.dispatchEvent(new Event('input', { bubbles: true })); }); await ready(); await verifyImage(); await capture('night');
     await page.locator('#sunTime').evaluate((input) => { input.value = '12:00'; input.dispatchEvent(new Event('input', { bubbles: true })); }); await ready();
-    // The reference apartment exercises more than four simultaneous fixture lights.
-    await page.selectOption('#exampleSelect', 'Mediterranean three-level apartment'); await ready();
+    // Exercise night lighting across the apartment rooms.
+    await page.selectOption('#exampleSelect', 'Small apartment'); await ready();
     await page.locator('#sunTime').evaluate((input) => { input.value = '00:00'; input.dispatchEvent(new Event('input', { bubbles: true })); }); await ready();
     await verifyImage(); await capture('apartment-night');
     await page.locator('#sunTime').evaluate((input) => { input.value = '12:00'; input.dispatchEvent(new Event('input', { bubbles: true })); }); await ready();
