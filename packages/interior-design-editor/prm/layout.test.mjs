@@ -13,6 +13,12 @@ const room = (row = ".") =>
   `GRID 1\nROOM main 4x4 AT 0,0\nWALLS north east south west\nLAYOUT main\n${row}\nEND`;
 for (const [name, source] of Object.entries(examples))
   test(`bundled layout: ${name}`, () => assert.ok(parseProgram(source).rooms.length));
+test("bundled layouts survive the formatter removing literal newlines", () => {
+  const formatted = new Function(core.replace(/[\r\n]/gu, "") + "\nreturn createLayoutCore();")();
+  assert.deepEqual(formatted.examples, examples);
+  for (const text of Object.values(formatted.examples))
+    assert.deepEqual(formatted.parseProgram(text), parseProgram(text));
+});
 test("modifier order, product fragments, and exact source spans", () => {
   const text = "desk(work_on_top)[1.2x0.6x0.7]~north<https://example.com/item#oak>";
   const token = parseToken(text, 9, 4);
