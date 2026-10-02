@@ -387,10 +387,12 @@ async function run({ assetsOnly = false } = {}) {
             }));
         });
         for (const pair of [
-          "bathroom/living",
-          "living/study",
+          "bathroom/passage",
+          "passage/study",
+          "living/passage",
           "balcony/living",
           "balcony/bedroom",
+          "balcony/study",
           "bedroom/hall",
           "hall/living",
           "entry/hall",
@@ -441,7 +443,7 @@ async function run({ assetsOnly = false } = {}) {
         });
         assert.deepEqual(
           reachable,
-          ["balcony", "bathroom", "bedroom", "entry", "hall", "living", "study"],
+          ["balcony", "bathroom", "bedroom", "entry", "hall", "living", "passage", "study"],
           "Continuous walking routes connect every area, including turns around furniture",
         );
         const floorFits = await page.evaluate(() => {
@@ -522,7 +524,7 @@ async function run({ assetsOnly = false } = {}) {
             const m = interior.studio.model;
             return (
               m.walls.every((wall) => !wall.elevation.visible && wall.plan.visible) &&
-              m.labels.length === 5 &&
+              m.labels.length === 6 &&
               m.labels.every((label) => label.visible) &&
               m.root.children
                 .filter((group) => group.userData.ceilingFixture)
@@ -606,7 +608,7 @@ async function run({ assetsOnly = false } = {}) {
         assert.equal(instanceCounts.rails, 3, "Three balcony rails each batch all posts");
         assert.equal(
           instanceCounts.floors,
-          7,
+          8,
           "Mapped rooms and passages retain their floor batches",
         );
         assert.equal(instanceCounts.fringes, 1, "Apartment rug retains its fringe batch");
@@ -630,7 +632,7 @@ async function run({ assetsOnly = false } = {}) {
       ...window.retiredLabels,
       children: window.retiredLabelScene.children.length,
     }));
-    assert.equal(retiredLabels.expected, 10);
+    assert.equal(retiredLabels.expected, 12);
     assert.equal(
       retiredLabels.disposed,
       retiredLabels.expected,

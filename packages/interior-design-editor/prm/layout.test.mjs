@@ -234,7 +234,7 @@ test("mounted sub-layouts respect expanded asset and light budgets", () => {
 
 test("Apartment keeps mapped rooms and passages, exact balcony depth and raised product furniture", () => {
   const p = parseProgram(examples["Apartment"]);
-  assert.equal(p.rooms.length, 7);
+  assert.equal(p.rooms.length, 8);
   assert.ok(Math.abs(p.rooms.find((room) => room.kind === "balcony").cols * p.grid - 1.56) < 1e-9);
   assert.ok(Math.abs(p.areas.indoor - 60) < 0.1);
   assert.ok(Math.abs(p.areas.total - p.areas.indoor - p.areas.outdoor) < 1e-9);
@@ -244,7 +244,7 @@ test("Apartment keeps mapped rooms and passages, exact balcony depth and raised 
       .find((room) => room.name === "living")
       .mounts.some(
         (mount) =>
-          mount.name === "floating_tv_console" && mount.side === "north" && mount.height === 0.45,
+          mount.name === "floating_tv_console" && mount.side === "west" && mount.height === 0.45,
       ),
   );
   assert.deepEqual(p.warnings, []);
@@ -282,8 +282,9 @@ test("project details preserve room inventory and safe links as parsed data", ()
 test("apartment matches the supplied map and the balcony continues beside the bedroom", () => {
   const p = parseProgram(examples.Apartment),
     rooms = Object.fromEntries(p.rooms.map((room) => [room.name, room]));
-  assert.equal(rooms.study.z + rooms.study.rows, rooms.living.z + 3);
-  assert.equal(rooms.bathroom.z + rooms.bathroom.rows, rooms.living.z);
+  assert.equal(rooms.study.z + rooms.study.rows, rooms.living.z);
+  assert.equal(rooms.bathroom.z + rooms.bathroom.rows, rooms.passage.z);
+  assert.equal(rooms.passage.z + rooms.passage.rows, rooms.living.z);
   assert.ok(rooms.bathroom.z < rooms.living.z);
   assert.equal(rooms.bedroom.z, rooms.living.z + rooms.living.rows);
   assert.equal(rooms.balcony.x, rooms.living.x + rooms.living.cols);
@@ -408,8 +409,16 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   const p = parseProgram(examples.Apartment),
     rooms = Object.fromEntries(p.rooms.map((r) => [r.name, r])),
     find = (roomName, name) => p.layouts[roomName].flat().find((token) => token?.name === name);
-  for (const name of ["study", "bedroom"]) {
-    assert.deepEqual(rooms[name].windows, []);
+  for (const room of p.rooms) assert.deepEqual(room.windows, []);
+  assert.equal(
+    p.rooms.reduce(
+      (count, room) =>
+        count + (room.openings || []).filter(({ kind }) => kind === "shutter").length,
+      0,
+    ),
+    3,
+  );
+  for (const name of ["living", "study", "bedroom"]) {
     assert.equal(rooms[name].openings.filter(({ kind }) => kind === "shutter").length, 1);
     assert.equal(rooms[name].openings.find(({ kind }) => kind === "shutter").side, "east");
   }
@@ -418,17 +427,22 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   );
   assert.equal(bathDoor.axis, "x");
   assert.equal(bathDoor.coordinate, rooms.bathroom.z + rooms.bathroom.rows);
-  assert.ok(bathDoor.rooms.includes(rooms.living));
+  assert.ok(bathDoor.rooms.includes(rooms.passage));
   const studyDoor = p.wallSpecs.find(
     (wall) => wall.rooms.includes(rooms.study) && wall.opening?.kind === "door",
   );
   assert.equal(studyDoor.axis, "z");
   assert.equal(studyDoor.coordinate, rooms.study.x);
-  assert.ok(studyDoor.rooms.includes(rooms.living));
+  assert.ok(studyDoor.rooms.includes(rooms.passage));
+  const passageExit = p.wallSpecs.find(
+    (wall) => wall.rooms.includes(rooms.passage) && wall.rooms.includes(rooms.living),
+  );
+  assert.equal(passageExit.opening.kind, "door");
+  assert.ok(passageExit.opening.width > 1.5);
   for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
-    assert.equal(find("living", name).wall, "south");
-  assert.equal(find("living", "robot_vacuum").wall, "north");
-  assert.equal(find("bedroom", "bed").wall, "south");
+    assert.equal(find("living", name).wall, "east");
+  assert.equal(find("living", "robot_vacuum").wall, "west");
+  assert.equal(find("bedroom", "bed").wall, "north");
   assert.equal(find("bathroom", "toilet").wall, "east");
   assert.ok(
     p.layouts.bathroom
@@ -437,8 +451,40 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
       .some((token) => token?.name === "toilet"),
   );
   const air = rooms.living.mounts.find(({ name }) => name === "air_conditioner");
-  assert.equal(air.side, "east");
-  assert.ok(air.cell > rooms.living.rows - 3 && air.height > 2);
+  assert.equal(air.side, "west");
+  assert.ok(air.height > 2);
+  const position = (roomName, name) => {
+    const layout = p.layouts[roomName],
+      token = find(roomName, name),
+      row = layout.findIndex((cells) => cells.includes(token));
+    return furniturePosition(p, rooms[roomName], token, layout[row].indexOf(token), row);
+  };
+  assert.equal(find("living", "aabenraa_table").yaw, 90);
+  const localZ = (roomName, name) =>
+    position(roomName, name)[2] + p.center[1] - rooms[roomName].z * p.grid;
+  assert.ok(Math.abs(localZ("living", "aabenraa_table") - (air.cell + 0.5) * p.grid) < 0.001);
+  assert.equal(find("living", "grey_sofa").yaw, 270);
+  const sofa = position("living", "grey_sofa"),
+    tv = rooms.living.mounts.find(({ name }) => name === "wall_tv");
+  assert.equal(tv.side, "west");
+  assert.ok(Math.abs((tv.cell + 0.5) * p.grid - localZ("living", "grey_sofa")) < 0.001);
+  for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
+    assert.ok(position("living", name)[0] > sofa[0]);
+  const curtains = Object.entries(p.layouts).flatMap(([roomName, layout]) =>
+    layout
+      .flat()
+      .filter((token) => token?.name === "curtain_pair")
+      .map((token) => ({ roomName, token })),
+  );
+  assert.equal(curtains.length, 3);
+  assert.deepEqual(curtains.map(({ roomName }) => roomName).sort(), ["bedroom", "living", "study"]);
+  for (const { roomName, token } of curtains) {
+    const shutter = rooms[roomName].openings.find(({ kind }) => kind === "shutter");
+    assert.equal(token.wall, shutter.side);
+    const offset = Math.abs(localZ(roomName, "curtain_pair") - shutter.at * p.grid);
+    assert.ok(offset < 0.05);
+    assert.ok(token.dimensions[0] / 2 >= shutter.width / 2 + offset);
+  }
   const condenser = find("balcony", "ac_condenser");
   assert.equal(condenser.wall, "west");
   const chairs = p.layouts.balcony.flat().filter((token) => token?.name === "hogsten_chair");
@@ -452,7 +498,7 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
 test("room labels preserve Greek text, validate their position and stay within source limits", () => {
   const p = parseProgram(examples.Apartment),
     labelled = p.rooms.filter(({ label }) => label);
-  assert.equal(labelled.length, 5);
+  assert.equal(labelled.length, 6);
   assert.equal(labelled.find(({ name }) => name === "living").label, "Σαλόνι / κουζίνα");
   for (const r of labelled) assert.ok(insideRoom(r, ...r.labelPoint));
   for (const label of [
