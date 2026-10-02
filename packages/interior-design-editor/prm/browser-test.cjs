@@ -374,7 +374,7 @@ async function run({ assetsOnly = false } = {}) {
                 .map((room) => room.name)
                 .sort()
                 .join("/"),
-              clear: Boolean(s.canStand(wall.position.x, wall.position.z)),
+              clear: Boolean(s.canStand(...wall.opening.center)),
             }));
         });
         for (const pair of [
@@ -391,6 +391,108 @@ async function run({ assetsOnly = false } = {}) {
             `The ${pair} doorway is shared and clear of furniture`,
           );
         }
+        const reachable = await page.evaluate(() => {
+          const s = interior.studio,
+            p = s.model.program,
+            hall = p.rooms.find(({ name }) => name === "hall"),
+            origin = [(hall.x + 1.5) * p.grid - p.center[0], (hall.z + 3) * p.grid - p.center[1]],
+            step = 0.08,
+            nodes = [[0, 0]],
+            seen = new Set(["0,0"]),
+            free = new Map(),
+            rooms = new Set();
+          s.model.root.updateMatrixWorld(true);
+          const roomAt = (x, z) => {
+            const key = `${x},${z}`;
+            if (!free.has(key))
+              free.set(key, s.canStand(origin[0] + x * step, origin[1] + z * step)?.name);
+            return free.get(key);
+          };
+          if (!roomAt(0, 0)) return [];
+          for (let i = 0; i < nodes.length && nodes.length < 16000; i += 1) {
+            const [x, z] = nodes[i];
+            rooms.add(roomAt(x, z));
+            for (const [dx, dz] of [
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+            ]) {
+              const key = `${x + dx},${z + dz}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              if (
+                roomAt(x + dx, z + dz) &&
+                s.canStand(origin[0] + (x + dx / 2) * step, origin[1] + (z + dz / 2) * step)
+              )
+                nodes.push([x + dx, z + dz]);
+            }
+          }
+          return [...rooms].sort();
+        });
+        assert.deepEqual(
+          reachable,
+          ["balcony", "bathroom", "bedroom", "entry", "hall", "living", "study"],
+          "Continuous walking routes connect every area, including turns around furniture",
+        );
+        const floorFits = await page.evaluate(() => {
+          const s = interior.studio,
+            p = s.model.program;
+          return s.model.roomGroups.every((group) => {
+            const r = group.userData.room,
+              floor = group.children.find((mesh) => mesh.isInstancedMesh),
+              matrix = floor.matrix.clone();
+            for (let i = 0; i < floor.count; i += 1) {
+              floor.getMatrixAt(i, matrix);
+              const e = matrix.elements;
+              if (e[0] <= 0 || e[10] <= 0) return false;
+              for (const [a, b] of [
+                [-1, -1],
+                [1, -1],
+                [1, 1],
+                [-1, 1],
+              ]) {
+                const x = (e[12] + (a * e[0]) / 2) / p.grid + r.cols / 2,
+                  z = (e[14] + (b * e[10]) / 2) / p.grid + r.rows / 2;
+                if (
+                  !r.footprint.some(
+                    ([left, top, right, bottom]) =>
+                      x >= left - 0.00001 &&
+                      x <= right + 0.00001 &&
+                      z >= top - 0.00001 &&
+                      z <= bottom + 0.00001,
+                  )
+                )
+                  return false;
+              }
+            }
+            return true;
+          });
+        });
+        assert.equal(floorFits, true, "Batched floor pieces remain inside the mapped outlines");
+        await page.click("#topButton");
+        await ready();
+        assert.ok(
+          await page.evaluate(() => {
+            const m = interior.studio.model;
+            return (
+              m.walls.every((wall) => !wall.elevation.visible && wall.plan.visible) &&
+              m.labels.length === 5 &&
+              m.labels.every((label) => label.visible) &&
+              m.root.children
+                .filter((group) => group.userData.ceilingFixture)
+                .every((group) => !group.visible)
+            );
+          }),
+          "Plan view shows room labels and low walls without overhead lintels or fixtures",
+        );
+        if (!assetsOnly) await capture("apartment-plan");
+        await page.click("#resetButton");
+        await ready();
+        assert.ok(
+          await page.evaluate(() => interior.studio.model.labels.every((label) => !label.visible)),
+          "Labels stay in plan view",
+        );
         const mounted = await page.evaluate(() =>
           interior.studio.model.objects
             .filter((group) => group.userData.token.mount && group.userData.token.child)
@@ -438,6 +540,14 @@ async function run({ assetsOnly = false } = {}) {
             floors = 0,
             fringes = 0;
           window.retiredInstances = { expected: 0, disposed: 0 };
+          window.retiredLabels = { expected: 0, disposed: 0 };
+          window.retiredLabelScene = interior.studio.model.labelsScene;
+          for (const label of interior.studio.model.labels) {
+            for (const resource of [label.material, label.material.map]) {
+              window.retiredLabels.expected++;
+              resource.addEventListener("dispose", () => window.retiredLabels.disposed++);
+            }
+          }
           interior.studio.model.root.traverse((node) => {
             if (!node.isInstancedMesh) return;
             window.retiredInstances.expected++;
@@ -471,7 +581,78 @@ async function run({ assetsOnly = false } = {}) {
       retired.expected,
       "Scene replacement disposes every instanced buffer",
     );
+    const retiredLabels = await page.evaluate(() => ({
+      ...window.retiredLabels,
+      children: window.retiredLabelScene.children.length,
+    }));
+    assert.equal(retiredLabels.expected, 10);
+    assert.equal(
+      retiredLabels.disposed,
+      retiredLabels.expected,
+      "Scene replacement releases label textures and materials",
+    );
+    assert.equal(retiredLabels.children, 0);
     const original = await page.evaluate(() => interior.editor.state.doc.toString());
+    await page.evaluate(async () => {
+      interior.editor.dispatch({
+        changes: {
+          from: 0,
+          to: interior.editor.state.doc.length,
+          insert:
+            "GRID 1\nROOF flat\nROOM main 4x4 AT 0,0\nOUTLINE 0,0 4,0 4,4 2,4 2,1.602 0,1.602\nWALLS north east south west\nLAYOUT main\n.\nEND",
+        },
+      });
+      await interior.compile(true);
+    });
+    await ready();
+    const roofsFit = await page.evaluate(() => {
+      const { model } = interior.studio,
+        { grid } = model.program;
+      return (
+        model.ceilings.length === 4 &&
+        model.ceilings.every((mesh) => {
+          const room = mesh.parent.userData.room;
+          mesh.geometry.computeBoundingBox();
+          mesh.updateMatrix();
+          const bounds = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrix);
+          for (const x of [bounds.min.x, bounds.max.x]) {
+            for (const z of [bounds.min.z, bounds.max.z]) {
+              const localX = x / grid + room.cols / 2,
+                localZ = z / grid + room.rows / 2;
+              if (
+                !room.footprint.some(
+                  ([left, top, right, bottom]) =>
+                    localX >= left - 0.00001 &&
+                    localX <= right + 0.00001 &&
+                    localZ >= top - 0.00001 &&
+                    localZ <= bottom + 0.00001,
+                )
+              )
+                return false;
+            }
+          }
+          return true;
+        })
+      );
+    });
+    assert.equal(roofsFit, true, "Ceilings and flat roofs preserve the room recess");
+    assert.ok(
+      await page.evaluate(() => {
+        const floor = interior.studio.model.roomGroups[0].children.find(
+            (mesh) => mesh.isInstancedMesh,
+          ),
+          matrix = floor.matrix.clone();
+        for (let i = 0; i < floor.count; i++) {
+          floor.getMatrixAt(i, matrix);
+          if (matrix.elements[0] <= 0 || matrix.elements[10] <= 0) return false;
+        }
+        return true;
+      }),
+      "Thin floor pieces beside a fractional outline edge retain positive dimensions",
+    );
+    await page.locator(".cm-content").fill(original);
+    await page.locator(".cm-content").press("Control+Enter");
+    await ready();
     await page.locator(".cm-content").fill("ROOM broken");
     await page.locator(".cm-content").press("Control+Enter");
     await page.waitForFunction(() =>

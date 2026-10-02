@@ -5,9 +5,8 @@ import { readFileSync } from "node:fs";
 // Exercise the exact pure layout implementation shipped in script.js.
 const source = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const core = source.split("const initializeStudio =")[0];
-const { examples, parseProgram, parseToken, productUrl, furniturePosition } = new Function(
-  core + "\nreturn createLayoutCore();",
-)();
+const { examples, parseProgram, parseToken, productUrl, furniturePosition, insideRoom } =
+  new Function(core + "\nreturn createLayoutCore();")();
 
 const room = (row = ".") =>
   `GRID 1\nROOM main 4x4 AT 0,0\nWALLS north east south west\nLAYOUT main\n${row}\nEND`;
@@ -280,4 +279,161 @@ test("apartment matches the supplied map and the balcony continues beside the be
   assert.ok(p.layouts.living.flat().some((token) => token?.name === "stove"));
   assert.ok(p.layouts.living.flat().some((token) => token?.name === "grey_sofa"));
   assert.ok(!Object.keys(examples).some((name) => name.includes("Καλαμαριά")));
+});
+
+test("the mapped outline preserves recesses without adding floor to unmapped areas", () => {
+  const p = parseProgram(examples.Apartment),
+    rooms = Object.fromEntries(p.rooms.map((room) => [room.name, room]));
+  assert.equal(insideRoom(rooms.bathroom, 0.5, 4.5), false);
+  assert.equal(insideRoom(rooms.bathroom, 3, 4.5), true);
+  assert.equal(insideRoom(rooms.bedroom, 0.5, 6.5), false);
+  assert.equal(insideRoom(rooms.bedroom, 3, 6.5), true);
+  assert.equal(insideRoom(rooms.entry, 0.25, 0.25), false);
+  assert.equal(insideRoom(rooms.entry, 0.25, 2), true);
+  assert.deepEqual(p.warnings, []);
+  assert.ok(
+    rooms.study.openings.some(({ side, at }) => side === "south" && at < rooms.study.cols / 2),
+  );
+});
+
+test("outline validation rejects crossing, diagonal, repeated and unbounded edges", () => {
+  for (const outline of [
+    "0,0 4,0 4,4 1,3 0,4",
+    "0,0 4,0 4,4 0,4 0,0",
+    "0,0 4,0 4,3 0,3",
+    "0,0 4,0 4,4 1,4 1,1 3,1 3,3 0,3",
+    "0,0 4,0 4,4 0,4 0,3 1,3 1,0 0,0",
+    "0,0 4,0 4,NaN 0,4",
+  ]) {
+    assert.throws(
+      () => parseProgram(room().replace("LAYOUT", `OUTLINE ${outline}\nLAYOUT`)),
+      /OUTLINE/u,
+    );
+  }
+  const counterclockwise = parseProgram(
+    room().replace("LAYOUT", "OUTLINE 0,0 0,4 4,4 4,0\nLAYOUT"),
+  );
+  assert.deepEqual(counterclockwise.rooms[0].footprint, [[0, 0, 4, 4]]);
+});
+
+test("rooms can meet inside a recess and shaped walls support furniture", () => {
+  const text = [
+    "GRID 0.5",
+    "ROOM main 4x4 AT 0,0",
+    "OUTLINE 0,0 4,0 4,4 2,4 2,2 0,2",
+    "WALLS north east south west",
+    "DOOR south AT 3 WIDTH 0.8",
+    "LAYOUT main",
+    ".",
+    ".",
+    ".",
+    ". | . | bookshelf[0.4x0.2x1]~west",
+    "END",
+    "ROOM inset 2x2 AT 0,2",
+    "LAYOUT inset",
+    ".",
+    "END",
+  ].join("\n");
+  const p = parseProgram(text),
+    token = p.layouts.main[3][2];
+  assert.equal(insideRoom(p.rooms[0], 1, 3), false);
+  assert.equal(insideRoom(p.rooms[0], 3, 3), true);
+  assert.ok(Math.abs(furniturePosition(p, p.rooms[0], token, 2, 3)[0] - 0.13) < 0.001);
+  assert.throws(() => parseProgram(text.replace("AT 0,2", "AT 1,2")), /overlap/u);
+  assert.throws(() => parseProgram(text.replace("AT 3 WIDTH 0.8", "AT 2 WIDTH 0.8")), /DOOR/u);
+});
+
+test("room labels preserve Greek text, validate their position and stay within source limits", () => {
+  const p = parseProgram(examples.Apartment),
+    labelled = p.rooms.filter(({ label }) => label);
+  assert.equal(labelled.length, 5);
+  assert.equal(labelled.find(({ name }) => name === "living").label, "Σαλόνι / κουζίνα");
+  for (const r of labelled) assert.ok(insideRoom(r, ...r.labelPoint));
+  for (const label of [
+    '""',
+    JSON.stringify("x".repeat(61)),
+    '"line\\nline"',
+    '"bad\\q"',
+    '"name" AT 5,2',
+  ])
+    assert.throws(() => parseProgram(room().replace("LAYOUT", `LABEL ${label}\nLAYOUT`)), /LABEL/u);
+  assert.throws(() => parseProgram('LABEL "Unknown"\n' + room()), /LABEL/u);
+});
+
+test("explicit shared doors agree and remain within the rendered wall segment", () => {
+  const first = room().replace("LAYOUT main", "DOOR east AT 1 WIDTH 0.8\nDOORS none\nLAYOUT main"),
+    neighbor = room()
+      .replaceAll("main", "next")
+      .replace("AT 0,0", "AT 4,0")
+      .replace("4x4", "2x2")
+      .replace("LAYOUT next", "DOOR west AT 1 WIDTH 0.8\nLAYOUT next"),
+    p = parseProgram(first + "\n" + neighbor),
+    shared = p.wallSpecs.filter(({ rooms }) => rooms.length === 2);
+  assert.equal(shared.length, 1);
+  assert.equal(shared[0].opening.coordinate, 1);
+  assert.equal(shared[0].opening.width, 0.8);
+  assert.ok(p.rooms[0].doors.includes("east"));
+  assert.throws(
+    () => parseProgram(first + "\n" + neighbor.replace("WIDTH 0.8", "WIDTH 0.9")),
+    /matching DOOR/u,
+  );
+  assert.throws(
+    () => parseProgram(first.replace("AT 1 WIDTH", "AT 2 WIDTH") + "\n" + neighbor),
+    /shared wall boundary/u,
+  );
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace(
+          "LAYOUT main",
+          "DOOR north AT 1 WIDTH 0.8\nDOOR north AT 3 WIDTH 0.8\nLAYOUT main",
+        ),
+      ),
+    /matching DOOR/u,
+  );
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace("LAYOUT main", "DOOR north AT 1 WIDTH 0.8\n".repeat(9) + "LAYOUT main"),
+      ),
+    /eight DOOR/u,
+  );
+});
+
+test("shaped rooms reject fixtures in recesses and unsupported pitched roofs", () => {
+  const shaped = room().replace("LAYOUT main", "OUTLINE 0,0 4,0 4,4 2,4 2,2 0,2\nLAYOUT main");
+  assert.throws(
+    () => parseProgram(shaped.replace("LAYOUT main", "LIGHT ceiling_light AT 0,3\nLAYOUT main")),
+    /LIGHT must be inside/u,
+  );
+  assert.ok(parseProgram(shaped.replace("LAYOUT main", "LIGHT ceiling_light AT 3,3\nLAYOUT main")));
+  assert.ok(parseProgram("ROOF flat\n" + shaped));
+  for (const roof of ["pitched", "terracotta"]) {
+    assert.throws(() => parseProgram(`ROOF ${roof}\n` + shaped), /Pitched roofs need rectangular/u);
+  }
+});
+
+test("mounted shelves fit their full supporting edge beside outline recesses", () => {
+  const shaped = room().replace(
+      "LAYOUT main",
+      "OUTLINE 0,0 4,0 4,4 2,4 2,2 0,2\nMOUNT west 3 wall_shelf[0.8x0.2x0.08] HEIGHT 1.2\nLAYOUT main",
+    ),
+    p = parseProgram(shaped),
+    shelf = p.rooms[0].mounts[0];
+  assert.equal(shelf.edge.across, 2);
+  assert.equal(shelf.edge.min, 2);
+  assert.equal(shelf.edge.max, 4);
+  assert.throws(
+    () => parseProgram(shaped.replace("[0.8x0.2x0.08]", "[3.2x0.2x0.08]")),
+    /MOUNT must fit/u,
+  );
+  assert.throws(
+    () =>
+      parseProgram(shaped.replace("west 3", "west 2").replace("[0.8x0.2x0.08]", "[1.2x0.2x0.08]")),
+    /MOUNT must fit/u,
+  );
+  const apartment = parseProgram(examples.Apartment),
+    study = apartment.rooms.find(({ name }) => name === "study");
+  assert.equal(study.mounts[0].side, "south");
+  assert.equal(study.mounts[0].cell, 4);
 });

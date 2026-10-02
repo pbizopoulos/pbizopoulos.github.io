@@ -181,7 +181,9 @@
         Apartment: [
           'DETAIL project "Κρεβατοκάμαρα, μπαλκόνι, σαλόνι, κουζίνα, δωμάτιο, μπάνιο."',
           'DETAIL project "Διάταξη από τον χάρτη: room1 δωμάτιο, room2 μπαλκόνι, room3 σαλόνι/κουζίνα, room4 κρεβατοκάμαρα· μπάνιο πάνω."',
-          'DETAIL project "Οι αναλογίες ακολουθούν τον χάρτη. Τα μήκη είναι προσεγγιστικά, με βάθος μπαλκονιού 1.56 m."',
+          'DETAIL project "Αναλογίες και εσοχές από τον χάρτη. Εκτίμηση κλίμακας με βάθος μπαλκονιού 1.56 m."',
+          'DETAIL project "Οι εσοχές αποδίδουν το περίγραμμα της σάρωσης· μπορεί να οφείλονται σε τοίχους ή εμπόδια."',
+          'DETAIL project "Θέσεις θυρών, παραθύρων και επίπλων ενδεικτικές· δεν διακρίνονται με ακρίβεια στον χάρτη."',
           'DETAIL project "Γενικά μοντέλα, όχι ακριβή αντίγραφα προϊόντων. Κλικ για σύνδεσμο."',
           'DETAIL project "Επιβεβαιωμένα: GEDVED 154×84×85, UDSBJERG 66×68×84 cm;"',
           'DETAIL project "HÖGSTEN 73×65×83, SUNDSÖ 65×65×71 cm. Τα υπόλοιπα είναι προσεγγίσεις."',
@@ -216,45 +218,59 @@
           'DETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>',
           "GRID 0.312",
           "ROOM living 15x11 AT 0,9",
+          'LABEL "Σαλόνι / κουζίνα" AT 4,5.5',
           "WALLS north east south west",
-          "DOORS north east south",
+          "DOORS north south",
           "WINDOWS none",
           "SURFACE wood",
-          "MOUNT east 2 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
-          "MOUNT east 2 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
-          "MOUNT west 9 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>",
+          "DOOR east AT 2 WIDTH 0.95",
+          "MOUNT east 7 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
+          "MOUNT east 7 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
+          "MOUNT west 8 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.15",
           "LIGHT ceiling_light AT 9,5 POWER 18",
           "ROOM study 10x7 AT 5,2",
+          'LABEL "Δωμάτιο" AT 5.5,3.5',
           "WALLS north east south west",
-          "DOORS south east",
+          "DOORS east",
           "WINDOWS north",
           "SURFACE wood",
-          "MOUNT north 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2",
+          "DOOR south AT 1.5 WIDTH 0.85",
+          "MOUNT south 4 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2",
           "LIGHT ceiling_light AT 5,3 POWER 12",
           "ROOM bathroom 5x9 AT 0,0",
+          'LABEL "Μπάνιο" AT 3.6,4.7',
           "WALLS north east south west",
-          "DOORS south",
+          "DOORS none",
           "WINDOWS north",
           "SURFACE tile",
-          "MOUNT east 7 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>",
-          "LIGHT ceiling_light AT 2,4 POWER 12",
+          "OUTLINE 0,0 3,0 3,1.75 5,1.75 5,9 0,9 0,6 2,6 2,4 1,4 1,3 0,3",
+          "DOOR south AT 3.2 WIDTH 0.85",
+          "MOUNT east 6 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>",
+          "LIGHT ceiling_light AT 3,4 POWER 12",
           "ROOM bedroom 12x8 AT 3,22",
+          'LABEL "Κρεβατοκάμαρα" AT 7,7.15',
           "WALLS north east south west",
-          "DOORS west east",
+          "DOORS none",
           "WINDOWS south",
           "SURFACE wood",
+          "OUTLINE 0,0 12,0 12,8 2,8 2,6 1,6 1,4 0,4",
+          "DOOR west AT 2.5 WIDTH 0.8",
+          "DOOR east AT 6.4 WIDTH 0.95",
           "LIGHT ceiling_light AT 8,4 POWER 12",
           "ROOM hall 3x6 AT 0,20",
           "WALLS north east south west",
           "DOORS north east west",
           "WINDOWS none",
           "SURFACE wood",
-          "ROOM entry 3x3 AT -3,22",
+          "ROOM entry 3x4 AT -3,22",
           "WALLS north east south west",
-          "DOORS east west",
+          "DOORS east",
           "WINDOWS none",
           "SURFACE wood",
+          "OUTLINE 0,0.5 0.75,0.5 0.75,0 3,0 3,3.5 2,3.5 2,4 0.75,4 0.75,3.5 0,3.5",
+          "DOOR west AT 2 WIDTH 0.8",
           "BALCONY balcony 5x28 AT 15,2",
+          'LABEL "Μπαλκόνι" AT 2.5,4',
           "WALLS west",
           "DOORS west",
           "WINDOWS none",
@@ -262,16 +278,16 @@
           "RAILS north east south",
           "LAYOUT living",
           ".",
-          ". | . | . | . | . | . | . | . | . | . | . | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>",
-          "fridge[0.6x0.66x1.86]~west<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>",
-          ". | . | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
-          ". | . | . | . | . | . | . | . | . | . | . | . | grey_armchair[0.66x0.68x0.84]<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>",
-          "sink[1.05x0.6x0.9]~west<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2>",
-          ". | . | . | . | . | . | . | . | . | . | coffee_table[0.9x0.5x0.4]",
-          ". | . | . | . | . | . | . | . | . | . | jute_rug[1.6x1.6x0.018]",
-          "stove[0.6x0.6x0.88]~west<https://manuall.gr/franke-ca-52-m-xs-fournos/>",
+          "fridge[0.6x0.66x1.86]~west<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> | . | . | . | . | . | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
           ".",
-          ". | . | . | . | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]~south<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>",
+          ".",
+          "sink[1.05x0.6x0.9]~west<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | . | . | . | . | . | . | . | . | grey_armchair[0.66x0.68x0.84]@-35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>",
+          ".",
+          ".",
+          "stove[0.6x0.6x0.88]~west<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@90<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> | . | . | coffee_table[0.9x0.5x0.4]@90",
+          ". | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf> | . | . | . | . | . | . | jute_rug[2.1x1.8x0.018]",
+          ".",
+          ".",
           "END",
           "LAYOUT study",
           ".",
@@ -285,22 +301,22 @@
           "LAYOUT bathroom",
           ". | shower[0.8x0.8x2.05]~north",
           ".",
+          ". | . | . | . | toilet[0.35x0.6x0.8]~east",
           ".",
-          ". | . | . | . | washing_machine[0.6x0.6x0.85]~east<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>",
           ".",
           ".",
-          "toilet~west",
-          ". | . | . | . | bathroom_vanity[0.6x0.45x0.85]~east",
+          ". | . | . | . | bathroom_vanity[0.45x0.3x0.85]~east",
+          "washing_machine[0.6x0.6x0.85]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>",
           ".",
           "END",
           "LAYOUT bedroom",
-          ". | . | . | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf> | . | . | . | nightstand(bedside_on_top)~north",
+          ". | . | pedestal_fan~north<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html> | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf> | . | . | . | nightstand(bedside_on_top)~north",
           ".",
           ".",
           ".",
           ".",
-          "wardrobe~west",
-          ". | . | . | . | . | . | . | . | . | . | . | pedestal_fan~east<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>",
+          ".",
+          ".",
           ". | . | . | . | . | . | . | curtain_pair[1.8x0.12x2.5]~south",
           "END",
           "LAYOUT balcony",
@@ -342,6 +358,7 @@
           ".",
           "END",
           "LAYOUT entry",
+          ".",
           ".",
           ".",
           ".",
@@ -752,6 +769,63 @@
             fail("Use at most 32 rooms, each 2–40 cells", line);
           }
           program.rooms.push(room);
+        } else if ((m = /^OUTLINE\s+(.+)$/iu.exec(text))) {
+          if (!room || room.outline) {
+            fail("Define one OUTLINE after its room", line);
+          }
+          const points = m[1].split(/\s+/u).map((point) => {
+            if (!/^\d+(?:\.\d+)?,\d+(?:\.\d+)?$/u.test(point)) {
+              fail("OUTLINE needs x,z points in grid cells", line);
+            }
+            return point.split(",").map(Number);
+          });
+          room.outline = points;
+          room.outlineLine = line;
+        } else if (
+          (m = /^LABEL\s+("(?:[^"\\]|\\.)*")(?:\s+AT\s+(\d+(?:\.\d+)?),(\d+(?:\.\d+)?))?$/iu.exec(
+            text,
+          ))
+        ) {
+          if (!room || room.label) {
+            fail("Define one LABEL after its room", line);
+          }
+          let label;
+          try {
+            label = JSON.parse(m[1]);
+          } catch {
+            fail("LABEL needs a JSON string", line);
+          }
+          if (!label.trim() || label.length > 60 || /[\r\n\t]/u.test(label)) {
+            fail("LABEL must contain 1–60 characters on one line", line);
+          }
+          room.label = label;
+          room.labelLine = line;
+          if (m[2]) {
+            room.labelPoint = [Number(m[2]), Number(m[3])];
+          }
+        } else if (
+          (m =
+            /^DOOR\s+(north|east|south|west)\s+AT\s+(\d+(?:\.\d+)?)(?:\s+WIDTH\s+(\d+(?:\.\d+)?))?$/iu.exec(
+              text,
+            ))
+        ) {
+          if (!room) {
+            fail("Define a room before its DOOR", line);
+          }
+          const side = m[1].toLowerCase(),
+            at = Number(m[2]),
+            width = Number(m[3] || 0.85);
+          room.openings ??= [];
+          if (room.openings.length >= 8) {
+            fail("Use at most eight DOOR statements per room", line);
+          }
+          if (!Number.isFinite(at) || !Number.isFinite(width) || width < 0.4 || width > 2.4) {
+            fail("DOOR width must be 0.4–2.4 metres", line);
+          }
+          room.openings.push({ at, line, side, width });
+          if (!room.doors.includes(side)) {
+            room.doors.push(side);
+          }
         } else if ((m = /^LAYOUT\s+(\w+)$/iu.exec(text))) {
           active = m[1].toLowerCase();
           if (program.layouts[active]) {
@@ -896,6 +970,23 @@
       ];
       program.floors = [...new Set(program.rooms.map((r) => r.floor))].toSorted((a, b) => a - b);
       for (const r of program.rooms) {
+        roomGeometry(r);
+        if (r.labelPoint && !insideRoom(r, ...r.labelPoint)) {
+          fail("LABEL must be inside its room outline", r.labelLine);
+        }
+        for (const light of r.lights) {
+          if (!insideRoom(r, light.x + 0.5, light.z + 0.5)) {
+            fail("LIGHT must be inside its room outline", light.line);
+          }
+        }
+        if (
+          r.outline &&
+          r.footprint.length > 1 &&
+          ["pitched", "terracotta"].includes(program.roof)
+        ) {
+          fail("Pitched roofs need rectangular rooms", r.line);
+        }
+        r.doors = [...new Set([...r.doors, ...(r.openings || []).map(({ side }) => side)])];
         const rows = program.layouts[r.name];
         if (!rows?.length) {
           fail(`Add LAYOUT ${r.name}`, r.line);
@@ -911,13 +1002,31 @@
         if (r.windows.some((dir) => r.doors.includes(dir))) {
           fail("A wall cannot have both WINDOWS and DOORS", r.line);
         }
-        for (const mount of r.mounts) {
-          if (
-            !r.walls.includes(mount.side) ||
-            mount.cell >= (["east", "west"].includes(mount.side) ? r.rows : r.cols)
-          ) {
-            fail("MOUNT needs an existing wall and a cell inside the room", mount.line);
+        for (const opening of r.openings || []) {
+          const half = opening.width / program.grid / 2,
+            edges = r.edges.filter(
+              (edge) =>
+                edge.side === opening.side &&
+                opening.at - half >= edge.min + 0.01 &&
+                opening.at + half <= edge.max - 0.01,
+            );
+          if (!r.walls.includes(opening.side) || edges.length !== 1) {
+            fail("DOOR must fit on one existing outline edge", opening.line);
           }
+          opening.across = edges[0].across;
+        }
+        for (const mount of r.mounts) {
+          const edge = supportingEdge(
+            program,
+            r,
+            mount.side,
+            (mount.cell + 0.5) * program.grid,
+            mount.dimensions[0],
+          );
+          if (!r.walls.includes(mount.side) || !edge) {
+            fail("MOUNT must fit within an existing outline edge", mount.line);
+          }
+          mount.edge = edge;
         }
         rows.forEach((row, z) =>
           row.forEach((token, x) => {
@@ -927,12 +1036,20 @@
           }),
         );
         for (const other of program.rooms) {
+          if (!other.footprint) {
+            roomGeometry(other);
+          }
           if (
             other !== r &&
-            r.x < other.x + other.cols &&
-            r.x + r.cols > other.x &&
-            r.z < other.z + other.rows &&
-            r.z + r.rows > other.z &&
+            r.footprint.some(([left, top, right, bottom]) =>
+              other.footprint.some(
+                ([a, b, c, d]) =>
+                  r.x + left < other.x + c &&
+                  r.x + right > other.x + a &&
+                  r.z + top < other.z + d &&
+                  r.z + bottom > other.z + b,
+              ),
+            ) &&
             r.elevation < other.elevation + other.height &&
             r.elevation + r.height > other.elevation
           ) {
@@ -1012,7 +1129,182 @@
         }
         placementWarnings(program, r);
       }
+      program.wallSpecs = partitionWalls(program);
       return program;
+    }
+    function roomGeometry(room) {
+      const points = room.outline || [
+          [0, 0],
+          [room.cols, 0],
+          [room.cols, room.rows],
+          [0, room.rows],
+        ],
+        line = room.outlineLine || room.line;
+      if (
+        points.length < 4 ||
+        points.length > 32 ||
+        points.some(
+          ([x, z]) => !Number.isFinite(x + z) || x < 0 || z < 0 || x > room.cols || z > room.rows,
+        ) ||
+        Math.min(...points.map(([x]) => x)) !== 0 ||
+        Math.max(...points.map(([x]) => x)) !== room.cols ||
+        Math.min(...points.map(([, z]) => z)) !== 0 ||
+        Math.max(...points.map(([, z]) => z)) !== room.rows
+      ) {
+        fail("OUTLINE needs 4–32 points within the room and must reach each bound", line);
+      }
+      const segments = points.map(([x, z], i) => {
+        const [a, b] = points[(i + 1) % points.length];
+        if ((x === a) === (z === b)) {
+          fail("OUTLINE edges must be horizontal or vertical and have length", line);
+        }
+        return {
+          a,
+          b,
+          maxX: Math.max(x, a),
+          maxZ: Math.max(z, b),
+          minX: Math.min(x, a),
+          minZ: Math.min(z, b),
+          x,
+          z,
+        };
+      });
+      for (let i = 0; i < segments.length; i += 1) {
+        for (let j = i + 2; j < segments.length; j += 1) {
+          if (i === 0 && j === segments.length - 1) {
+            continue;
+          }
+          const a = segments[i],
+            b = segments[j];
+          if (a.minX <= b.maxX && a.maxX >= b.minX && a.minZ <= b.maxZ && a.maxZ >= b.minZ) {
+            fail("OUTLINE edges cannot cross or touch", line);
+          }
+        }
+      }
+      const area = segments.reduce((sum, { x, z, a, b }) => sum + x * b - a * z, 0);
+      if (area < 0) {
+        room.outline = [...points].toReversed();
+        roomGeometry(room);
+        return;
+      }
+      room.edges = segments.map(({ x, z, a, b, minX, maxX, minZ, maxZ }) => ({
+        across: x === a ? x : z,
+        axis: x === a ? "z" : "x",
+        max: x === a ? maxZ : maxX,
+        min: x === a ? minZ : minX,
+        side: x === a ? (b > z ? "east" : "west") : a > x ? "north" : "south",
+      }));
+      room.footprint = [];
+      const rows = [...new Set(points.map(([, z]) => z))].toSorted((a, b) => a - b);
+      for (let i = 1; i < rows.length; i += 1) {
+        const top = rows[i - 1],
+          bottom = rows[i],
+          middle = (top + bottom) / 2,
+          cuts = segments
+            .filter(({ x, a, minZ, maxZ }) => x === a && middle > minZ && middle < maxZ)
+            .map(({ x }) => x)
+            .toSorted((a, b) => a - b);
+        for (let j = 0; j < cuts.length; j += 2) {
+          room.footprint.push([cuts[j], top, cuts[j + 1], bottom]);
+        }
+      }
+    }
+    function insideRoom(room, x, z, tolerance = 0) {
+      return room.footprint.some(
+        ([left, top, right, bottom]) =>
+          x >= left - tolerance &&
+          x <= right + tolerance &&
+          z >= top - tolerance &&
+          z <= bottom + tolerance,
+      );
+    }
+    function partitionWalls(program) {
+      const lines = new Map(),
+        result = [];
+      for (const room of program.rooms) {
+        for (const edge of room.edges.filter(({ side }) => room.walls.includes(side))) {
+          const { axis, side } = edge,
+            acrossAxis = axis === "x" ? "z" : "x",
+            coordinate = room[acrossAxis] + edge.across,
+            key = [room.floor, axis, coordinate.toFixed(6)].join(":"),
+            span = { max: room[axis] + edge.max, min: room[axis] + edge.min, room, side };
+          if (!lines.has(key)) {
+            lines.set(key, { axis, coordinate, spans: [] });
+          }
+          lines.get(key).spans.push(span);
+        }
+      }
+      for (const { axis, coordinate, spans } of lines.values()) {
+        const cuts = [...new Set(spans.flatMap(({ min, max }) => [min, max]))].toSorted(
+          (a, b) => a - b,
+        );
+        for (let i = 1; i < cuts.length; i += 1) {
+          const min = cuts[i - 1],
+            max = cuts[i],
+            covering = spans.filter(
+              (span) => span.min <= min + 0.00001 && span.max >= max - 0.00001,
+            );
+          if (max - min < 0.00001 || covering.length === 0) {
+            continue;
+          }
+          const rooms = [...new Set(covering.map(({ room }) => room))],
+            sides = Object.create(null),
+            specified = new Map();
+          for (const span of covering) {
+            sides[span.room.name] = span.side;
+            for (const opening of span.room.openings || []) {
+              const at = span.room[axis] + opening.at,
+                across = span.room[axis === "x" ? "z" : "x"] + opening.across;
+              if (
+                opening.side !== span.side ||
+                Math.abs(across - coordinate) > 0.00001 ||
+                at < min ||
+                at >= max
+              ) {
+                continue;
+              }
+              const half = opening.width / program.grid / 2;
+              if (at - half < min + 0.01 || at + half > max - 0.01) {
+                fail("DOOR crosses a shared wall boundary", opening.line);
+              }
+              specified.set([at.toFixed(6), opening.width.toFixed(6)].join(":"), {
+                ...opening,
+                coordinate: at,
+              });
+            }
+          }
+          if (specified.size > 1) {
+            fail("Use one matching DOOR per wall segment", [...specified.values()][1].line);
+          }
+          const [opening] = specified.values();
+          result.push({
+            axis,
+            coordinate,
+            hasSharedSpan: covering.some((span) =>
+              spans.some(
+                (other) =>
+                  other.room !== span.room &&
+                  other.min < span.max - 0.00001 &&
+                  other.max > span.min + 0.00001,
+              ),
+            ),
+            max,
+            min,
+            opening,
+            rooms,
+            sides,
+          });
+        }
+      }
+      return result;
+    }
+    function supportingEdge(program, room, side, along, width) {
+      return room.edges.find(
+        (edge) =>
+          edge.side === side &&
+          along - width / 2 >= edge.min * program.grid + 0.02 &&
+          along + width / 2 <= edge.max * program.grid - 0.02,
+      );
     }
     function furniturePosition(program, room, token, col, row) {
       let x = (col + 0.5) * program.grid,
@@ -1024,18 +1316,19 @@
         const vertical = ["east", "west"].includes(token.wall),
           positive = ["east", "south"].includes(token.wall),
           along = vertical ? z : x,
-          length = (vertical ? room.rows : room.cols) * program.grid,
-          across = (vertical ? room.cols : room.rows) * program.grid;
+          edge = supportingEdge(program, room, token.wall, along, token.dimensions[0]),
+          length = (vertical ? room.rows : room.cols) * program.grid;
         if (
+          !edge ||
           along - token.dimensions[0] / 2 < 0.02 ||
           along + token.dimensions[0] / 2 > length - 0.02 ||
-          token.dimensions[1] > across - 0.04
+          token.dimensions[1] > (vertical ? room.cols : room.rows) * program.grid - 0.04
         ) {
           fail("Furniture does not fit along the wall", token.line);
         }
         const offset = positive
-          ? across - token.dimensions[1] / 2 - 0.03
-          : token.dimensions[1] / 2 + 0.03;
+          ? edge.across * program.grid - token.dimensions[1] / 2 - 0.03
+          : edge.across * program.grid + token.dimensions[1] / 2 + 0.03;
         if (vertical) {
           x = offset;
         } else {
@@ -1085,10 +1378,12 @@
           if (
             corners.some(
               ([a, b]) =>
-                a < left - 0.02 ||
-                a > left + room.cols * program.grid + 0.02 ||
-                b < top - 0.02 ||
-                b > top + room.rows * program.grid + 0.02,
+                !insideRoom(
+                  room,
+                  (a - left) / program.grid,
+                  (b - top) / program.grid,
+                  0.02 / program.grid,
+                ),
             )
           ) {
             warn(`Line ${token.line}: ${token.name} extends beyond ${room.name}.`);
@@ -1128,12 +1423,14 @@
       examples,
       fixtureNames,
       furniturePosition,
+      insideRoom,
       parseProgram,
       parseToken,
       productUrl,
     };
   };
-const { catalog, examples, fixtureNames, parseProgram, furniturePosition } = createLayoutCore();
+const { catalog, examples, fixtureNames, parseProgram, furniturePosition, insideRoom } =
+  createLayoutCore();
 const initializeStudio = async function initializeStudio() {
   const [
     THREE,
@@ -1261,6 +1558,7 @@ const initializeStudio = async function initializeStudio() {
         linen: physical("#e6ddcc", { bumpMap: weave, bumpScale: 0.0015, map: weave, sheen: 0.6 }),
         metal: physical("#515855", { metalness: 0.85, roughness: 0.27 }),
         mirror: physical("#fafafa", { metalness: 1, roughness: 0.015 }),
+        planWall: physical("#737a74", { roughness: 1 }),
         rug: physical("#c2b496", { bumpMap: weave, bumpScale: 0.015, map: weave }),
         screen: physical("#13242a", { metalness: 0.35, roughness: 0.17 }),
         soil: physical("#45362a"),
@@ -1905,6 +2203,7 @@ const initializeStudio = async function initializeStudio() {
     turns = { east: -Math.PI / 2, north: 0, south: Math.PI, west: Math.PI / 2 };
   function buildScene(program, library) {
     const root = new THREE.Group(),
+      labelsScene = new THREE.Scene(),
       walls = [],
       ceilings = [],
       fixtures = [],
@@ -1912,9 +2211,9 @@ const initializeStudio = async function initializeStudio() {
       roomGroups = [],
       colliders = [],
       mirrors = [],
+      labels = [],
       owned = [],
       m = library.material,
-      edgeMap = new Map(),
       box = (...args) => library.box(...args),
       addObject = (token, position, room, parent = root) => {
         const group = library.create(token.name),
@@ -1989,7 +2288,75 @@ const initializeStudio = async function initializeStudio() {
       roomRoot.userData.room = room;
       root.add(roomRoot);
       roomGroups.push(roomRoot);
-      box(roomRoot, w, 0.14, d, 0, -0.075, 0, m.stone, 0);
+      if (room.label) {
+        const canvas = document.createElement("canvas"),
+          context = canvas.getContext("2d"),
+          font = "600 32px Arial, sans-serif";
+        context.font = font;
+        canvas.width = Math.ceil(context.measureText(room.label).width + 32);
+        canvas.height = 64;
+        context.font = font;
+        context.fillStyle = "rgba(255,255,252,0.94)";
+        context.beginPath();
+        context.roundRect(1, 1, canvas.width - 2, 62, 12);
+        context.fill();
+        context.strokeStyle = "rgba(64,76,69,0.2)";
+        context.stroke();
+        context.fillStyle = "#243229";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(room.label, canvas.width / 2, 33);
+        const texture = new THREE.CanvasTexture(canvas),
+          material = new THREE.MeshBasicNodeMaterial({
+            depthTest: false,
+            depthWrite: false,
+            map: texture,
+            transparent: true,
+          }),
+          label = new THREE.Mesh(
+            library.geometry("plan-label", () => new THREE.PlaneGeometry(1, 1)),
+            material,
+          ),
+          [largest] = room.footprint.toSorted(
+            (a, b) => (b[2] - b[0]) * (b[3] - b[1]) - (a[2] - a[0]) * (a[3] - a[1]),
+          ),
+          point = room.labelPoint || [(largest[0] + largest[2]) / 2, (largest[1] + largest[3]) / 2],
+          width = Math.min((canvas.width / canvas.height) * 0.26, w * 0.8, 2.5);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        material.toneMapped = false;
+        label.scale.set(width, (width * canvas.height) / canvas.width, 1);
+        label.rotation.x = -Math.PI / 2;
+        label.position.set(
+          room.x * program.grid + point[0] * program.grid - program.center[0],
+          y + room.height + 0.25,
+          room.z * program.grid + point[1] * program.grid - program.center[1],
+        );
+        label.userData.room = room;
+        label.renderOrder = 10;
+        label.visible = false;
+        labelsScene.add(label);
+        labels.push(label);
+        owned.push(texture, material);
+      }
+      const floorRects = room.footprint.map(([left, top, right, bottom]) => [
+        left * program.grid - w / 2,
+        top * program.grid - d / 2,
+        right * program.grid - w / 2,
+        bottom * program.grid - d / 2,
+      ]);
+      for (const [left, top, right, bottom] of floorRects) {
+        box(
+          roomRoot,
+          right - left,
+          0.14,
+          bottom - top,
+          (left + right) / 2,
+          -0.075,
+          (top + bottom) / 2,
+          m.stone,
+          0,
+        );
+      }
       const finish = room.surface === "auto" ? "wood" : room.surface;
       let floor;
       if (finish === "wood") {
@@ -1997,24 +2364,33 @@ const initializeStudio = async function initializeStudio() {
           plankWidth = 0.16,
           transforms = [],
           colors = [];
-        for (let z = -d / 2; z < d / 2 - 0.001; z += plankWidth) {
-          const row = Math.round((z + d / 2) / plankWidth),
-            offset = (row % 3) * 0.4;
-          for (let x = -w / 2 - offset; x < w / 2 - 0.001; x += plankLength) {
-            const left = Math.max(x, -w / 2),
-              right = Math.min(x + plankLength, w / 2),
-              depth = Math.min(plankWidth, d / 2 - z),
-              matrix = new THREE.Matrix4().compose(
-                new THREE.Vector3((left + right) / 2, 0.003, z + depth / 2),
-                new THREE.Quaternion(),
-                new THREE.Vector3(right - left - 0.004, 0.012, depth - 0.003),
+        for (const [minX, minZ, maxX, maxZ] of floorRects) {
+          for (let z = minZ; z < maxZ - 0.001;) {
+            const row = Math.floor((z + d / 2 + 0.00001) / plankWidth),
+              offset = (row % 3) * 0.4,
+              depth = Math.min(-d / 2 + (row + 1) * plankWidth, maxZ) - z,
+              start =
+                -w / 2 - offset + Math.floor((minX + w / 2 + offset) / plankLength) * plankLength;
+            for (let x = start; x < maxX - 0.001; x += plankLength) {
+              const left = Math.max(x, minX),
+                right = Math.min(x + plankLength, maxX),
+                matrix = new THREE.Matrix4().compose(
+                  new THREE.Vector3((left + right) / 2, 0.003, z + depth / 2),
+                  new THREE.Quaternion(),
+                  new THREE.Vector3(
+                    right - left - Math.min(0.004, (right - left) / 4),
+                    0.012,
+                    depth - Math.min(0.003, depth / 4),
+                  ),
+                );
+              transforms.push(matrix);
+              colors.push(
+                new THREE.Color().setScalar(
+                  0.8 + ((((row * 13 + Math.round(x * 10)) % 7) + 7) % 7) * 0.035,
+                ),
               );
-            transforms.push(matrix);
-            colors.push(
-              new THREE.Color().setScalar(
-                0.8 + ((((row * 13 + Math.round(x * 10)) % 7) + 7) % 7) * 0.035,
-              ),
-            );
+            }
+            z += depth;
           }
         }
         floor = new THREE.InstancedMesh(
@@ -2029,42 +2405,47 @@ const initializeStudio = async function initializeStudio() {
           m.wood,
           transforms.length,
         );
-        transforms.forEach((matrix, i) => {
-          floor.setMatrixAt(i, matrix);
+        transforms.forEach((transform, i) => {
+          floor.setMatrixAt(i, transform);
           floor.setColorAt(i, colors[i]);
         });
       } else {
         const tileSize = finish === "tile" ? 0.6 : finish === "terracotta" ? 0.3 : 1.2,
-          cols = Math.ceil((w - 0.001) / tileSize),
-          rows = Math.ceil((d - 0.001) / tileSize),
           matrix = new THREE.Matrix4(),
-          color = new THREE.Color();
-        floor = new THREE.InstancedMesh(
-          library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
-          m[finish] || m.stone,
-          cols * rows,
-        );
-        for (let col = 0; col < cols; col += 1) {
-          for (let row = 0; row < rows; row += 1) {
-            const width = Math.min(tileSize, w - col * tileSize),
-              depth = Math.min(tileSize, d - row * tileSize),
-              i = col * rows + row;
-            matrix.makeScale(
-              width - Math.min(0.004, width / 4),
-              0.014,
-              depth - Math.min(0.004, depth / 4),
-            );
-            matrix.setPosition(
-              -w / 2 + col * tileSize + width / 2,
-              0.004,
-              -d / 2 + row * tileSize + depth / 2,
-            );
-            floor.setMatrixAt(i, matrix);
-            if (finish === "terracotta") {
-              floor.setColorAt(i, color.setScalar(0.94 + ((i * 17) % 7) * 0.01));
+          color = new THREE.Color(),
+          transforms = [];
+        for (const [minX, minZ, maxX, maxZ] of floorRects) {
+          const cols = Math.ceil((maxX + w / 2 - 0.001) / tileSize),
+            rows = Math.ceil((maxZ + d / 2 - 0.001) / tileSize);
+          for (let col = Math.floor((minX + w / 2) / tileSize); col < cols; col += 1) {
+            for (let row = Math.floor((minZ + d / 2) / tileSize); row < rows; row += 1) {
+              const left = Math.max(minX, -w / 2 + col * tileSize),
+                top = Math.max(minZ, -d / 2 + row * tileSize),
+                right = Math.min(maxX, -w / 2 + (col + 1) * tileSize),
+                bottom = Math.min(maxZ, -d / 2 + (row + 1) * tileSize),
+                width = right - left,
+                depth = bottom - top;
+              matrix.makeScale(
+                width - Math.min(0.004, width / 4),
+                0.014,
+                depth - Math.min(0.004, depth / 4),
+              );
+              matrix.setPosition((left + right) / 2, 0.004, (top + bottom) / 2);
+              transforms.push(matrix.clone());
             }
           }
         }
+        floor = new THREE.InstancedMesh(
+          library.geometry("unit-box", () => new THREE.BoxGeometry(1, 1, 1)),
+          m[finish] || m.stone,
+          transforms.length,
+        );
+        transforms.forEach((transform, i) => {
+          floor.setMatrixAt(i, transform);
+          if (finish === "terracotta") {
+            floor.setColorAt(i, color.setScalar(0.94 + ((i * 17) % 7) * 0.01));
+          }
+        });
         floor.instanceMatrix.needsUpdate = true;
         if (floor.instanceColor) {
           floor.instanceColor.needsUpdate = true;
@@ -2074,24 +2455,41 @@ const initializeStudio = async function initializeStudio() {
       owned.push(floor);
       roomRoot.add(floor);
       if (room.kind === "room") {
-        const ceiling = box(roomRoot, w, 0.1, d, 0, room.height + 0.05, 0, m.white, 0);
-        ceiling.userData.room = room;
-        ceilings.push(ceiling);
-        if (program.roof !== "none") {
-          const roof = box(
+        for (const [left, top, right, bottom] of floorRects) {
+          const ceiling = box(
             roomRoot,
-            w + 0.2,
-            0.12,
-            d + 0.2,
-            0,
-            room.height + 0.16,
-            0,
-            program.roof === "terracotta" ? m.terracotta : m.concrete,
+            right - left,
+            0.1,
+            bottom - top,
+            (left + right) / 2,
+            room.height + 0.05,
+            (top + bottom) / 2,
+            m.white,
             0,
           );
-          ceilings.push(roof);
+          ceiling.userData.room = room;
+          ceilings.push(ceiling);
+        }
+        if (program.roof !== "none") {
+          const roofRects =
+            room.footprint.length === 1
+              ? [[-w / 2 - 0.1, -d / 2 - 0.1, w / 2 + 0.1, d / 2 + 0.1]]
+              : floorRects;
+          for (const [left, top, right, bottom] of roofRects) {
+            const roof = box(
+              roomRoot,
+              right - left,
+              0.12,
+              bottom - top,
+              (left + right) / 2,
+              room.height + 0.16,
+              (top + bottom) / 2,
+              program.roof === "terracotta" ? m.terracotta : m.concrete,
+              0,
+            );
+            ceilings.push(roof);
+          }
           if (["pitched", "terracotta"].includes(program.roof)) {
-            roof.visible = false;
             const rise = Math.min(w, d) * 0.22,
               geometry = new THREE.BufferGeometry(),
               vertices = [
@@ -2163,41 +2561,6 @@ const initializeStudio = async function initializeStudio() {
           }
         }
       }
-      for (const side of room.walls) {
-        const vertical = ["east", "west"].includes(side),
-          length = vertical ? d : w,
-          pos = [
-            cx + (side === "east" ? w / 2 : side === "west" ? -w / 2 : 0),
-            y,
-            cz + (side === "south" ? d / 2 : side === "north" ? -d / 2 : 0),
-          ],
-          key = [
-            room.floor,
-            vertical ? "x" : "z",
-            ...[pos[0], pos[2], length].map((value) => value.toFixed(6)),
-          ].join(":"),
-          previous = edgeMap.get(key);
-        if (previous) {
-          previous.rooms.push(room);
-          continue;
-        }
-        const wall = new THREE.Group();
-        wall.position.set(...pos);
-        wall.rotation.y = turns[side];
-        wall.userData.room = room;
-        const entry = {
-          group: wall,
-          length,
-          normal: new THREE.Vector3(...normals[side]),
-          position: new THREE.Vector3(...pos),
-          room,
-          rooms: [room],
-          side,
-        };
-        edgeMap.set(key, entry);
-        root.add(wall);
-        walls.push(entry);
-      }
       for (const side of room.rails) {
         const rail = new THREE.Group(),
           vertical = ["east", "west"].includes(side),
@@ -2234,7 +2597,8 @@ const initializeStudio = async function initializeStudio() {
         }),
       );
       for (const mount of room.mounts) {
-        const [mw, md, mh] = mount.dimensions,
+        const { edge } = mount,
+          [mw, md, mh] = mount.dimensions,
           vertical = ["east", "west"].includes(mount.side),
           along = (mount.cell + 0.5) * program.grid,
           token = {
@@ -2245,14 +2609,14 @@ const initializeStudio = async function initializeStudio() {
           },
           x = vertical
             ? mount.side === "east"
-              ? w / 2 - md / 2 - 0.02
-              : -w / 2 + md / 2 + 0.02
+              ? edge.across * program.grid - w / 2 - md / 2 - 0.02
+              : edge.across * program.grid - w / 2 + md / 2 + 0.02
             : -w / 2 + along,
           z = vertical
             ? -d / 2 + along
             : mount.side === "south"
-              ? d / 2 - md / 2 - 0.02
-              : -d / 2 + md / 2 + 0.02;
+              ? edge.across * program.grid - d / 2 - md / 2 - 0.02
+              : edge.across * program.grid - d / 2 + md / 2 + 0.02;
         addObject(token, [cx + x, y + (mount.height ?? Math.max(0.3, 1.5 - mh / 2)), cz + z], room);
       }
       for (const light of room.lights) {
@@ -2264,6 +2628,7 @@ const initializeStudio = async function initializeStudio() {
           cz + (light.z + 0.5) * program.grid - d / 2,
         );
         group.userData.room = room;
+        group.userData.ceilingFixture = true;
         root.add(group);
         const point = new THREE.PointLight("#ffe1b2", light.power * 0.9, Math.max(w, d) * 2, 2);
         point.position.set(group.position.x, y + room.height - 0.55, group.position.z);
@@ -2272,85 +2637,68 @@ const initializeStudio = async function initializeStudio() {
         fixtures.push({ light: point, power: light.power * 0.9 });
       }
     }
-    const wallLines = new Map();
-    for (const entry of walls) {
-      const vertical = ["east", "west"].includes(entry.side),
-        axis = vertical ? "z" : "x",
-        key = [entry.room.floor, axis, entry.position[vertical ? "x" : "z"].toFixed(6)].join(":"),
-        span = {
-          entry,
-          max: entry.position[axis] + entry.length / 2,
-          min: entry.position[axis] - entry.length / 2,
-        };
-      if (!wallLines.has(key)) {
-        wallLines.set(key, { axis, spans: [] });
-      }
-      wallLines.get(key).spans.push(span);
-      root.remove(entry.group);
-    }
-    walls.length = 0;
-    for (const { axis, spans } of wallLines.values()) {
-      const cuts = [
-        ...new Set(
-          spans.flatMap((span) => [span.min, span.max]).map((value) => Number(value.toFixed(6))),
+    for (const spec of program.wallSpecs) {
+      const [room] = spec.rooms,
+        side = spec.sides[room.name],
+        position = new THREE.Vector3(
+          (spec.axis === "x" ? (spec.min + spec.max) / 2 : spec.coordinate) * program.grid -
+            program.center[0],
+          room.elevation,
+          (spec.axis === "z" ? (spec.min + spec.max) / 2 : spec.coordinate) * program.grid -
+            program.center[1],
         ),
-      ].toSorted((a, b) => a - b);
-      for (let i = 1; i < cuts.length; i += 1) {
-        const min = cuts[i - 1],
-          max = cuts[i],
-          covering = spans.filter((span) => span.min <= min + 0.00001 && span.max >= max - 0.00001);
-        if (covering.length === 0 || max - min < 0.00001) {
-          continue;
-        }
-        const original = covering[0].entry,
-          position = original.position.clone(),
-          group = new THREE.Group(),
-          sides = new Map();
-        position[axis] = (min + max) / 2;
-        for (const { entry } of covering) {
-          for (const room of entry.rooms) {
-            sides.set(
-              room,
-              room === entry.room
-                ? entry.side
-                : { east: "west", north: "south", south: "north", west: "east" }[entry.side],
-            );
-          }
-        }
-        group.position.copy(position);
-        group.rotation.copy(original.group.rotation);
-        group.userData.room = original.room;
-        root.add(group);
-        walls.push({
-          ...original,
-          axis,
-          group,
-          hasSharedSpan:
-            spans.some(
-              (span) =>
-                span.entry !== original &&
-                span.min < covering[0].max - 0.00001 &&
-                span.max > covering[0].min + 0.00001,
-            ) || original.rooms.length > 1,
-          length: max - min,
-          position,
-          rooms: [...sides.keys()],
-          sides,
-        });
-      }
+        group = new THREE.Group();
+      group.position.copy(position);
+      group.rotation.y = turns[side];
+      group.userData.room = room;
+      root.add(group);
+      walls.push({
+        axis: spec.axis,
+        group,
+        hasSharedSpan: spec.hasSharedSpan,
+        length: (spec.max - spec.min) * program.grid,
+        normal: new THREE.Vector3(...normals[side]),
+        position,
+        room,
+        rooms: spec.rooms,
+        side,
+        sides: new Map(spec.rooms.map((r) => [r, spec.sides[r.name]])),
+        specified: spec.opening
+          ? {
+              ...spec.opening,
+              coordinate:
+                spec.opening.coordinate * program.grid - program.center[spec.axis === "x" ? 0 : 1],
+            }
+          : undefined,
+      });
     }
     for (const entry of walls) {
-      const { group, room, side, length } = entry,
-        opposite = { east: "west", north: "south", south: "north", west: "east" }[side],
+      const { group, room, side, length, specified } = entry,
         shared = entry.rooms.length > 1,
-        door =
-          (shared || !entry.hasSharedSpan) &&
-          (room.doors.includes(side) ||
-            entry.rooms.slice(1).some((r) => r.doors.includes(opposite))),
-        window = !door && !shared && room.windows.includes(side),
+        generic = entry.rooms.some(
+          (r) =>
+            r.doors.includes(entry.sides.get(r)) &&
+            !(r.openings || []).some((opening) => opening.side === entry.sides.get(r)),
+        ),
+        door = Boolean(specified) || ((shared || !entry.hasSharedSpan) && generic),
+        outer =
+          entry.position[entry.axis === "x" ? "z" : "x"] ===
+          (room[entry.axis === "x" ? "z" : "x"] +
+            (side === "east" ? room.cols : side === "south" ? room.rows : 0)) *
+            program.grid -
+            program.center[entry.axis === "x" ? 1 : 0],
+        window = !door && !shared && outer && room.windows.includes(side),
         t = shared ? program.interiorWallThickness : program.exteriorWallThickness,
-        { height } = room;
-      const width = door ? Math.min(0.95, length * 0.65) : window ? Math.min(1.9, length * 0.6) : 0;
+        { height } = room,
+        offset = specified
+          ? (specified.coordinate - entry.position[entry.axis]) *
+            (["north", "east"].includes(side) ? 1 : -1)
+          : 0;
+      const width = door
+        ? specified?.width || Math.min(0.95, length * 0.65)
+        : window
+          ? Math.min(1.9, length * 0.6)
+          : 0;
       const bottom = window ? 0.85 : 0,
         top = door ? Math.min(2.12, height - 0.12) : window ? Math.min(2.25, height - 0.16) : 0;
       const wallMat =
@@ -2369,24 +2717,34 @@ const initializeStudio = async function initializeStudio() {
                 : wallMat,
         wallBox = (w, h, x, y) => box(group, w, h, t, x, y, -t / 2, shared ? wallMat : facade, 0);
       if (width) {
-        wallBox((length - width) / 2, height, -(length + width) / 4, height / 2);
-        wallBox((length - width) / 2, height, (length + width) / 4, height / 2);
-        wallBox(width, height - top, 0, (height + top) / 2);
+        wallBox(
+          (length - width) / 2 + offset,
+          height,
+          -(length + width) / 4 + offset / 2,
+          height / 2,
+        );
+        wallBox(
+          (length - width) / 2 - offset,
+          height,
+          (length + width) / 4 + offset / 2,
+          height / 2,
+        );
+        wallBox(width, height - top, offset, (height + top) / 2);
         if (bottom) {
-          wallBox(width, bottom, 0, bottom / 2);
+          wallBox(width, bottom, offset, bottom / 2);
         }
       } else {
         wallBox(length, height, 0, height / 2);
       }
       for (const sign of [-1, 1]) {
-        const len = door ? (length - width) / 2 : length;
+        const len = door ? (length - width) / 2 - sign * offset : length;
         if (door || sign < 0) {
           box(
             group,
             len,
             0.09,
             0.023,
-            door ? (sign * (length + width)) / 4 : 0,
+            door ? (sign * (length + width)) / 4 + offset / 2 : 0,
             0.045,
             0.013,
             m.white,
@@ -2395,12 +2753,15 @@ const initializeStudio = async function initializeStudio() {
         }
       }
       box(group, length, 0.07, 0.045, 0, height - 0.035, 0.025, m.white, 0.003);
+      const openingDecor = new THREE.Group();
+      openingDecor.position.x = offset;
+      group.add(openingDecor);
       if (window) {
         const wh = top - bottom;
-        box(group, width, wh, 0.012, 0, (bottom + top) / 2, -t / 2, m.glass, 0);
+        box(openingDecor, width, wh, 0.012, 0, (bottom + top) / 2, -t / 2, m.glass, 0);
         for (const s of [-1, 1]) {
           box(
-            group,
+            openingDecor,
             0.045,
             wh + 0.08,
             0.1,
@@ -2410,14 +2771,24 @@ const initializeStudio = async function initializeStudio() {
             m.white,
             0.003,
           );
-          box(group, width + 0.1, 0.045, 0.1, 0, s > 0 ? top : bottom, -t / 2, m.white, 0.003);
+          box(
+            openingDecor,
+            width + 0.1,
+            0.045,
+            0.1,
+            0,
+            s > 0 ? top : bottom,
+            -t / 2,
+            m.white,
+            0.003,
+          );
         }
-        box(group, 0.035, wh, 0.055, 0, (top + bottom) / 2, -t / 2 + 0.022, m.white, 0.002);
-        box(group, width + 0.18, 0.04, 0.24, 0, bottom - 0.02, 0.035, m.stone, 0.004);
+        box(openingDecor, 0.035, wh, 0.055, 0, (top + bottom) / 2, -t / 2 + 0.022, m.white, 0.002);
+        box(openingDecor, width + 0.18, 0.04, 0.24, 0, bottom - 0.02, 0.035, m.stone, 0.004);
         for (const s of [-1, 1]) {
           for (let i = 0; i < 7; i += 1) {
             box(
-              group,
+              openingDecor,
               0.052,
               height - 0.3,
               0.075,
@@ -2430,7 +2801,7 @@ const initializeStudio = async function initializeStudio() {
           }
         }
         library.rod(
-          group,
+          openingDecor,
           [-width / 2 - 0.34, height - 0.14, 0.14],
           [width / 2 + 0.34, height - 0.14, 0.14],
           0.012,
@@ -2440,7 +2811,7 @@ const initializeStudio = async function initializeStudio() {
       if (door) {
         for (const s of [-1, 1]) {
           box(
-            group,
+            openingDecor,
             0.065,
             top + 0.035,
             0.09,
@@ -2451,10 +2822,58 @@ const initializeStudio = async function initializeStudio() {
             0.003,
           );
         }
-        box(group, width + 0.13, 0.065, 0.09, 0, top + 0.032, 0.025, m.white, 0.003);
+        box(openingDecor, width + 0.13, 0.065, 0.09, 0, top + 0.032, 0.025, m.white, 0.003);
       }
-      entry.opening = width ? { bottom, top, width } : null;
+      entry.opening = width
+        ? {
+            bottom,
+            center: [
+              entry.position.x +
+                (entry.axis === "x" ? offset * (["north", "east"].includes(side) ? 1 : -1) : 0),
+              entry.position.z +
+                (entry.axis === "z" ? offset * (["north", "east"].includes(side) ? 1 : -1) : 0),
+            ],
+            offset,
+            top,
+            width,
+          }
+        : null;
       entry.thickness = t;
+      const elevation = new THREE.Group(),
+        plan = new THREE.Group();
+      elevation.add(...group.children);
+      group.add(elevation, plan);
+      if (width) {
+        box(
+          plan,
+          (length - width) / 2 + offset,
+          0.09,
+          t,
+          -(length + width) / 4 + offset / 2,
+          0.045,
+          -t / 2,
+          m.planWall,
+          0,
+        );
+        box(
+          plan,
+          (length - width) / 2 - offset,
+          0.09,
+          t,
+          (length + width) / 4 + offset / 2,
+          0.045,
+          -t / 2,
+          m.planWall,
+          0,
+        );
+        if (window) {
+          box(plan, width, 0.025, t * 0.65, offset, 0.015, -t / 2, m.glass, 0);
+        }
+      } else {
+        box(plan, length, 0.09, t, 0, 0.045, -t / 2, m.planWall, 0);
+      }
+      entry.elevation = elevation;
+      entry.plan = plan;
     }
     let terrain;
     if (program.site !== "none") {
@@ -2501,9 +2920,12 @@ const initializeStudio = async function initializeStudio() {
           resource.dispose();
         }
         root.clear();
+        labelsScene.clear();
       },
       fixtures,
       grid,
+      labels,
+      labelsScene,
       mirrors,
       objects,
       program,
@@ -2881,10 +3303,7 @@ const initializeStudio = async function initializeStudio() {
         (r) =>
           (this.options.floor === "" || r.floor === Number(this.options.floor)) &&
           (this.mode !== "walk" || this.walkFloor === undefined || r.floor === this.walkFloor) &&
-          x >= r.x * g - p.center[0] &&
-          x <= (r.x + r.cols) * g - p.center[0] &&
-          z >= r.z * g - p.center[1] &&
-          z <= (r.z + r.rows) * g - p.center[1],
+          insideRoom(r, (x + p.center[0]) / g - r.x, (z + p.center[1]) / g - r.z),
       );
     }
     canStand(x, z) {
@@ -2922,7 +3341,7 @@ const initializeStudio = async function initializeStudio() {
           Math.abs(local.x) < wall.length / 2 + 0.1 &&
           (!wall.opening ||
             wall.opening.bottom > 0 ||
-            Math.abs(local.x) > wall.opening.width / 2 - 0.18)
+            Math.abs(local.x - wall.opening.offset) > wall.opening.width / 2 - 0.18)
         ) {
           return false;
         }
@@ -3091,10 +3510,12 @@ const initializeStudio = async function initializeStudio() {
         const onlyVisible = wall.rooms.filter(visible),
           sign = onlyVisible.length === 1 && onlyVisible[0] !== wall.room ? -1 : 1,
           front = this.camera.position.clone().sub(wall.position).dot(wall.normal) * sign > 0;
+        wall.elevation.visible = this.mode !== "top";
+        wall.plan.visible = this.mode === "top";
         wall.group.visible =
           wall.rooms.some(visible) &&
           !this.options.walls &&
-          (this.mode === "walk" || (this.mode !== "top" && !front));
+          (this.mode === "walk" || this.mode === "top" || !front);
       }
       for (const object of this.model.objects) {
         if (!object.userData.token.mount) {
@@ -3106,7 +3527,7 @@ const initializeStudio = async function initializeStudio() {
             Math.abs(object.position[entry.axis] - entry.position[entry.axis]) <=
               entry.length / 2 + 0.00001,
         );
-        if (wall && !wall.group.visible) {
+        if (wall && (!wall.group.visible || this.mode === "top")) {
           object.visible = false;
         }
       }
@@ -3123,7 +3544,13 @@ const initializeStudio = async function initializeStudio() {
           !this.model.walls.some((w) => w.group === group)
         ) {
           group.visible = visible(group.userData.room);
+          if (group.userData.ceilingFixture && this.mode === "top") {
+            group.visible = false;
+          }
         }
+      }
+      for (const label of this.model.labels) {
+        label.visible = this.mode === "top" && visible(label.userData.room);
       }
       this.model.grid.visible = this.options.grid && this.mode !== "walk";
       this.model.grid.position.y =
@@ -3216,6 +3643,15 @@ const initializeStudio = async function initializeStudio() {
         effect.ambient.resolutionScale = this.quality === "high" ? 0.75 : 0.5;
         effect.ambient.samples.value = this.quality === "high" ? 24 : 12;
         effect.processing.render();
+      }
+      if (this.mode === "top" && this.model.labels.some((label) => label.visible)) {
+        const { autoClear } = this.renderer;
+        this.renderer.autoClear = false;
+        try {
+          this.renderer.render(this.model.labelsScene, this.camera);
+        } finally {
+          this.renderer.autoClear = autoClear;
+        }
       }
       this.onRender?.({
         calls: this.renderer.info.render.drawCalls,
@@ -3415,7 +3851,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|WALLS|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -3472,7 +3908,7 @@ const initializeStudio = async function initializeStudio() {
       renderProjectDetails();
       $("roomFocus").replaceChildren(
         new Option("Entire project", ""),
-        ...program.rooms.map((r) => new Option(friendly(r.name), r.name)),
+        ...program.rooms.map((r) => new Option(r.label || friendly(r.name), r.name)),
       );
       $("roomFocus").value = studio.options.room;
       $("floorFocus").replaceChildren(
@@ -3489,7 +3925,13 @@ const initializeStudio = async function initializeStudio() {
       $("floorFocus").value = studio.options.floor;
       status(program.warnings.join(" "));
       const area = program.rooms.reduce(
-        (total, room) => total + room.cols * room.rows * program.grid ** 2,
+        (total, room) =>
+          total +
+          room.footprint.reduce(
+            (sum, [left, top, right, bottom]) =>
+              sum + (right - left) * (bottom - top) * program.grid ** 2,
+            0,
+          ),
         0,
       );
       $("projectSummary").textContent =
@@ -3522,7 +3964,10 @@ const initializeStudio = async function initializeStudio() {
       const section = document.createElement("section"),
         heading = document.createElement("h3"),
         list = document.createElement("ul");
-      heading.textContent = scope === "project" ? "Project" : friendly(scope);
+      heading.textContent =
+        scope === "project"
+          ? "Project"
+          : program.rooms.find(({ name }) => name === scope)?.label || friendly(scope);
       for (const detail of program.details.filter((item) => item.room === scope)) {
         const item = document.createElement("li"),
           text = document.createElement("span");
