@@ -490,6 +490,9 @@ async function run({ assetsOnly = false } = {}) {
                   "wardrobe",
                   "frameless_shower",
                   "washing_machine",
+                  "bathroom_vanity",
+                  "sink",
+                  "stove",
                   "toilet",
                   "coat_rack",
                   "shoe_rack",
@@ -528,7 +531,7 @@ async function run({ assetsOnly = false } = {}) {
           ["balcony", "bathroom", "bedroom", "hall", "living", "passage", "study"],
           "Continuous walking routes connect every area, including turns around furniture",
         );
-        assert.equal(reachable.fixtures.length, 11);
+        assert.equal(reachable.fixtures.length, 13);
         assert.ok(
           reachable.fixtures.every(({ occupied, reachable }) => occupied && reachable),
           JSON.stringify(reachable.fixtures),
@@ -608,17 +611,17 @@ async function run({ assetsOnly = false } = {}) {
           const s = interior.studio;
           s.setView("3d");
           s.updateVisibility();
-          const before = s.model.walls.every(w => w.group.visible);
+          const before = s.model.walls.map((w) => w.group.visible);
           s.camera.position.multiplyScalar(-1);
           s.updateVisibility();
-          const after = s.model.walls.every(w => w.group.visible);
+          const after = s.model.walls.map((w) => w.group.visible);
           s.options.walls = true;
           s.updateVisibility();
           const hidden = s.model.walls.every(w => !w.group.visible);
           s.options.walls = false;
           s.options.ceilings = true;
-          return before && after && hidden;
-        }), "Walls stay visible from either camera angle until explicitly hidden");
+          return before.some(Boolean) && before.some((v, i) => v !== after[i]) && hidden;
+        }), "Walls follow the camera angle and the hide button still hides all walls");
         await page.click("#topButton");
         await ready();
         assert.ok(
@@ -631,7 +634,7 @@ async function run({ assetsOnly = false } = {}) {
               m.labels.length === 6 &&
               m.labels.every((label) => label.visible) &&
               m.objects
-                .filter(({ userData }) => userData.token.name === "double_awning")
+                .filter(({ userData }) => userData.token.name === "retracted_double_awning")
                 .every((group) => !group.visible) &&
               m.root.children
                 .filter((group) => group.userData.ceilingFixture)
@@ -695,8 +698,8 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(
           await page.evaluate(() => {
             const m = interior.studio.model,
-              doubles = m.objects.filter(({ userData }) => userData.token.name === "double_awning"),
-              singles = m.objects.filter(({ userData }) => userData.token.name === "side_awning"),
+              doubles = m.objects.filter(({ userData }) => userData.token.name === "retracted_double_awning"),
+              singles = m.objects.filter(({ userData }) => userData.token.name === "retracted_side_awning"),
               balcony = m.roomGroups.find(({ userData }) => userData.room.kind === "balcony"),
               rails = balcony.children.filter(({ userData }) => userData.railing);
             return (
@@ -706,7 +709,7 @@ async function run({ assetsOnly = false } = {}) {
                   group.visible &&
                   group
                     .getObjectsByProperty("isMesh", true)
-                    .filter(({ userData }) => userData.awningPanel).length === 2,
+                    .filter(({ userData }) => userData.awningRoll).length === 2,
               ) &&
               singles.length === 1 &&
               singles[0].visible &&
@@ -729,8 +732,19 @@ async function run({ assetsOnly = false } = {}) {
               })
             );
           }),
-          "Two double awnings, one side awning and silver horizontal railing remain visible",
+          "Retracted double awnings, a retracted side awning and silver horizontal railing remain visible",
         );
+        assert.ok(await page.evaluate(() => {
+          const objects = interior.studio.model.objects;
+          const hooks = objects.find((g) => g.userData.token.name === "wall_coat_hooks");
+          const hose = objects.find((g) => g.userData.token.name === "watering_hose");
+          const sconces = objects.filter((g) => g.userData.token.name === "wall_lamp");
+          const uppers = objects.filter((g) => g.userData.token.name === "kitchen_cabinet" && g.userData.token.height > 0);
+          return hooks.getObjectsByProperty("isMesh", true).filter((m) => m.userData.woodenCoatHook).length === 5 &&
+            hose.parent.userData.token.name === "hogsten_chair" && hose.position.y === 0 &&
+            sconces.length === 2 && sconces.every((g) => g.getObjectsByProperty("isMesh", true).some((m) => m.userData.wallSconce)) &&
+            uppers.length === 4 && uppers.every((g) => g.visible && g.position.y >= 1.55);
+        }), "Wooden coat hooks, wall sconces, under-chair hose and overhead cabinets are modelled");
         const mounted = await page.evaluate(() =>
           interior.studio.model.objects
             .filter((group) => group.userData.token.mount && group.userData.token.child)

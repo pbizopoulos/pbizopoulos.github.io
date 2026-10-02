@@ -270,7 +270,7 @@ test("project details preserve selected inventory and exclude pending purchases"
   assert.ok(
     !p.details.some(
       ({ text, url }) =>
-        /Εκκρεμ|CMOS|πλυντήριο πιάτων|Έρευνα/iu.test(text) || url?.includes("freebox.gr"),
+        /Pending|CMOS|dishwasher|Research/iu.test(text) || url?.includes("freebox.gr"),
     ),
   );
   for (const source of Object.values(examples)) assert.ok(!/^\s*#/mu.test(source));
@@ -456,7 +456,7 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
     assert.equal(find("living", name).wall, "south");
   assert.equal(find("living", "robot_vacuum").wall, "north");
   assert.equal(find("bedroom", "bed").wall, "south");
-  assert.equal(find("bathroom", "toilet").wall, "west");
+  assert.equal(find("bathroom", "toilet").wall, "north");
   assert.ok(
     p.layouts.bathroom
       .slice(0, 4)
@@ -542,12 +542,10 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.ok(Math.abs((front[0] - 0.875) * edge.normal[0] + (front[1] - 4) * edge.normal[1]) < 1e-9);
   assert.equal(rooms.bedroom.area, 95.75);
   assert.deepEqual(rooms.balcony.railing, { style: "horizontal", finish: "silver", spacing: 1.5 });
-  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "double_awning").length, 2);
-  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "side_awning").length, 1);
-  for (const name of ["coat_rack", "shoe_rack"]) {
-    assert.ok(find("hall", name));
-    assert.ok(localZ("hall", name) < rooms.hall.openings[0].at * p.grid);
-  }
+  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "retracted_double_awning").length, 2);
+  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "retracted_side_awning").length, 1);
+  assert.ok(find("hall", "wall_coat_hooks"));
+  assert.ok(localZ("hall", "shoe_rack") > rooms.hall.openings[0].at * p.grid);
   const entryPassage = p.wallSpecs.find(
     ({ rooms: adjoining, opening }) =>
       adjoining.includes(rooms.living) && adjoining.includes(rooms.hall) && opening,
@@ -567,11 +565,11 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.ok(outsideDoors[0].rooms.includes(rooms.hall));
 });
 
-test("room labels preserve Greek text, validate their position and stay within source limits", () => {
+test("room labels preserve English text, validate their position and stay within source limits", () => {
   const p = parseProgram(examples.Apartment),
     labelled = p.rooms.filter(({ label }) => label);
   assert.equal(labelled.length, 6);
-  assert.equal(labelled.find(({ name }) => name === "living").label, "Σαλόνι / κουζίνα");
+  assert.equal(labelled.find(({ name }) => name === "living").label, "Living room / kitchen");
   for (const r of labelled) assert.ok(insideRoom(r, ...r.labelPoint));
   for (const label of [
     '""',
@@ -746,22 +744,55 @@ test("balcony railing spacing and side awning supports are validated", () => {
   );
   assert.throws(() => parseProgram(source.replace("BALCONY main", "ROOM main")), /RAILING/u);
 });
-test("apartment kitchen cabinets fit between cooker and fridge", () => {
+test("apartment kitchen sink sits between the oven and fridge with a separating cabinet", () => {
   const p = parseProgram(examples.Apartment);
-  const living = p.rooms.find(r => r.name === "living");
+  const living = p.rooms.find((r) => r.name === "living");
   const items = p.layouts.living.flat().filter(Boolean);
-  assert.equal(items.filter(t => t.name === "kitchen_chair").length, 4);
-  const cabinets = living.mounts.filter(m => m.name === "kitchen_cabinet");
-  assert.equal(cabinets.filter(m => m.height > 0).length, 4);
-  const bases = cabinets.filter(m => m.height === 0).sort((a,b) => a.cell - b.cell);
+  assert.equal(items.filter((t) => t.name === "kitchen_chair").length, 4);
+  const cabinets = living.mounts.filter((m) => m.name === "kitchen_cabinet");
+  assert.equal(cabinets.filter((m) => m.height > 0).length, 4);
+  const bases = cabinets.filter((m) => m.height === 0);
   assert.equal(bases.length, 5);
-  const run = bases.slice(1);
-  let end = 8.5 * p.grid + 0.3;
-  for (const cabinet of run) {
-    const center = (cabinet.cell + 0.5) * p.grid;
-    assert.ok(center - cabinet.dimensions[0] / 2 >= end);
-    end = center + cabinet.dimensions[0] / 2;
+  const run = bases.map((m) => ({ name: m.name, center: (m.cell + 0.5) * p.grid, width: m.dimensions[0] }));
+  p.layouts.living.forEach((row, z) => row.forEach((token, x) => {
+    if (token && ["stove", "sink", "pitsos_fridge"].includes(token.name)) {
+      const position = furniturePosition(p, living, token, x, z);
+      run.push({ name: token.name, center: position[0] + p.center[0], width: token.dimensions[0] });
+    }
+  }));
+  run.sort((a, b) => a.center - b.center);
+  for (let i = 1; i < run.length; i++) {
+    assert.ok(run[i].center - run[i].width / 2 >= run[i - 1].center + run[i - 1].width / 2);
   }
-  assert.ok(end <= 13.5 * p.grid - 0.3);
-  assert.equal(living.lights.filter(l => l.name === "downlight").length, 4);
+  assert.deepEqual(run.map((item) => item.name), [
+    "kitchen_cabinet", "stove", "kitchen_cabinet", "sink", "kitchen_cabinet",
+    "kitchen_cabinet", "kitchen_cabinet", "pitsos_fridge",
+  ]);
+  assert.equal(living.lights.filter((l) => l.name === "downlight").length, 4);
+});
+test("offsets preserve wall alignment and underneath layouts keep their placement", () => {
+  const p = parseProgram(room("chair[-0.1,0.2]"));
+  const token = p.layouts.main[0][0];
+  assert.deepEqual(token.offset, [-0.1, 0.2]);
+  assert.deepEqual(furniturePosition(p, p.rooms[0], token, 0, 0), [-1.6, 0, -1.3]);
+  assert.equal(parseToken("chair(hose_underneath)", 1).childPlacement, "underneath");
+  assert.equal(parseToken("chair(HOSE_UNDERNEATH)", 1).childPlacement, "underneath");
+  for (const text of ["chair[11,0]", "chair[1..2,0]", "chair[0,1][1,0]"]) {
+    assert.throws(() => parseToken(text, 1));
+  }
+  assert.throws(() => parseProgram(room().replace("LAYOUT", "MOUNT north 2 mirror[0.1,0]\nLAYOUT")));
+});
+test("apartment uses English labels, retracted awnings and wooden wall hooks", () => {
+  const p = parseProgram(examples.Apartment);
+  assert.doesNotMatch(examples.Apartment, /\p{Script=Greek}/u);
+  const balcony = p.rooms.find((r) => r.name === "balcony");
+  assert.equal(balcony.mounts.filter((m) => m.name === "retracted_double_awning").length, 2);
+  assert.ok(balcony.mounts.some((m) => m.name === "retracted_side_awning"));
+  const seating = p.layouts.balcony.flat().filter((t) => t && /hogsten_chair|folding_table/u.test(t.name));
+  assert.equal(seating.length, 3);
+  assert.ok(seating.every((t) => t.offset[0] === -0.12));
+  assert.ok(seating.some((t) => t.child === "hose" && t.childPlacement === "underneath"));
+  const hall = p.rooms.find((r) => r.name === "hall");
+  assert.ok(hall.mounts.some((m) => m.name === "wall_coat_hooks" && m.height > 1));
+  assert.equal(p.layouts.hall.flat().find((t) => t?.name === "shoe_rack").wall, "south");
 });
