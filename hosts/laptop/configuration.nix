@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 {
   boot = {
     kernelParams = [ "i915.enable_psr=0" ];
@@ -70,10 +75,7 @@
     pkgs.noto-fonts
     pkgs.noto-fonts-color-emoji
   ];
-  hardware = {
-    enableRedistributableFirmware = true;
-    graphics.enable = true;
-  };
+  hardware.graphics.enable = true;
   imports = [
     ./hardware-configuration.nix
     inputs.disko.nixosModules.disko
@@ -115,11 +117,15 @@
           inInitrd = true;
         }
         {
+          configureParent = true;
           file = "/etc/ssh/ssh_host_ed25519_key";
+          how = "symlink";
           mode = "0600";
         }
         {
+          configureParent = true;
           file = "/etc/ssh/ssh_host_rsa_key";
+          how = "symlink";
           mode = "0600";
         }
       ];
@@ -151,20 +157,7 @@
   };
   security.pam.services.waylock = { };
   services = {
-    openssh = {
-      enable = true;
-      hostKeys = [
-        {
-          bits = 4096;
-          path = "/persistent/etc/ssh/ssh_host_rsa_key";
-          type = "rsa";
-        }
-        {
-          path = "/persistent/etc/ssh/ssh_host_ed25519_key";
-          type = "ed25519";
-        }
-      ];
-    };
+    openssh.enable = true;
     pipewire = {
       enable = true;
       pulse.enable = true;
@@ -199,11 +192,11 @@
   };
   virtualisation.vmVariantWithDisko = {
     disko.devices.disk.main.content.partitions = {
-      home.size = pkgs.lib.mkForce "500M";
-      swap.size = pkgs.lib.mkForce "1M";
+      home.size = lib.mkForce "500M";
+      swap.size = lib.mkForce "1M";
     };
     users.users.pbizopoulos = {
-      hashedPasswordFile = pkgs.lib.mkForce null;
+      hashedPasswordFile = lib.mkForce null;
       password = "password";
     };
     virtualisation = {
