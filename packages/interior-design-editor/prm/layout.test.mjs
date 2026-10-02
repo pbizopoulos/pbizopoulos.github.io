@@ -452,11 +452,11 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   );
   assert.equal(passageExit.opening.kind, "door");
   assert.ok(passageExit.opening.width > 1.5);
-  for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
+  for (const name of ["pitsos_fridge", "sink", "stove"])
     assert.equal(find("living", name).wall, "south");
   assert.equal(find("living", "robot_vacuum").wall, "north");
   assert.equal(find("bedroom", "bed").wall, "south");
-  assert.equal(find("bathroom", "toilet").wall, "east");
+  assert.equal(find("bathroom", "toilet").wall, "west");
   assert.ok(
     p.layouts.bathroom
       .slice(0, 4)
@@ -483,7 +483,7 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.ok(
     Math.abs((tv.cell + 0.5) * p.grid - (sofa[0] + p.center[0] - rooms.living.x * p.grid)) < 0.001,
   );
-  for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
+  for (const name of ["pitsos_fridge", "sink", "stove"])
     assert.ok(position("living", name)[2] > sofa[2]);
   const curtains = p.rooms.flatMap(({ name: roomName, mounts }) =>
     mounts.filter((token) => token.name === "curtain_pair").map((token) => ({ roomName, token })),
@@ -745,4 +745,23 @@ test("balcony railing spacing and side awning supports are validated", () => {
     /MOUNT must fit/u,
   );
   assert.throws(() => parseProgram(source.replace("BALCONY main", "ROOM main")), /RAILING/u);
+});
+test("apartment kitchen cabinets fit between cooker and fridge", () => {
+  const p = parseProgram(examples.Apartment);
+  const living = p.rooms.find(r => r.name === "living");
+  const items = p.layouts.living.flat().filter(Boolean);
+  assert.equal(items.filter(t => t.name === "kitchen_chair").length, 4);
+  const cabinets = living.mounts.filter(m => m.name === "kitchen_cabinet");
+  assert.equal(cabinets.filter(m => m.height > 0).length, 4);
+  const bases = cabinets.filter(m => m.height === 0).sort((a,b) => a.cell - b.cell);
+  assert.equal(bases.length, 5);
+  const run = bases.slice(1);
+  let end = 8.5 * p.grid + 0.3;
+  for (const cabinet of run) {
+    const center = (cabinet.cell + 0.5) * p.grid;
+    assert.ok(center - cabinet.dimensions[0] / 2 >= end);
+    end = center + cabinet.dimensions[0] / 2;
+  }
+  assert.ok(end <= 13.5 * p.grid - 0.3);
+  assert.equal(living.lights.filter(l => l.name === "downlight").length, 4);
 });

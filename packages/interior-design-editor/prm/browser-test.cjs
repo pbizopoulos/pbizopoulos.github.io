@@ -509,11 +509,16 @@ async function run({ assetsOnly = false } = {}) {
                 return {
                   name: `${group.userData.room.name}/${token.name}`,
                   occupied: !s.canStand(position.x, position.z),
-                  reachable:
-                    Boolean(s.canStand(x, z)) &&
-                    [-1, 0, 1].some((dx) =>
-                      [-1, 0, 1].some((dz) => reached.has(`${gx + dx},${gz + dz}`)),
-                    ),
+                  reachable: [
+                    [x, z, gx, gz],
+                    ...(/bed/u.test(token.name) ? [-1, 1].map(side => {
+                      const distance = token.dimensions[0] / 2 + 0.28;
+                      const x = position.x + side * Math.cos(yaw) * distance;
+                      const z = position.z - side * Math.sin(yaw) * distance;
+                      return [x, z, Math.round((x - origin[0]) / step), Math.round((z - origin[1]) / step)];
+                    }) : []),
+                  ].some(([x, z, gx, gz]) => Boolean(s.canStand(x, z)) &&
+                    [-1, 0, 1].some(dx => [-1, 0, 1].some(dz => reached.has(`${gx + dx},${gz + dz}`)))),
                 };
               });
           return { rooms: [...rooms].sort(), fixtures };
@@ -599,6 +604,21 @@ async function run({ assetsOnly = false } = {}) {
           });
         });
         assert.equal(floorFits, true, "Batched floor pieces remain inside the mapped outlines");
+        assert.ok(await page.evaluate(() => {
+          const s = interior.studio;
+          s.setView("3d");
+          s.updateVisibility();
+          const before = s.model.walls.every(w => w.group.visible);
+          s.camera.position.multiplyScalar(-1);
+          s.updateVisibility();
+          const after = s.model.walls.every(w => w.group.visible);
+          s.options.walls = true;
+          s.updateVisibility();
+          const hidden = s.model.walls.every(w => !w.group.visible);
+          s.options.walls = false;
+          s.options.ceilings = true;
+          return before && after && hidden;
+        }), "Walls stay visible from either camera angle until explicitly hidden");
         await page.click("#topButton");
         await ready();
         assert.ok(
@@ -606,6 +626,8 @@ async function run({ assetsOnly = false } = {}) {
             const m = interior.studio.model;
             return (
               m.walls.every((wall) => !wall.elevation.visible && wall.plan.visible) &&
+              m.labelsScene.parent === m.root &&
+              m.ceilings.every(ceiling => !ceiling.visible) &&
               m.labels.length === 6 &&
               m.labels.every((label) => label.visible) &&
               m.objects
@@ -633,6 +655,7 @@ async function run({ assetsOnly = false } = {}) {
           "Full-wall shutters leave clear plan openings without zero-width wall pieces",
         );
         if (!assetsOnly) await capture("apartment-plan");
+        await page.evaluate(() => { interior.studio.options.ceilings = false; });
         await page.click("#resetButton");
         await ready();
         assert.ok(
@@ -687,7 +710,7 @@ async function run({ assetsOnly = false } = {}) {
               ) &&
               singles.length === 1 &&
               singles[0].visible &&
-              rails.length === 3 &&
+              rails.length === 2 &&
               rails.every((rail) => {
                 const posts = rail.children.find(({ userData }) => userData.railPosts),
                   bars = rail.children.find(({ userData }) => userData.horizontalRails),
@@ -773,7 +796,7 @@ async function run({ assetsOnly = false } = {}) {
           });
           return { rails, floors, fringes };
         });
-        assert.equal(instanceCounts.rails, 3, "Three balcony rails each batch all posts");
+        assert.equal(instanceCounts.rails, 2, "Two balcony rails each batch all posts beside the solid partition");
         assert.equal(
           instanceCounts.floors,
           7,

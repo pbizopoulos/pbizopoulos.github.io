@@ -81,6 +81,7 @@
         jute_rug: [2, 1.4, 0.018],
         kilim_rug: [1.4, 0.8, 0.015],
         kitchen_accessories: [0.65, 0.32, 0.42],
+        kitchen_cabinet: [0.6, 0.6, 0.9],
         kitchen_chair: [0.52, 0.51, 0.79],
         kitchen_counter: [1.48, 0.62, 0.9],
         kitchen_island: [1.55, 0.85, 0.91],
@@ -226,8 +227,22 @@
           "MOUNT north 7 floating_tv_console[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
           "MOUNT north 7 wall_tv[1.1164x0.0915x0.6513]<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
           "MOUNT east 4 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.28",
-          "MOUNT south 10 cooker_hood<https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html> HEIGHT 1.6",
-          "LIGHT ceiling_light AT 9,6 POWER 18",
+          "MOUNT south 8 cooker_hood<https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html> HEIGHT 1.6",
+          "LIGHT downlight AT 7,6 POWER 6",
+          "LIGHT downlight AT 8,6 POWER 6",
+          "LIGHT downlight AT 9,6 POWER 6",
+          "LIGHT downlight AT 2,6 POWER 6",
+          "MOUNT west 1 wall_lamp HEIGHT 2.1",
+          "MOUNT west 9 wall_lamp HEIGHT 2.1",
+          "MOUNT south 9.5 kitchen_cabinet[0.5x0.6x0.9] HEIGHT 0",
+          "MOUNT south 10.52 kitchen_cabinet[0.24x0.6x0.9] HEIGHT 0",
+          "MOUNT south 11.19 kitchen_cabinet[0.24x0.6x0.9] HEIGHT 0",
+          "MOUNT south 11.86 kitchen_cabinet[0.24x0.6x0.9] HEIGHT 0",
+          "MOUNT south 4.6 kitchen_cabinet[0.4x0.6x0.9] HEIGHT 0",
+          "MOUNT south 4.8 kitchen_cabinet[0.55x0.32x0.7] HEIGHT 1.55",
+          "MOUNT south 6.4 kitchen_cabinet[0.6x0.32x0.7] HEIGHT 1.55",
+          "MOUNT south 9.75 kitchen_cabinet[0.6x0.32x0.7] HEIGHT 1.55",
+          "MOUNT south 11.38 kitchen_cabinet[0.6x0.32x0.7] HEIGHT 1.55",
           "ROOM passage 5x2.5 AT 0,6.5",
           'LABEL "Διάδρομος" AT 2.5,1.25',
           "WALLS north east south west",
@@ -277,34 +292,34 @@
           "DOOR west AT 4 WIDTH 0.8",
           "BALCONY balcony 4.168927919741478x28 AT 15,2",
           'LABEL "Μπαλκόνι" AT 2.25,4',
-          "WALLS west",
+          "WALLS west south",
           "DOORS none",
           "WINDOWS none",
           "SURFACE tile",
-          "RAILS north east south",
+          "RAILS north east",
           "RAILING horizontal silver SPACING 1.5",
-          "MOUNT west 6 double_awning HEIGHT 2.18",
-          "MOUNT west 20 double_awning HEIGHT 2.18",
+          "MOUNT west 7.5 double_awning HEIGHT 2.18",
+          "MOUNT west 19.5 double_awning HEIGHT 2.18",
           "MOUNT north 1.5 side_awning HEIGHT 0.75",
           "LAYOUT living",
           ". | . | . | . | . | . | robot_vacuum~north<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>",
-          ". | . | . | . | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
+          ". | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | .",
           ".",
           ".",
-          ". | . | . | . | grey_armchair[0.66x0.68x0.84]@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> | . | . | . | . | . | . | . | . | aabenraa_table(tableware_on_top)@270<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa>",
+          ". | . | . | . | grey_armchair[0.66x0.68x0.84]@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> | . | . | . | . | . | . | aabenraa_table(tableware_on_top)[1.5x1x0.75]@270<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa>",
           ". | . | . | . | . | . | . | round_coffee_table",
           ".",
-          ". | . | . | . | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
+          ". | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | .",
           ". | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>",
           ".",
           ".",
           ".",
-          ". | . | . | . | . | . | kitchen_counter[0.6x0.6x0.9]~south | . | sink[0.9x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | pitsos_fridge~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>",
+          ". | . | . | . | . | . | sink[0.9x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | . | . | pitsos_fridge~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>",
           "END",
           "LAYOUT study",
           ". | . | . | . | . | . | . | wardrobe[1.1x0.56x2.4]~north",
-          ".",
           "single_bed~west",
+          ".",
           ".",
           ".",
           ".",
@@ -314,7 +329,7 @@
           ". | . | frameless_shower[0.8x0.9x2.05]~north",
           ".",
           ".",
-          ". | . | . | . | . | toilet~east",
+          "toilet[0.32x0.68x0.8]~west",
           ".",
           ".",
           ". | . | washing_machine[0.6x0.6x0.85]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf> | . | . | bathroom_vanity[0.45x0.3x0.85]~east",
@@ -493,6 +508,7 @@
         "cooker_hood",
         "curtain_pair",
         "builtin_wardrobe",
+        "kitchen_cabinet",
         "double_awning",
         "side_awning",
       ]),
@@ -2665,7 +2681,7 @@ const initializeStudio = async function initializeStudio() {
           box(w / 2 - 0.016, h - 0.028, 0.018, (side * w) / 4, h / 2, d / 2 - 0.009, m.wood, 0.003);
         }
         box(w - 0.04, 0.006, 0.008, 0, 0.006, d / 2 - 0.028, m.glow, 0);
-      } else if (name === "builtin_wardrobe") {
+      } else if (name === "builtin_wardrobe" || name === "kitchen_cabinet") {
         box(w, 0.07, d - 0.02, 0, 0.035, 0, m.darkWood, 0);
         box(w, h - 0.07, d - 0.02, 0, (h + 0.07) / 2, -0.01, m.wall, 0);
         const pulls = [];
@@ -3040,7 +3056,7 @@ const initializeStudio = async function initializeStudio() {
     turns = { east: -Math.PI / 2, north: 0, south: Math.PI, west: Math.PI / 2 };
   function buildScene(program, library) {
     const root = new THREE.Group(),
-      labelsScene = new THREE.Scene(),
+      labelsScene = new THREE.Group(),
       walls = [],
       ceilings = [],
       fixtures = [],
@@ -4229,6 +4245,7 @@ const initializeStudio = async function initializeStudio() {
       this.disposeReflections();
       this.model = next;
       this.sun.shadow.needsUpdate = true;
+      next.root.add(next.labelsScene);
       this.scene.add(next.root);
       if (previous) {
         this.scene.remove(previous.root);
@@ -4669,15 +4686,9 @@ const initializeStudio = async function initializeStudio() {
         }
       }
       for (const wall of this.model.walls) {
-        const onlyVisible = wall.rooms.filter(visible),
-          sign = onlyVisible.length === 1 && onlyVisible[0] !== wall.room ? -1 : 1,
-          front = this.camera.position.clone().sub(wall.position).dot(wall.normal) * sign > 0;
         wall.elevation.visible = this.mode !== "top";
         wall.plan.visible = this.mode === "top";
-        wall.group.visible =
-          wall.rooms.some(visible) &&
-          !this.options.walls &&
-          (this.mode === "walk" || this.mode === "top" || !front);
+        wall.group.visible = wall.rooms.some(visible) && !this.options.walls;
       }
       for (const object of this.model.objects) {
         if (object.userData.token.name === "double_awning") {
@@ -4686,6 +4697,8 @@ const initializeStudio = async function initializeStudio() {
         }
         if (
           !object.userData.token.mount ||
+          (object.userData.token.name === "kitchen_cabinet" &&
+            object.userData.token.height === 0) ||
           ["curtain_pair", "air_conditioner", "side_awning", "builtin_wardrobe"].includes(
             object.userData.token.name,
           )
@@ -4711,6 +4724,7 @@ const initializeStudio = async function initializeStudio() {
       for (const ceiling of this.model.ceilings) {
         ceiling.visible =
           visible(ceiling.userData.room || ceiling.parent.userData.room) &&
+          this.mode !== "top" &&
           (this.mode === "walk" || this.options.ceilings);
       }
       for (const group of this.model.root.children) {
@@ -4820,15 +4834,6 @@ const initializeStudio = async function initializeStudio() {
         effect.ambient.resolutionScale = this.quality === "high" ? 0.75 : 0.5;
         effect.ambient.samples.value = this.quality === "high" ? 24 : 12;
         effect.processing.render();
-      }
-      if (this.mode === "top" && this.model.labels.some((label) => label.visible)) {
-        const { autoClear } = this.renderer;
-        this.renderer.autoClear = false;
-        try {
-          this.renderer.render(this.model.labelsScene, this.camera);
-        } finally {
-          this.renderer.autoClear = autoClear;
-        }
       }
       this.onRender?.({
         calls: this.renderer.info.render.drawCalls,
