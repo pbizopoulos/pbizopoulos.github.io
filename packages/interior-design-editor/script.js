@@ -1,6 +1,7 @@
 /* eslint-disable oxc/no-rest-spread-properties, no-underscore-dangle, max-classes-per-file, unicorn/no-null, new-cap, unicorn/max-nested-calls, max-lines, max-lines-per-function, prefer-named-capture-group, no-magic-numbers, id-length, max-statements, max-params, complexity, max-depth, one-var, sort-vars, func-style, no-use-before-define, unicorn/consistent-function-scoping, no-ternary, no-nested-ternary, unicorn/no-nested-ternary, init-declarations, no-undefined, no-continue, unicorn/no-array-for-each, oxc/no-optional-chaining, oxc/no-async-await, unicorn/prefer-top-level-await */ const createLayoutCore =
   function createLayoutCore() {
     const catalog = {
+        aabenraa_table: [1.2, 0.8, 0.75],
         ac_condenser: [0.82, 0.36, 0.62],
         accent_chair: [0.72, 0.8, 0.86],
         air_conditioner: [1.02, 0.22, 0.31],
@@ -41,6 +42,7 @@
         coffee_table: [1.08, 0.64, 0.43],
         column: [0.55, 0.55, 2.6],
         console_table: [1.1, 0.35, 0.8],
+        cooker_hood: [0.6, 0.43, 0.196],
         curtain_pair: [1.8, 0.18, 2.5],
         cypress: [1.2, 1.2, 3.5],
         desk: [1.35, 0.7, 0.75],
@@ -51,6 +53,7 @@
         elevator: [1.6, 1.6, 3],
         filing_cabinet: [0.48, 0.55, 0.68],
         fireplace: [1.35, 0.65, 2.6],
+        floating_tv_console: [1.35, 0.316, 0.25],
         floor_drain: [0.18, 0.18, 0.015],
         flower_border: [2.4, 0.65, 0.65],
         fluorescent_light: [1.2, 0.3, 2.7],
@@ -70,12 +73,13 @@
         gym_bench: [0.65, 1.45, 1.1],
         gym_mat: [1.8, 1.2, 0.025],
         hedge: [2, 0.65, 1.7],
+        hogsten_chair: [0.73, 0.65, 0.83],
         hot_tub: [2.2, 2.2, 0.85],
         hydroponic_rack: [1.8, 0.7, 2],
         jute_rug: [2, 1.4, 0.018],
         kilim_rug: [1.4, 0.8, 0.015],
         kitchen_accessories: [0.65, 0.32, 0.42],
-        kitchen_chair: [0.5, 0.53, 0.86],
+        kitchen_chair: [0.52, 0.51, 0.79],
         kitchen_counter: [1.48, 0.62, 0.9],
         kitchen_island: [1.55, 0.85, 0.91],
         kitchen_table: [1.52, 0.86, 0.75],
@@ -106,6 +110,7 @@
         pendant_light: [0.5, 0.5, 2.7],
         piano: [1.5, 0.65, 1.2],
         pillow: [0.38, 0.3, 0.1],
+        pitsos_fridge: [0.6, 0.66, 1.86],
         plant: [0.48, 0.48, 1.12],
         planter: [1.05, 0.34, 0.46],
         plate: [0.26, 0.26, 0.025],
@@ -181,18 +186,15 @@
         Apartment: [
           'DETAIL project "Κρεβατοκάμαρα, μπαλκόνι, σαλόνι, κουζίνα, δωμάτιο, μπάνιο."',
           'DETAIL project "Διάταξη από τον χάρτη: room1 δωμάτιο, room2 μπαλκόνι, room3 σαλόνι/κουζίνα, room4 κρεβατοκάμαρα· μπάνιο πάνω."',
-          'DETAIL project "Αναλογίες και εσοχές από τον χάρτη. Εκτίμηση κλίμακας με βάθος μπαλκονιού 1.56 m."',
+          'DETAIL project "Προσαρμογή κλίμακας σε περίπου 60 m² εσωτερικού χώρου, χωρίς το μπαλκόνι· βάθος μπαλκονιού 1.56 m."',
+          'DETAIL project "Οι αναλογίες από τον χάρτη είναι προσεγγίσεις, όχι μετρημένη κάτοψη."',
+          'DETAIL project "Διαστάσεις και σχήματα επίπλων από τις αναφορές προϊόντων, με απλοποιημένη γεωμετρία."',
+          'DETAIL bedroom "Στρώμα Structure ύψους 26 cm, 160×200 cm από το GRUSNARV· η βάση κρεβατιού είναι ενδεικτική."',
           'DETAIL project "Οι εσοχές αποδίδουν το περίγραμμα της σάρωσης· μπορεί να οφείλονται σε τοίχους ή εμπόδια."',
-          'DETAIL project "Θέσεις θυρών, παραθύρων και επίπλων ενδεικτικές· δεν διακρίνονται με ακρίβεια στον χάρτη."',
-          'DETAIL project "Γενικά μοντέλα, όχι ακριβή αντίγραφα προϊόντων. Κλικ για σύνδεσμο."',
-          'DETAIL project "Επιβεβαιωμένα: GEDVED 154×84×85, UDSBJERG 66×68×84 cm;"',
-          'DETAIL project "HÖGSTEN 73×65×83, SUNDSÖ 65×65×71 cm. Τα υπόλοιπα είναι προσεγγίσεις."',
-          'DETAIL project "Κρεβάτι 160×200 cm από το μέγεθος GRUSNARV· πάχος στρώματος ενδεικτικό."',
           'DETAIL living "ΣΑΛΟΝΙ — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."',
           'DETAIL living "Aristo: επιτοίχιο 135×31.6×25 cm, ενδεικτικό ύψος βάσης 45 cm."',
           'DETAIL living "HAMA 220810 (στήριξη TV)" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>',
           'DETAIL living "Εκκρεμεί ντίζα μανιβέλας" <https://karol.gr/product/ntiza-manivelas-exagoni/>',
-          'DETAIL living "Αντικατάσταση: Ξενοφώντος 8–10 Καλαμαριά" <https://www.avraampanagiotidis.gr/>',
           'DETAIL living "ΚΟΥΖΙΝΑ — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."',
           'DETAIL living "Απορροφητήρας Franke" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>',
           'DETAIL living "Ανταλλακτικό GEYSER ARAGON EH" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>',
@@ -210,56 +212,60 @@
           'DETAIL study "Προηγούμενη επιλογή γραφείου" <https://www.skroutz.gr/s/60752062/grafeio-xylino-leyko-80x40ek-02842134.html>',
           'DETAIL bathroom "ΜΠΑΝΙΟ — πλυντήριο (manual), καθρέπτης Drop Gusto Wood Cut 60 cm."',
           'DETAIL balcony "ΜΠΑΛΚΟΝΙ — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."',
-          'DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί, παραμένει κενός χώρος δεξιά."',
+          'DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί."',
           'DETAIL balcony "MADORA" <https://www.leroymerlin.gr/gr/epipla-diamorfosi-exoterikou-horou/epipla-kipou-axesouar/kounies/kounia-dithesia-madora-alouminiowicker-se-kafe-hroma-86492377>',
           'DETAIL balcony "HM5905.02, 150×90×128h cm" <https://www.freebox.gr/en/product/hanging-nest-for-2-hm5905-02-cappuccino-rope-cream-cushions-150x90x128hcm/>',
           'DETAIL balcony "Βάθος 1.56 m: το σώμα 0.90 m αφήνει 0.66 m συνολικά, πριν από βάση/αιώρηση."',
           'DETAIL balcony "Απαιτούνται πραγματικές διαστάσεις βάσης και περιθώρια κατασκευαστή για έλεγχο."',
           'DETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>',
-          "GRID 0.312",
-          "ROOM living 15x11 AT 0,9",
-          'LABEL "Σαλόνι / κουζίνα" AT 4,5.5',
+          "GRID 0.38",
+          "ROOM living 15x16 AT 0,6",
+          'LABEL "Σαλόνι / κουζίνα" AT 4.5,4.6',
+          "OUTLINE 0,0 5,0 5,3 15,3 15,16 3,16 3,14 0,14",
           "WALLS north east south west",
-          "DOORS north south",
+          "DOORS none",
           "WINDOWS none",
           "SURFACE wood",
-          "DOOR east AT 2 WIDTH 0.95",
-          "MOUNT east 7 tv_stand[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
-          "MOUNT east 7 wall_tv<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
-          "MOUNT west 8 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.15",
-          "LIGHT ceiling_light AT 9,5 POWER 18",
+          "DOOR south AT 1.5 WIDTH 0.85",
+          "DOOR east AT 5.4 WIDTH 0.95",
+          "MOUNT north 10 floating_tv_console[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
+          "MOUNT north 10 wall_tv[1.1164x0.0915x0.6513]<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
+          "MOUNT east 14 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.15",
+          "MOUNT south 4 cooker_hood<https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html> HEIGHT 1.6",
+          "LIGHT ceiling_light AT 9,9 POWER 18",
           "ROOM study 10x7 AT 5,2",
           'LABEL "Δωμάτιο" AT 5.5,3.5',
           "WALLS north east south west",
-          "DOORS east",
-          "WINDOWS north",
+          "DOORS none",
+          "WINDOWS none",
           "SURFACE wood",
-          "DOOR south AT 1.5 WIDTH 0.85",
+          "DOOR west AT 5.3 WIDTH 0.85",
+          "SHUTTER east AT 3.5 WIDTH 1.1",
           "MOUNT south 4 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2",
           "LIGHT ceiling_light AT 5,3 POWER 12",
-          "ROOM bathroom 5x9 AT 0,0",
-          'LABEL "Μπάνιο" AT 3.6,4.7',
+          "ROOM bathroom 5x6 AT 0,0",
+          'LABEL "Μπάνιο" AT 3.4,3.7',
           "WALLS north east south west",
           "DOORS none",
           "WINDOWS north",
           "SURFACE tile",
-          "OUTLINE 0,0 3,0 3,1.75 5,1.75 5,9 0,9 0,6 2,6 2,4 1,4 1,3 0,3",
-          "DOOR south AT 3.2 WIDTH 0.85",
-          "MOUNT east 6 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>",
-          "LIGHT ceiling_light AT 3,4 POWER 12",
+          "OUTLINE 0,0 3,0 3,1.75 5,1.75 5,6 2,6 2,4 1,4 1,3 0,3",
+          "DOOR south AT 3.5 WIDTH 0.85",
+          "MOUNT east 4 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>",
+          "LIGHT ceiling_light AT 3,3 POWER 12",
           "ROOM bedroom 12x8 AT 3,22",
-          'LABEL "Κρεβατοκάμαρα" AT 7,7.15',
+          'LABEL "Κρεβατοκάμαρα" AT 5.8,1.8',
           "WALLS north east south west",
           "DOORS none",
-          "WINDOWS south",
+          "WINDOWS none",
           "SURFACE wood",
-          "OUTLINE 0,0 12,0 12,8 2,8 2,6 1,6 1,4 0,4",
+          "OUTLINE 0,0 12,0 12,8 2,8 0,4",
           "DOOR west AT 2.5 WIDTH 0.8",
-          "DOOR east AT 6.4 WIDTH 0.95",
+          "SHUTTER east AT 6.4 WIDTH 0.95",
           "LIGHT ceiling_light AT 8,4 POWER 12",
           "ROOM hall 3x6 AT 0,20",
           "WALLS north east south west",
-          "DOORS north east west",
+          "DOORS west",
           "WINDOWS none",
           "SURFACE wood",
           "ROOM entry 3x4 AT -3,22",
@@ -267,57 +273,59 @@
           "DOORS east",
           "WINDOWS none",
           "SURFACE wood",
-          "OUTLINE 0,0.5 0.75,0.5 0.75,0 3,0 3,3.5 2,3.5 2,4 0.75,4 0.75,3.5 0,3.5",
+          "OUTLINE 0,0.75 1,0 3,0 3,3 1,4 0,3.25",
           "DOOR west AT 2 WIDTH 0.8",
-          "BALCONY balcony 5x28 AT 15,2",
-          'LABEL "Μπαλκόνι" AT 2.5,4',
+          "BALCONY balcony 4.105263157894736x28 AT 15,2",
+          'LABEL "Μπαλκόνι" AT 2.25,4',
           "WALLS west",
-          "DOORS west",
+          "DOORS none",
           "WINDOWS none",
           "SURFACE tile",
           "RAILS north east south",
           "LAYOUT living",
           ".",
-          "fridge[0.6x0.66x1.86]~west<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> | . | . | . | . | . | . | kitchen_chair@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | dining_table(tableware_on_top)[1.2x0.8x0.75]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | kitchen_chair@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
           ".",
           ".",
-          "sink[1.05x0.6x0.9]~west<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | . | . | . | . | . | . | . | . | grey_armchair[0.66x0.68x0.84]@-35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>",
+          ". | . | . | . | . | . | . | . | . | . | robot_vacuum~north<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>",
           ".",
           ".",
-          "stove[0.6x0.6x0.88]~west<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@90<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> | . | . | coffee_table[0.9x0.5x0.4]@90",
-          ". | . | . | robot_vacuum<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf> | . | . | . | . | . | . | jute_rug[2.1x1.8x0.018]",
+          ".",
+          ". | kitchen_chair[0.52x0.51x0.79]@90<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | aabenraa_table(tableware_on_top)<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> | . | . | kitchen_chair[0.52x0.51x0.79]@270<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | . | coffee_table[0.9x0.5x0.4]",
+          ".",
+          ". | . | . | . | . | . | . | . | . | . | jute_rug[2.1x1.8x0.018]",
+          ". | . | . | . | . | . | grey_armchair[0.66x0.68x0.84]@150<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> | . | . | . | grey_sofa[1.54x0.84x0.85]@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>",
           ".",
           ".",
+          ".",
+          ".",
+          ". | . | . | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | kitchen_counter[0.46x0.6x0.9]~south | . | sink[1.05x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | kitchen_counter[0.86x0.6x0.9]~south | . | pitsos_fridge~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>",
           "END",
           "LAYOUT study",
+          ". | . | . | garment_rack~north",
+          ".",
+          "suitcase~west",
           ".",
           ".",
-          "garment_rack~west",
-          ".",
-          ".",
-          "suitcase~west | . | . | . | . | . | . | . | . | guitar~east",
+          ". | . | . | . | . | . | . | . | . | guitar~east",
           ".",
           "END",
           "LAYOUT bathroom",
-          ". | shower[0.8x0.8x2.05]~north",
           ".",
-          ". | . | . | . | toilet[0.35x0.6x0.8]~east",
-          ".",
-          ".",
+          "washing_machine[0.6x0.6x0.85]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>",
+          ". | . | . | . | toilet~east",
           ".",
           ". | . | . | . | bathroom_vanity[0.45x0.3x0.85]~east",
-          "washing_machine[0.6x0.6x0.85]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>",
           ".",
           "END",
           "LAYOUT bedroom",
-          ". | . | pedestal_fan~north<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html> | . | . | . | bed[1.6x2x0.56]~north<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf> | . | . | . | nightstand(bedside_on_top)~north",
+          ". | . | . | . | . | . | . | . | . | . | pedestal_fan~north<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>",
           ".",
           ".",
           ".",
           ".",
           ".",
-          ".",
-          ". | . | . | . | . | . | . | curtain_pair[1.8x0.12x2.5]~south",
+          ". | . | . | . | . | . | . | . | . | . | . | curtain_pair[1.05x0.12x2.5]~east",
+          ". | . | . | nightstand(bedside_on_top)~south | . | . | bed[1.6x2x0.56]~south<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>",
           "END",
           "LAYOUT balcony",
           ".",
@@ -327,17 +335,17 @@
           ".",
           ".",
           ".",
-          ".",
-          ". | . | outdoor_chair[0.73x0.65x0.83]@180<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>",
-          ".",
-          ".",
-          ". | . | folding_table[0.65x0.65x0.71]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/>",
-          ".",
-          ".",
-          ". | . | outdoor_chair[0.73x0.65x0.83]<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>",
+          "ac_condenser~west<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>",
           ".",
           ".",
           ".",
+          ". | hogsten_chair[0.73x0.65x0.83]<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>",
+          ".",
+          ".",
+          ". | folding_table[0.65x0.65x0.71]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/>",
+          ".",
+          ".",
+          ". | hogsten_chair[0.73x0.65x0.83]@180<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>",
           ".",
           ".",
           ".",
@@ -484,6 +492,8 @@
         "wall_spot_pair",
         "wall_lamp",
         "air_conditioner",
+        "floating_tv_console",
+        "cooker_hood",
       ]),
       directions = ["north", "east", "south", "west"],
       aliases = Object.fromEntries(
@@ -732,7 +742,10 @@
             fail("FLOOR must be −8–31", line);
           }
         } else if (
-          (m = /^(ROOM|BALCONY|GARDEN)\s+(\w+)\s+(\d+)x(\d+)\s+AT\s+(-?\d+),(-?\d+)$/iu.exec(text))
+          (m =
+            /^(ROOM|BALCONY|GARDEN)\s+(\w+)\s+(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\s+AT\s+(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/iu.exec(
+              text,
+            ))
         ) {
           const [, kind, name, cols, rows, x, z] = m;
           if (roomNames.has(name.toLowerCase())) {
@@ -805,24 +818,25 @@
           }
         } else if (
           (m =
-            /^DOOR\s+(north|east|south|west)\s+AT\s+(\d+(?:\.\d+)?)(?:\s+WIDTH\s+(\d+(?:\.\d+)?))?$/iu.exec(
+            /^(DOOR|SHUTTER)\s+(north|east|south|west)\s+AT\s+(\d+(?:\.\d+)?)(?:\s+WIDTH\s+(\d+(?:\.\d+)?))?$/iu.exec(
               text,
             ))
         ) {
           if (!room) {
-            fail("Define a room before its DOOR", line);
+            fail(`Define a room before its ${m[1].toUpperCase()}`, line);
           }
-          const side = m[1].toLowerCase(),
-            at = Number(m[2]),
-            width = Number(m[3] || 0.85);
+          const kind = m[1].toLowerCase(),
+            side = m[2].toLowerCase(),
+            at = Number(m[3]),
+            width = Number(m[4] || 0.85);
           room.openings ??= [];
           if (room.openings.length >= 8) {
-            fail("Use at most eight DOOR statements per room", line);
+            fail("Use at most eight DOOR or SHUTTER statements per room", line);
           }
           if (!Number.isFinite(at) || !Number.isFinite(width) || width < 0.4 || width > 2.4) {
-            fail("DOOR width must be 0.4–2.4 metres", line);
+            fail(`${m[1].toUpperCase()} width must be 0.4–2.4 metres`, line);
           }
-          room.openings.push({ at, line, side, width });
+          room.openings.push({ at, kind, line, side, width });
           if (!room.doors.includes(side)) {
             room.doors.push(side);
           }
@@ -981,7 +995,7 @@
         }
         if (
           r.outline &&
-          r.footprint.length > 1 &&
+          (r.diagonal || r.footprint.length > 1) &&
           ["pitched", "terracotta"].includes(program.roof)
         ) {
           fail("Pitched roofs need rectangular rooms", r.line);
@@ -1006,12 +1020,16 @@
           const half = opening.width / program.grid / 2,
             edges = r.edges.filter(
               (edge) =>
+                edge.axis !== "diagonal" &&
                 edge.side === opening.side &&
                 opening.at - half >= edge.min + 0.01 &&
                 opening.at + half <= edge.max - 0.01,
             );
           if (!r.walls.includes(opening.side) || edges.length !== 1) {
-            fail("DOOR must fit on one existing outline edge", opening.line);
+            fail(
+              `${opening.kind.toUpperCase()} must fit on one existing outline edge`,
+              opening.line,
+            );
           }
           opening.across = edges[0].across;
         }
@@ -1041,15 +1059,7 @@
           }
           if (
             other !== r &&
-            r.footprint.some(([left, top, right, bottom]) =>
-              other.footprint.some(
-                ([a, b, c, d]) =>
-                  r.x + left < other.x + c &&
-                  r.x + right > other.x + a &&
-                  r.z + top < other.z + d &&
-                  r.z + bottom > other.z + b,
-              ),
-            ) &&
+            roomsOverlap(r, other) &&
             r.elevation < other.elevation + other.height &&
             r.elevation + r.height > other.elevation
           ) {
@@ -1130,7 +1140,71 @@
         placementWarnings(program, r);
       }
       program.wallSpecs = partitionWalls(program);
+      const indoor = program.rooms
+          .filter((r) => r.kind === "room")
+          .reduce((sum, r) => sum + r.area * program.grid ** 2, 0),
+        outdoor = program.rooms
+          .filter((r) => r.kind !== "room")
+          .reduce((sum, r) => sum + r.area * program.grid ** 2, 0);
+      program.areas = { indoor, outdoor, total: indoor + outdoor };
       return program;
+    }
+    function polygonArea(points) {
+      let area = 0;
+      for (let i = 0; i < points.length; i += 1) {
+        const [x, z] = points[i],
+          [a, b] = points[(i + 1) % points.length];
+        area += x * b - a * z;
+      }
+      return area / 2;
+    }
+    function clipPolygon(points, boundary) {
+      let result = points;
+      for (let i = 0; i < boundary.length && result.length > 0; i += 1) {
+        const [ax, az] = boundary[i],
+          [bx, bz] = boundary[(i + 1) % boundary.length],
+          distance = ([x, z]) => (bx - ax) * (z - az) - (bz - az) * (x - ax),
+          input = result;
+        result = [];
+        let previous = input.at(-1),
+          previousDistance = distance(previous);
+        for (const current of input) {
+          const currentDistance = distance(current);
+          if (currentDistance >= -1e-8 !== previousDistance >= -1e-8) {
+            const t = previousDistance / (previousDistance - currentDistance);
+            result.push([
+              previous[0] + (current[0] - previous[0]) * t,
+              previous[1] + (current[1] - previous[1]) * t,
+            ]);
+          }
+          if (currentDistance >= -1e-8) {
+            result.push(current);
+          }
+          previous = current;
+          previousDistance = currentDistance;
+        }
+      }
+      return result;
+    }
+    function roomsOverlap(room, other) {
+      return room.footprint.some(([left, top, right, bottom], i) =>
+        other.footprint.some(([a, b, c, d], j) => {
+          if (
+            room.x + left >= other.x + c ||
+            room.x + right <= other.x + a ||
+            room.z + top >= other.z + d ||
+            room.z + bottom <= other.z + b
+          ) {
+            return false;
+          }
+          if (!room.diagonal && !other.diagonal) {
+            return true;
+          }
+          const region = room.regions[i].map(([x, z]) => [x + room.x, z + room.z]),
+            boundary = other.regions[j].map(([x, z]) => [x + other.x, z + other.z]);
+          return Math.abs(polygonArea(clipPolygon(region, boundary))) > 1e-7;
+        }),
+      );
     }
     function roomGeometry(room) {
       const points = room.outline || [
@@ -1155,8 +1229,8 @@
       }
       const segments = points.map(([x, z], i) => {
         const [a, b] = points[(i + 1) % points.length];
-        if ((x === a) === (z === b)) {
-          fail("OUTLINE edges must be horizontal or vertical and have length", line);
+        if (x === a && z === b) {
+          fail("OUTLINE edges must have length", line);
         }
         return {
           a,
@@ -1176,53 +1250,112 @@
           }
           const a = segments[i],
             b = segments[j];
-          if (a.minX <= b.maxX && a.maxX >= b.minX && a.minZ <= b.maxZ && a.maxZ >= b.minZ) {
+          const turn = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]),
+            p = [a.x, a.z],
+            q = [a.a, a.b],
+            r = [b.x, b.z],
+            s = [b.a, b.b];
+          if (
+            a.minX <= b.maxX &&
+            a.maxX >= b.minX &&
+            a.minZ <= b.maxZ &&
+            a.maxZ >= b.minZ &&
+            turn(p, q, r) * turn(p, q, s) <= 0 &&
+            turn(r, s, p) * turn(r, s, q) <= 0
+          ) {
             fail("OUTLINE edges cannot cross or touch", line);
           }
         }
       }
-      const area = segments.reduce((sum, { x, z, a, b }) => sum + x * b - a * z, 0);
+      const area = polygonArea(points);
+      if (Math.abs(area) < 1e-7) {
+        fail("OUTLINE must enclose an area", line);
+      }
       if (area < 0) {
         room.outline = [...points].toReversed();
         roomGeometry(room);
         return;
       }
-      room.edges = segments.map(({ x, z, a, b, minX, maxX, minZ, maxZ }) => ({
-        across: x === a ? x : z,
-        axis: x === a ? "z" : "x",
-        max: x === a ? maxZ : maxX,
-        min: x === a ? minZ : minX,
-        side: x === a ? (b > z ? "east" : "west") : a > x ? "north" : "south",
-      }));
+      room.polygon = points;
+      room.area = area;
+      room.diagonal = segments.some(({ x, z, a, b }) => x !== a && z !== b);
+      room.edges = segments.map(({ x, z, a, b, minX, maxX, minZ, maxZ }) => {
+        const length = Math.hypot(a - x, b - z),
+          normal = [(b - z) / length, (x - a) / length];
+        return {
+          across: x === a ? x : z,
+          axis: x === a ? "z" : z === b ? "x" : "diagonal",
+          end: [a, b],
+          max: x === a ? maxZ : maxX,
+          min: x === a ? minZ : minX,
+          normal,
+          side:
+            Math.abs(normal[0]) > Math.abs(normal[1])
+              ? normal[0] > 0
+                ? "east"
+                : "west"
+              : normal[1] > 0
+                ? "south"
+                : "north",
+          start: [x, z],
+        };
+      });
       room.footprint = [];
+      room.regions = [];
       const rows = [...new Set(points.map(([, z]) => z))].toSorted((a, b) => a - b);
       for (let i = 1; i < rows.length; i += 1) {
         const top = rows[i - 1],
           bottom = rows[i],
           middle = (top + bottom) / 2,
+          at = (edge, z) => edge.x + ((edge.a - edge.x) * (z - edge.z)) / (edge.b - edge.z),
           cuts = segments
-            .filter(({ x, a, minZ, maxZ }) => x === a && middle > minZ && middle < maxZ)
-            .map(({ x }) => x)
-            .toSorted((a, b) => a - b);
+            .filter(({ minZ, maxZ }) => middle > minZ && middle < maxZ)
+            .toSorted((a, b) => at(a, middle) - at(b, middle));
         for (let j = 0; j < cuts.length; j += 2) {
-          room.footprint.push([cuts[j], top, cuts[j + 1], bottom]);
+          const region = [
+            [at(cuts[j], top), top],
+            [at(cuts[j + 1], top), top],
+            [at(cuts[j + 1], bottom), bottom],
+            [at(cuts[j], bottom), bottom],
+          ];
+          room.regions.push(region);
+          room.footprint.push([
+            Math.min(region[0][0], region[3][0]),
+            top,
+            Math.max(region[1][0], region[2][0]),
+            bottom,
+          ]);
         }
       }
     }
     function insideRoom(room, x, z, tolerance = 0) {
-      return room.footprint.some(
-        ([left, top, right, bottom]) =>
-          x >= left - tolerance &&
-          x <= right + tolerance &&
-          z >= top - tolerance &&
-          z <= bottom + tolerance,
-      );
+      let inside = false;
+      for (let i = 0; i < room.polygon.length; i += 1) {
+        const [ax, az] = room.polygon[i],
+          [bx, bz] = room.polygon[(i + 1) % room.polygon.length],
+          t = Math.max(
+            0,
+            Math.min(
+              1,
+              ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / ((bx - ax) ** 2 + (bz - az) ** 2),
+            ),
+          );
+        if (Math.hypot(x - ax - t * (bx - ax), z - az - t * (bz - az)) <= tolerance + 1e-8) {
+          return true;
+        }
+        if (az > z !== bz > z && x < ax + ((bx - ax) * (z - az)) / (bz - az)) {
+          inside = !inside;
+        }
+      }
+      return inside;
     }
     function partitionWalls(program) {
       const lines = new Map(),
         result = [];
       for (const room of program.rooms) {
-        for (const edge of room.edges.filter(({ side }) => room.walls.includes(side))) {
+        for (const edge of room.edges.filter(
+          ({ axis, side }) => axis !== "diagonal" && room.walls.includes(side),
+        )) {
           const { axis, side } = edge,
             acrossAxis = axis === "x" ? "z" : "x",
             coordinate = room[acrossAxis] + edge.across,
@@ -1265,9 +1398,9 @@
               }
               const half = opening.width / program.grid / 2;
               if (at - half < min + 0.01 || at + half > max - 0.01) {
-                fail("DOOR crosses a shared wall boundary", opening.line);
+                fail(`${opening.kind.toUpperCase()} crosses a shared wall boundary`, opening.line);
               }
-              specified.set([at.toFixed(6), opening.width.toFixed(6)].join(":"), {
+              specified.set([at.toFixed(6), opening.width.toFixed(6), opening.kind].join(":"), {
                 ...opening,
                 coordinate: at,
               });
@@ -1296,11 +1429,67 @@
           });
         }
       }
+      const diagonals = new Map();
+      for (const room of program.rooms) {
+        for (const edge of room.edges.filter(
+          ({ axis, side }) => axis === "diagonal" && room.walls.includes(side),
+        )) {
+          const start = [edge.start[0] + room.x, edge.start[1] + room.z],
+            end = [edge.end[0] + room.x, edge.end[1] + room.z],
+            length = Math.hypot(end[0] - start[0], end[1] - start[1]),
+            sign = end[0] > start[0] ? 1 : -1,
+            tangent = [
+              ((end[0] - start[0]) / length) * sign,
+              ((end[1] - start[1]) / length) * sign,
+            ],
+            normal = [-tangent[1], tangent[0]],
+            coordinate = start[0] * normal[0] + start[1] * normal[1],
+            values = [start, end].map(([x, z]) => x * tangent[0] + z * tangent[1]),
+            key = [room.floor, ...tangent, coordinate].map((v) => v.toFixed(6)).join(":"),
+            span = { edge, max: Math.max(...values), min: Math.min(...values), room };
+          if (!diagonals.has(key)) {
+            diagonals.set(key, { coordinate, normal, spans: [], tangent });
+          }
+          diagonals.get(key).spans.push(span);
+        }
+      }
+      for (const { coordinate, normal, spans, tangent } of diagonals.values()) {
+        const cuts = [...new Set(spans.flatMap(({ min, max }) => [min, max]))].toSorted(
+          (a, b) => a - b,
+        );
+        for (let i = 1; i < cuts.length; i += 1) {
+          const min = cuts[i - 1],
+            max = cuts[i],
+            covering = spans.filter((span) => span.min <= min + 1e-7 && span.max >= max - 1e-7);
+          if (covering.length === 0 || max - min < 1e-7) {
+            continue;
+          }
+          result.push({
+            axis: "diagonal",
+            coordinate,
+            end: [
+              tangent[0] * max + normal[0] * coordinate,
+              tangent[1] * max + normal[1] * coordinate,
+            ],
+            hasSharedSpan: covering.length > 1,
+            max,
+            min,
+            normal: covering[0].edge.normal,
+            rooms: covering.map(({ room }) => room),
+            sides: Object.fromEntries(covering.map(({ room, edge }) => [room.name, edge.side])),
+            start: [
+              tangent[0] * min + normal[0] * coordinate,
+              tangent[1] * min + normal[1] * coordinate,
+            ],
+          });
+        }
+      }
       return result;
     }
     function supportingEdge(program, room, side, along, width) {
       return room.edges.find(
         (edge) =>
+          edge.axis !== "diagonal" &&
           edge.side === side &&
           along - width / 2 >= edge.min * program.grid + 0.02 &&
           along + width / 2 <= edge.max * program.grid - 0.02,
@@ -1420,17 +1609,27 @@
     return {
       LayoutError,
       catalog,
+      clipPolygon,
       examples,
       fixtureNames,
       furniturePosition,
       insideRoom,
       parseProgram,
       parseToken,
+      polygonArea,
       productUrl,
     };
   };
-const { catalog, examples, fixtureNames, parseProgram, furniturePosition, insideRoom } =
-  createLayoutCore();
+const {
+  catalog,
+  clipPolygon,
+  examples,
+  fixtureNames,
+  parseProgram,
+  furniturePosition,
+  insideRoom,
+  polygonArea,
+} = createLayoutCore();
 const initializeStudio = async function initializeStudio() {
   const [
     THREE,
@@ -1523,8 +1722,16 @@ const initializeStudio = async function initializeStudio() {
             : THREE.MeshStandardNodeMaterial)({ color, roughness: 0.7, ...options });
       this.material = {
         accent: physical("#b56e46", { map: weave, sheen: 0.5 }),
+        applianceGrey: physical("#898e8d", { metalness: 0.15, roughness: 0.6 }),
+        blackMetal: physical("#242725", { metalness: 0.5, roughness: 0.48 }),
         brass: physical("#b69b60", { metalness: 0.85, roughness: 0.26 }),
         ceramic: physical("#eee7d9", { clearcoat: 0.6, clearcoatRoughness: 0.2, roughness: 0.23 }),
+        charcoalFabric: physical("#292c2b", {
+          bumpMap: weave,
+          bumpScale: 0.0015,
+          map: weave,
+          sheen: 0.3,
+        }),
         clay: physical("#ad6549", { roughness: 0.78 }),
         concrete: physical("#a5a59b", { map: plaster, roughness: 0.92 }),
         darkWood: physical("#62503e", { map: woodMap, roughness: 0.48 }),
@@ -1561,7 +1768,16 @@ const initializeStudio = async function initializeStudio() {
         planWall: physical("#737a74", { roughness: 1 }),
         rug: physical("#c2b496", { bumpMap: weave, bumpScale: 0.015, map: weave }),
         screen: physical("#13242a", { metalness: 0.35, roughness: 0.17 }),
+        sheer: physical("#f0ede3", {
+          depthWrite: false,
+          map: weave,
+          opacity: 0.55,
+          roughness: 0.95,
+          side: THREE.DoubleSide,
+          transparent: true,
+        }),
         soil: physical("#45362a"),
+        stainless: physical("#b8bcba", { metalness: 0.8, roughness: 0.34 }),
         stone: physical("#c5beb0", {
           bumpMap: plaster,
           bumpScale: 0.002,
@@ -1691,6 +1907,84 @@ const initializeStudio = async function initializeStudio() {
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize());
       return mesh;
     }
+    rods(parent, segments, radius, material) {
+      const mesh = new THREE.InstancedMesh(
+          this.geometry("batched-rod", () => new THREE.CylinderGeometry(1, 1, 1, 6, 1, true)),
+          material,
+          segments.length,
+        ),
+        a = new THREE.Vector3(),
+        b = new THREE.Vector3(),
+        direction = new THREE.Vector3(),
+        position = new THREE.Vector3(),
+        rotation = new THREE.Quaternion(),
+        scale = new THREE.Vector3(),
+        up = new THREE.Vector3(0, 1, 0),
+        matrix = new THREE.Matrix4();
+      segments.forEach(([start, end], i) => {
+        a.set(...start);
+        b.set(...end);
+        direction.subVectors(b, a);
+        scale.set(radius, direction.length(), radius);
+        rotation.setFromUnitVectors(up, direction.normalize());
+        position.addVectors(a, b).multiplyScalar(0.5);
+        matrix.compose(position, rotation, scale);
+        mesh.setMatrixAt(i, matrix);
+      });
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+    shell(parent, key, width, depth, lower, upper, thickness, material) {
+      return AssetLibrary.mesh(
+        parent,
+        this.geometry(key, () => {
+          const positions = [],
+            steps = 24,
+            point = (angle, inset, height) => [
+              Math.sin(angle) * (width / 2 - inset),
+              height,
+              -Math.cos(angle) * (depth / 2 - inset),
+            ],
+            quad = (a, b, c, d) => positions.push(...a, ...b, ...c, ...a, ...c, ...d);
+          for (let i = 0; i < steps; i += 1) {
+            const a = -1.9 + (3.8 * i) / steps,
+              b = -1.9 + (3.8 * (i + 1)) / steps,
+              outerBottom = point(a, 0, lower(a)),
+              ai = point(a, thickness, lower(a)),
+              bo = point(b, 0, lower(b)),
+              bi = point(b, thickness, lower(b)),
+              at = point(a, 0, upper(a)),
+              au = point(a, thickness, upper(a)),
+              bt = point(b, 0, upper(b)),
+              bu = point(b, thickness, upper(b));
+            quad(outerBottom, at, bt, bo);
+            quad(ai, bi, bu, au);
+            quad(at, au, bu, bt);
+            quad(outerBottom, bo, bi, ai);
+            if (i === 0) {
+              quad(outerBottom, ai, au, at);
+            }
+            if (i === steps - 1) {
+              quad(bo, bt, bu, bi);
+            }
+          }
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+          geometry.setAttribute(
+            "uv",
+            new THREE.Float32BufferAttribute(
+              positions.flatMap((_, i) => (i % 3 === 0 ? [positions[i], positions[i + 1]] : [])),
+              2,
+            ),
+          );
+          geometry.computeVertexNormals();
+          return geometry;
+        }),
+        material,
+      );
+    }
     create(name) {
       const group = new THREE.Group(),
         m = this.material,
@@ -1721,7 +2015,79 @@ const initializeStudio = async function initializeStudio() {
             box(w, 0.055, d, 0, h - 0.028, 0, m.wood, 0.02);
           }
         };
-      if (
+      if (name === "grey_armchair" || name === "kitchen_chair") {
+        const upholstered = name === "grey_armchair",
+          seat = 0.45,
+          legMaterial = upholstered ? m.wood : m.blackMetal,
+          segments = [];
+        for (const x of [-1, 1]) {
+          for (const z of [-1, 1]) {
+            segments.push([
+              [x * w * 0.4, 0.02, z * d * 0.4],
+              [x * w * 0.3, seat - 0.06, z * d * 0.3],
+            ]);
+          }
+        }
+        this.rods(group, segments, upholstered ? 0.026 : 0.018, legMaterial);
+        box(
+          w * 0.91,
+          0.08,
+          d * 0.83,
+          0,
+          seat - 0.04,
+          d * 0.05,
+          upholstered ? m.greyFabric : m.charcoalFabric,
+          0.035,
+        );
+        this.shell(
+          group,
+          `${name}-shell`,
+          w,
+          d * 0.88,
+          (a) => (upholstered ? seat - 0.08 : seat + Math.max(0, Math.cos(a)) * 0.12),
+          (a) => h - (upholstered ? 0.22 : 0.14) * (Math.abs(a) / 1.9) ** 2,
+          upholstered ? 0.05 : 0.025,
+          upholstered ? m.greyFabric : m.wood,
+        );
+        if (upholstered) {
+          box(w * 0.79, 0.07, d * 0.69, 0, seat + 0.015, d * 0.13, m.greyFabric, 0.034);
+        }
+      } else if (name === "grey_sofa") {
+        const segments = [];
+        for (const x of [-1, 1]) {
+          for (const z of [-1, 1]) {
+            segments.push([
+              [x * w * 0.4, 0.015, z * d * 0.35],
+              [x * w * 0.37, 0.2, z * d * 0.31],
+            ]);
+          }
+        }
+        this.rods(group, segments, 0.026, m.wood);
+        box(w, 0.21, d * 0.96, 0, 0.29, 0, m.greyFabric, 0.045);
+        for (const side of [-1, 1]) {
+          box(
+            (w - 0.25) / 2,
+            0.12,
+            d * 0.76,
+            (side * (w - 0.25)) / 4,
+            0.455,
+            d * 0.08,
+            m.greyFabric,
+            0.042,
+          );
+          box(
+            (w - 0.08) / 2,
+            0.39,
+            0.2,
+            (side * (w - 0.08)) / 4,
+            h - 0.205,
+            -d * 0.37,
+            m.greyFabric,
+            0.055,
+          ).rotation.x = -0.12;
+          box(0.13, 0.25, d * 0.95, side * (w / 2 - 0.065), 0.46, 0, m.greyFabric, 0.055);
+        }
+      } else if (
         /sofa|armchair|accent_chair|woven_chair|pouf|ottoman|linen_bench|bench/u.test(name) &&
         !/gym/u.test(name)
       ) {
@@ -1776,9 +2142,9 @@ const initializeStudio = async function initializeStudio() {
           m.fabric,
           0.045,
         );
-        box(w - 0.05, 0.2, d - 0.08, 0, 0.4, 0, m.linen, 0.055);
-        this.cloth(group, w + 0.015, d * 0.66, 0, 0.53, d * 0.15, m.linen);
-        this.cloth(group, w + 0.025, d * 0.24, 0, 0.55, d * 0.28, m.fabric, 0.1);
+        box(w - 0.05, 0.26, d - 0.08, 0, 0.41, 0, m.linen, 0.055);
+        this.cloth(group, w + 0.015, d * 0.66, 0, 0.56, d * 0.15, m.linen);
+        this.cloth(group, w + 0.025, d * 0.24, 0, 0.58, d * 0.28, m.fabric, 0.1);
         for (const s of [-1, 1]) {
           box(w * 0.4, 0.14, d * 0.22, s * w * 0.23, 0.57, -d * 0.28, m.linen, 0.045);
         }
@@ -1789,6 +2155,44 @@ const initializeStudio = async function initializeStudio() {
             }
           }
         }
+      } else if (name === "hogsten_chair") {
+        const frame = [],
+          weave = [],
+          steps = 16,
+          levels = 3,
+          point = (angle, level) => [
+            Math.sin(angle) * w * 0.48,
+            0.42 + (h - 0.42 - 0.2 * (Math.abs(angle) / 1.9) ** 2) * level,
+            -Math.cos(angle) * d * 0.42,
+          ];
+        for (let i = 0; i < steps; i += 1) {
+          const a = -1.9 + (i * 3.8) / steps,
+            b = -1.9 + ((i + 1) * 3.8) / steps;
+          frame.push([point(a, 0), point(b, 0)], [point(a, 1), point(b, 1)]);
+          for (let j = 0; j <= levels; j += 1) {
+            weave.push([point(a, j / levels), point(b, j / levels)]);
+          }
+          for (let j = 0; j < levels; j += 1) {
+            weave.push(
+              [point(a, j / levels), point(b, (j + 1) / levels)],
+              [point(b, j / levels), point(a, (j + 1) / levels)],
+            );
+          }
+        }
+        for (const side of [-1, 1]) {
+          frame.push([point(side * 1.9, 0), point(side * 1.9, 1)]);
+          const front = [side * w * 0.43, 0.025, d * 0.42],
+            back = [side * w * 0.34, 0.025, -d * 0.4];
+          frame.push(
+            [[side * w * 0.31, 0.42, d * 0.24], front],
+            [front, back],
+            [back, [side * w * 0.31, 0.42, -d * 0.27]],
+          );
+        }
+        this.rods(group, frame, 0.012, m.white);
+        this.rods(group, weave, 0.0035, m.wicker);
+        box(w * 0.8, 0.025, d * 0.73, 0, 0.42, d * 0.06, m.wicker, 0.012);
+        box(0.5, 0.05, 0.5, 0, 0.46, d * 0.06, m.linen, 0.025);
       } else if (/outdoor_chair|patio_chair|woven_chair/u.test(name)) {
         for (const side of [-1, 1]) {
           for (const front of [-1, 1]) {
@@ -1812,19 +2216,54 @@ const initializeStudio = async function initializeStudio() {
         box(w * 0.86, 0.065, d * 0.9, 0, h * 0.5, 0, m.wicker, 0.035);
         box(w * 0.9, h * 0.47, 0.075, 0, h * 0.75, -d * 0.4, m.wicker, 0.035).rotation.x = -0.12;
         box(w * 0.68, 0.055, d * 0.67, 0, h * 0.56, d * 0.05, m.greyFabric, 0.025);
-      } else if (name === "folding_table") {
-        box(w, 0.028, d, 0, h - 0.014, 0, m.white, 0.008);
-        for (const side of [-1, 1]) {
-          for (const front of [-1, 1]) {
-            this.rod(
-              group,
-              [side * w * 0.37, 0.015, front * d * 0.4],
-              [side * w * 0.37, h - 0.03, -front * d * 0.32],
-              0.012,
-              m.white,
-            );
+      } else if (name === "aabenraa_table") {
+        box(w, 0.03, d, 0, h - 0.015, 0, m.wood, 0.004);
+        const frame = new THREE.InstancedMesh(
+            this.geometry("steel-frame", () => new THREE.BoxGeometry(1, 1, 1)),
+            m.blackMetal,
+            10,
+          ),
+          matrix = new THREE.Matrix4(),
+          halfWidth = (w - 0.14) / 2,
+          halfDepth = (d - 0.07) / 2,
+          legHeight = h - 0.03,
+          apronHeight = legHeight - 0.025;
+        let index = 0;
+        for (const x of [-halfWidth, halfWidth]) {
+          for (const z of [-halfDepth, halfDepth]) {
+            matrix.makeScale(0.04, legHeight, 0.02);
+            matrix.setPosition(x, legHeight / 2, z);
+            frame.setMatrixAt(index, matrix);
+            index += 1;
+          }
+          for (const y of [0.01, apronHeight]) {
+            matrix.makeScale(0.04, y === 0.01 ? 0.02 : 0.05, halfDepth * 2 + 0.02);
+            matrix.setPosition(x, y, 0);
+            frame.setMatrixAt(index, matrix);
+            index += 1;
           }
         }
+        for (const z of [-halfDepth, halfDepth]) {
+          matrix.makeScale(halfWidth * 2 - 0.04, 0.05, 0.02);
+          matrix.setPosition(0, apronHeight, z);
+          frame.setMatrixAt(index, matrix);
+          index += 1;
+        }
+        frame.castShadow = true;
+        frame.receiveShadow = true;
+        group.add(frame);
+      } else if (name === "folding_table") {
+        box(w, 0.028, d, 0, h - 0.014, 0, m.white, 0.008);
+        const supports = [];
+        for (const side of [-1, 1]) {
+          for (const front of [-1, 1]) {
+            supports.push([
+              [side * w * 0.37, 0.015, front * d * 0.4],
+              [side * w * 0.37, h - 0.03, -front * d * 0.32],
+            ]);
+          }
+        }
+        this.rods(group, supports, 0.012, m.white);
       } else if (/chair|stool/u.test(name)) {
         const seat = Math.min(0.46, h * 0.65);
         legs(seat, 0.055, 0.018);
@@ -1907,7 +2346,7 @@ const initializeStudio = async function initializeStudio() {
         const base = Math.min(0.88, h);
         box(w - 0.04, base - 0.09, d - 0.04, 0, base / 2, 0, m.white, 0.006);
         box(w, 0.045, d, 0, base, 0, m.stone, 0.012);
-        const count = Math.max(1, Math.round(w / 0.5));
+        const count = name === "stove" ? 0 : Math.max(1, Math.round(w / 0.5));
         for (let i = 0; i < count; i += 1) {
           const x = ((i - (count - 1) / 2) * w) / count;
           box(w / count - 0.025, base - 0.16, 0.028, x, base / 2, d / 2, m.wood, 0.008);
@@ -1931,11 +2370,28 @@ const initializeStudio = async function initializeStudio() {
           );
         }
         if (/stove|kitchenette/u.test(name)) {
-          box(w * 0.36, 0.018, d * 0.65, w * 0.24, base + 0.029, 0, m.screen);
+          box(w * 0.9, 0.018, d * 0.83, 0, base + 0.029, 0, m.screen);
           for (const s of [-1, 1]) {
             for (const t of [-1, 1]) {
-              cyl(0.065, 0.065, 0.01, w * 0.24 + s * w * 0.09, base + 0.045, t * d * 0.17, m.metal);
+              cyl(0.065, 0.065, 0.01, s * w * 0.22, base + 0.045, t * d * 0.23, m.metal);
             }
+          }
+        }
+        if (name === "stove") {
+          box(w - 0.035, base * 0.66, 0.022, 0, base * 0.41, d / 2, m.screen, 0.012);
+          box(w - 0.035, base * 0.15, 0.025, 0, base * 0.81, d / 2, m.metal, 0.003);
+          box(w * 0.67, 0.016, 0.04, 0, base * 0.67, d / 2 + 0.031, m.metal, 0.005);
+          for (const side of [-1, 1]) {
+            const knob = cyl(
+              0.022,
+              0.022,
+              0.016,
+              side * w * 0.28,
+              base * 0.81,
+              d / 2 + 0.027,
+              m.white,
+            );
+            knob.rotation.x = Math.PI / 2;
           }
         }
         if (/kitchenette/u.test(name)) {
@@ -1952,6 +2408,73 @@ const initializeStudio = async function initializeStudio() {
             );
           }
         }
+      } else if (name === "garment_rack") {
+        const frame = [
+            [
+              [-w * 0.45, 0.05, 0],
+              [-w * 0.45, h - 0.04, 0],
+            ],
+            [
+              [w * 0.45, 0.05, 0],
+              [w * 0.45, h - 0.04, 0],
+            ],
+            [
+              [-w * 0.45, h - 0.04, 0],
+              [w * 0.45, h - 0.04, 0],
+            ],
+          ],
+          hangers = [];
+        for (const side of [-1, 1]) {
+          frame.push([
+            [side * w * 0.45, 0.025, -d * 0.45],
+            [side * w * 0.45, 0.025, d * 0.45],
+          ]);
+        }
+        this.rods(group, frame, 0.018, m.metal);
+        for (let i = 0; i < 4; i += 1) {
+          const x = (i - 1.5) * w * 0.18,
+            top = h - 0.17,
+            material = [m.greyFabric, m.linen, m.fabric, m.charcoalFabric][i];
+          hangers.push(
+            [
+              [x, h - 0.05, 0],
+              [x, top, 0],
+            ],
+            [
+              [x - 0.12, top - 0.09, 0],
+              [x, top, 0],
+            ],
+            [
+              [x, top, 0],
+              [x + 0.12, top - 0.09, 0],
+            ],
+          );
+          box(w * 0.15, 0.5 + (i % 2) * 0.1, 0.05, x, top - 0.35, 0, material, 0.018);
+          for (const side of [-1, 1]) {
+            box(
+              0.085,
+              0.22,
+              0.045,
+              x + side * w * 0.085,
+              top - 0.22,
+              0,
+              material,
+              0.012,
+            ).rotation.z = side * 0.35;
+          }
+        }
+        this.rods(group, hangers, 0.003, m.metal);
+      } else if (name === "floating_tv_console") {
+        box(w, 0.018, d, 0, h - 0.009, 0, m.wood, 0.003);
+        box(w, 0.018, d, 0, 0.009, 0, m.wood, 0.003);
+        box(w, h - 0.036, 0.018, 0, h / 2, -d / 2 + 0.009, m.darkWood, 0);
+        for (const x of [-w / 2 + 0.009, 0, w / 2 - 0.009]) {
+          box(0.018, h - 0.036, d, x, h / 2, 0, m.wood, 0);
+        }
+        for (const side of [-1, 1]) {
+          box(w / 2 - 0.016, h - 0.028, 0.018, (side * w) / 4, h / 2, d / 2 - 0.009, m.wood, 0.003);
+        }
+        box(w - 0.04, 0.006, 0.008, 0, 0.006, d / 2 - 0.028, m.glow, 0);
       } else if (
         /wardrobe|dresser|sideboard|nightstand|bookshelf|rack|cabinet|console|tv_stand|shoe_rack/u.test(
           name,
@@ -1994,7 +2517,82 @@ const initializeStudio = async function initializeStudio() {
             box(0.12, 0.012, 0.023, x, drawer ? y : y + 0.05, d / 2 + 0.025, m.brass);
           }
         }
-      } else if (/fridge|washer|washing|vending|server|ac_condenser|air_conditioner/u.test(name)) {
+      } else if (name === "air_conditioner") {
+        box(w, h, d, 0, h / 2, 0, m.white, 0.045);
+        box(w * 0.96, h * 0.57, 0.035, 0, h * 0.66, d / 2 - 0.012, m.white, 0.025);
+        box(w * 0.86, h * 0.12, 0.018, 0, h * 0.16, d / 2 + 0.003, m.screen, 0.005);
+        box(w * 0.88, 0.012, d * 0.22, 0, h * 0.23, d / 2 + 0.003, m.white, 0.003).rotation.x =
+          -0.2;
+        box(0.018, 0.009, 0.005, w * 0.36, h * 0.41, d / 2 + 0.007, m.metal, 0.002);
+      } else if (name === "ac_condenser") {
+        box(w, h - 0.06, d, 0, (h + 0.06) / 2, 0, m.white, 0.02);
+        for (const side of [-1, 1]) {
+          box(0.065, 0.06, d * 0.95, side * w * 0.32, 0.03, 0, m.metal, 0.006);
+        }
+        const radius = Math.min(w * 0.27, h * 0.35),
+          fanX = -w * 0.16,
+          fanY = h * 0.54,
+          fan = cyl(radius, radius, 0.01, fanX, fanY, d / 2 + 0.005, m.screen),
+          grille = [];
+        fan.rotation.x = Math.PI / 2;
+        for (let i = -4; i <= 4; i += 1) {
+          const offset = (i * radius) / 5,
+            length = Math.sqrt(radius ** 2 - offset ** 2);
+          grille.push(
+            [
+              [fanX - length, fanY + offset, d / 2 + 0.018],
+              [fanX + length, fanY + offset, d / 2 + 0.018],
+            ],
+            [
+              [fanX + offset, fanY - length, d / 2 + 0.02],
+              [fanX + offset, fanY + length, d / 2 + 0.02],
+            ],
+          );
+        }
+        this.rods(group, grille, 0.004, m.white);
+        const ring = AssetLibrary.mesh(
+          group,
+          this.geometry("condenser-ring", () => new THREE.TorusGeometry(radius, 0.01, 6, 24)),
+          m.white,
+          [fanX, fanY, d / 2 + 0.015],
+        );
+        ring.castShadow = true;
+        box(w * 0.21, h * 0.74, 0.014, w * 0.35, h * 0.54, d / 2 + 0.004, m.white, 0.008);
+        box(w * 0.16, 0.045, 0.006, w * 0.35, h * 0.73, d / 2 + 0.014, m.metal, 0.003);
+      } else if (name === "cooker_hood") {
+        box(w, 0.012, d, 0, 0.012, 0, m.stainless, 0.003);
+        box(w - 0.05, h - 0.061, d * 0.605, 0, (h + 0.019) / 2, -d * 0.1975, m.stainless, 0.004);
+        box(w, 0.04, 0.018, 0, 0.026, d / 2 - 0.009, m.stainless, 0.003);
+        cyl(0.075, 0.075, 0.021, 0, h - 0.0105, -d * 0.32, m.stainless);
+        for (const side of [-1, 1]) {
+          box(w * 0.42, 0.004, d * 0.7, side * w * 0.22, 0.001, d * 0.04, m.metal, 0);
+          cyl(0.025, 0.025, 0.006, side * w * 0.29, 0, -d * 0.3, m.glow);
+        }
+      } else if (name === "pitsos_fridge") {
+        const split = h * 0.42;
+        box(w, h, d - 0.028, 0, h / 2, -0.014, m.applianceGrey, 0.009);
+        box(
+          w - 0.014,
+          h - split - 0.01,
+          0.028,
+          0,
+          (h + split + 0.002) / 2,
+          d / 2 - 0.014,
+          m.stainless,
+          0.006,
+        );
+        box(
+          w - 0.014,
+          split - 0.027,
+          0.028,
+          0,
+          (split + 0.003) / 2,
+          d / 2 - 0.014,
+          m.stainless,
+          0.006,
+        );
+        box(w * 0.75, 0.012, 0.008, 0, split, d / 2 - 0.009, m.blackMetal, 0.003);
+      } else if (/fridge|washer|washing|vending|server/u.test(name)) {
         box(w, h, d, 0, h / 2, 0, m.white, 0.035);
         box(w - 0.04, h * 0.7, 0.025, 0, h * 0.61, d / 2 + 0.005, m.white, 0.012);
         if (/washing/u.test(name)) {
@@ -2044,10 +2642,12 @@ const initializeStudio = async function initializeStudio() {
           box(0.09, 0.06, d, s * (w / 2 - 0.045), h, 0, m.ceramic);
         }
       } else if (/mirror|painting|print|tv|monitor|wall_outlet|wall_coat/u.test(name)) {
-        box(w, h, d, 0, h / 2, 0, m.darkWood, 0.008);
+        const display = /tv|monitor/u.test(name),
+          bezel = display ? 0.012 : 0.04;
+        box(w, h, d, 0, h / 2, 0, display ? m.blackMetal : m.darkWood, 0.008);
         box(
-          w - 0.04,
-          h - 0.04,
+          w - bezel,
+          h - bezel,
           0.009,
           0,
           h / 2,
@@ -2091,6 +2691,33 @@ const initializeStudio = async function initializeStudio() {
             );
           }
         }
+      } else if (name === "curtain_pair") {
+        const geometry = this.geometry("sheer-curtain", () => {
+          const panel = new THREE.PlaneGeometry(w * 0.19, h - 0.08, 16, 12),
+            positions = panel.getAttribute("position");
+          for (let i = 0; i < positions.count; i += 1) {
+            positions.setZ(
+              i,
+              Math.sin((positions.getX(i) / (w * 0.19) + 0.5) * Math.PI * 10) * d * 0.28,
+            );
+          }
+          panel.computeVertexNormals();
+          return panel;
+        });
+        for (const side of [-1, 1]) {
+          AssetLibrary.mesh(group, geometry, m.sheer, [side * w * 0.405, h / 2 - 0.04, 0]);
+        }
+        this.rods(
+          group,
+          [
+            [
+              [-w / 2, h - 0.04, -d * 0.3],
+              [w / 2, h - 0.04, -d * 0.3],
+            ],
+          ],
+          0.009,
+          m.metal,
+        );
       } else if (/curtain|blind|shutter/u.test(name)) {
         for (let i = 0; i < 18; i += 1) {
           box(
@@ -2137,16 +2764,15 @@ const initializeStudio = async function initializeStudio() {
         );
         guard.position.set(0, h - w / 2, 0);
         group.add(guard);
+        const spokes = [];
         for (let i = 0; i < 8; i += 1) {
           const a = (i * Math.PI) / 4;
-          this.rod(
-            group,
+          spokes.push([
             [0, h - w / 2, 0.015],
             [Math.cos(a) * w * 0.46, h - w / 2 + Math.sin(a) * w * 0.46, 0.015],
-            0.003,
-            m.metal,
-          );
+          ]);
         }
+        this.rods(group, spokes, 0.003, m.metal);
         this.sphere(group, 0, h - w / 2, 0.02, 0.035, 0.035, 0.018, m.white);
       } else if (name === "robot_vacuum") {
         cyl(w / 2, w / 2, h * 0.78, 0, h * 0.39, 0, m.white);
@@ -2338,13 +2964,37 @@ const initializeStudio = async function initializeStudio() {
         labels.push(label);
         owned.push(texture, material);
       }
-      const floorRects = room.footprint.map(([left, top, right, bottom]) => [
+      const floorRects = room.footprint.map(([left, top, right, bottom], i) => [
         left * program.grid - w / 2,
         top * program.grid - d / 2,
         right * program.grid - w / 2,
         bottom * program.grid - d / 2,
+        room.diagonal
+          ? room.regions[i].map(([x, z]) => [x * program.grid - w / 2, z * program.grid - d / 2])
+          : undefined,
       ]);
-      for (const [left, top, right, bottom] of floorRects) {
+      let outlineGeometry;
+      if (room.diagonal) {
+        const shape = new THREE.Shape();
+        room.polygon.forEach(([x, z], i) => {
+          if (i === 0) {
+            shape.moveTo(x * program.grid - w / 2, d / 2 - z * program.grid);
+          } else {
+            shape.lineTo(x * program.grid - w / 2, d / 2 - z * program.grid);
+          }
+        });
+        shape.closePath();
+        outlineGeometry = new THREE.ExtrudeGeometry(shape, {
+          bevelEnabled: false,
+          depth: 1,
+          steps: 1,
+        });
+        outlineGeometry.rotateX(-Math.PI / 2);
+        owned.push(outlineGeometry);
+        const slab = AssetLibrary.mesh(roomRoot, outlineGeometry, m.stone, [0, -0.145, 0]);
+        slab.scale.y = 0.14;
+      }
+      for (const [left, top, right, bottom] of room.diagonal ? [] : floorRects) {
         box(
           roomRoot,
           right - left,
@@ -2357,14 +3007,79 @@ const initializeStudio = async function initializeStudio() {
           0,
         );
       }
-      const finish = room.surface === "auto" ? "wood" : room.surface;
+      const finish = room.surface === "auto" ? "wood" : room.surface,
+        clippedPositions = [],
+        clippedNormals = [],
+        clippedUvs = [],
+        clippedColors = [],
+        cropFloor = (left, top, right, bottom, color, height, boundary) => {
+          if (!room.diagonal) {
+            return false;
+          }
+          const points = [
+            [left, top],
+            [right, top],
+            [right, bottom],
+            [left, bottom],
+          ];
+          if (
+            points.every(([x, z]) =>
+              boundary.every(([ax, az], i) => {
+                const [bx, bz] = boundary[(i + 1) % boundary.length];
+                return (bx - ax) * (z - az) - (bz - az) * (x - ax) >= -1e-8;
+              }),
+            )
+          ) {
+            return false;
+          }
+          const triangle = (a, b, c, normal) => {
+            for (const point of [a, b, c]) {
+              clippedPositions.push(...point);
+              clippedNormals.push(...normal);
+              clippedUvs.push(point[0], point[2]);
+              clippedColors.push(color.r, color.g, color.b);
+            }
+          };
+          const clipped = clipPolygon(points, boundary);
+          if (clipped.length < 3 || Math.abs(polygonArea(clipped)) < 1e-8) {
+            return true;
+          }
+          const bottomPoint = ([x, z]) => [x, -0.003, z],
+            topPoint = ([x, z]) => [x, height - 0.003, z];
+          for (let i = 2; i < clipped.length; i += 1) {
+            triangle(
+              topPoint(clipped[0]),
+              topPoint(clipped[i]),
+              topPoint(clipped[i - 1]),
+              [0, 1, 0],
+            );
+            triangle(
+              bottomPoint(clipped[0]),
+              bottomPoint(clipped[i - 1]),
+              bottomPoint(clipped[i]),
+              [0, -1, 0],
+            );
+          }
+          for (let i = 0; i < clipped.length; i += 1) {
+            const a = clipped[i],
+              b = clipped[(i + 1) % clipped.length],
+              length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+            if (length < 1e-8) {
+              continue;
+            }
+            const normal = [(b[1] - a[1]) / length, 0, (a[0] - b[0]) / length];
+            triangle(bottomPoint(a), topPoint(b), bottomPoint(b), normal);
+            triangle(bottomPoint(a), topPoint(a), topPoint(b), normal);
+          }
+          return true;
+        };
       let floor;
       if (finish === "wood") {
         const plankLength = 1.2,
           plankWidth = 0.16,
           transforms = [],
           colors = [];
-        for (const [minX, minZ, maxX, maxZ] of floorRects) {
+        for (const [minX, minZ, maxX, maxZ, boundary] of floorRects) {
           for (let z = minZ; z < maxZ - 0.001;) {
             const row = Math.floor((z + d / 2 + 0.00001) / plankWidth),
               offset = (row % 3) * 0.4,
@@ -2374,6 +3089,11 @@ const initializeStudio = async function initializeStudio() {
             for (let x = start; x < maxX - 0.001; x += plankLength) {
               const left = Math.max(x, minX),
                 right = Math.min(x + plankLength, maxX),
+                shade = new THREE.Color().setScalar(
+                  0.8 + ((((row * 13 + Math.round(x * 10)) % 7) + 7) % 7) * 0.035,
+                ),
+                gapX = Math.min(0.004, (right - left) / 4),
+                gapZ = Math.min(0.003, depth / 4),
                 matrix = new THREE.Matrix4().compose(
                   new THREE.Vector3((left + right) / 2, 0.003, z + depth / 2),
                   new THREE.Quaternion(),
@@ -2383,12 +3103,21 @@ const initializeStudio = async function initializeStudio() {
                     depth - Math.min(0.003, depth / 4),
                   ),
                 );
+              if (
+                cropFloor(
+                  left + gapX / 2,
+                  z + gapZ / 2,
+                  right - gapX / 2,
+                  z + depth - gapZ / 2,
+                  shade,
+                  0.012,
+                  boundary,
+                )
+              ) {
+                continue;
+              }
               transforms.push(matrix);
-              colors.push(
-                new THREE.Color().setScalar(
-                  0.8 + ((((row * 13 + Math.round(x * 10)) % 7) + 7) % 7) * 0.035,
-                ),
-              );
+              colors.push(shade);
             }
             z += depth;
           }
@@ -2414,7 +3143,7 @@ const initializeStudio = async function initializeStudio() {
           matrix = new THREE.Matrix4(),
           color = new THREE.Color(),
           transforms = [];
-        for (const [minX, minZ, maxX, maxZ] of floorRects) {
+        for (const [minX, minZ, maxX, maxZ, boundary] of floorRects) {
           const cols = Math.ceil((maxX + w / 2 - 0.001) / tileSize),
             rows = Math.ceil((maxZ + d / 2 - 0.001) / tileSize);
           for (let col = Math.floor((minX + w / 2) / tileSize); col < cols; col += 1) {
@@ -2425,6 +3154,21 @@ const initializeStudio = async function initializeStudio() {
                 bottom = Math.min(maxZ, -d / 2 + (row + 1) * tileSize),
                 width = right - left,
                 depth = bottom - top;
+              const gapX = Math.min(0.004, width / 4),
+                gapZ = Math.min(0.004, depth / 4);
+              if (
+                cropFloor(
+                  left + gapX / 2,
+                  top + gapZ / 2,
+                  right - gapX / 2,
+                  bottom - gapZ / 2,
+                  color.setScalar(1),
+                  0.014,
+                  boundary,
+                )
+              ) {
+                continue;
+              }
               matrix.makeScale(
                 width - Math.min(0.004, width / 4),
                 0.014,
@@ -2454,7 +3198,48 @@ const initializeStudio = async function initializeStudio() {
       floor.receiveShadow = true;
       owned.push(floor);
       roomRoot.add(floor);
-      if (room.kind === "room") {
+      if (clippedPositions.length > 0) {
+        const geometry = new THREE.BufferGeometry(),
+          finishMaterial = m[finish] || m.wood,
+          material = new finishMaterial.constructor(
+            Object.fromEntries(
+              [
+                "bumpMap",
+                "bumpScale",
+                "clearcoat",
+                "clearcoatRoughness",
+                "color",
+                "map",
+                "metalness",
+                "roughness",
+              ]
+                .filter((key) => finishMaterial[key] !== undefined)
+                .map((key) => [key, finishMaterial[key]]),
+            ),
+          );
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(clippedPositions, 3));
+        geometry.setAttribute("normal", new THREE.Float32BufferAttribute(clippedNormals, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(clippedUvs, 2));
+        geometry.setAttribute("color", new THREE.Float32BufferAttribute(clippedColors, 3));
+        material.vertexColors = true;
+        const clipped = AssetLibrary.mesh(roomRoot, geometry, material);
+        clipped.userData.clippedFloor = true;
+        owned.push(geometry, material);
+      }
+      if (room.kind === "room" && outlineGeometry) {
+        const ceiling = AssetLibrary.mesh(roomRoot, outlineGeometry, m.white, [0, room.height, 0]);
+        ceiling.scale.y = 0.1;
+        ceilings.push(ceiling);
+        if (program.roof === "flat") {
+          const roof = AssetLibrary.mesh(roomRoot, outlineGeometry, m.concrete, [
+            0,
+            room.height + 0.1,
+            0,
+          ]);
+          roof.scale.y = 0.12;
+          ceilings.push(roof);
+        }
+      } else if (room.kind === "room") {
         for (const [left, top, right, bottom] of floorRects) {
           const ceiling = box(
             roomRoot,
@@ -2640,16 +3425,28 @@ const initializeStudio = async function initializeStudio() {
     for (const spec of program.wallSpecs) {
       const [room] = spec.rooms,
         side = spec.sides[room.name],
+        normal = spec.normal || [normals[side][0], normals[side][2]],
         position = new THREE.Vector3(
-          (spec.axis === "x" ? (spec.min + spec.max) / 2 : spec.coordinate) * program.grid -
+          (spec.axis === "diagonal"
+            ? (spec.start[0] + spec.end[0]) / 2
+            : spec.axis === "x"
+              ? (spec.min + spec.max) / 2
+              : spec.coordinate) *
+            program.grid -
             program.center[0],
           room.elevation,
-          (spec.axis === "z" ? (spec.min + spec.max) / 2 : spec.coordinate) * program.grid -
+          (spec.axis === "diagonal"
+            ? (spec.start[1] + spec.end[1]) / 2
+            : spec.axis === "z"
+              ? (spec.min + spec.max) / 2
+              : spec.coordinate) *
+            program.grid -
             program.center[1],
         ),
         group = new THREE.Group();
       group.position.copy(position);
-      group.rotation.y = turns[side];
+      group.rotation.y =
+        spec.axis === "diagonal" ? Math.atan2(-normal[0], -normal[1]) : turns[side];
       group.userData.room = room;
       root.add(group);
       walls.push({
@@ -2657,7 +3454,7 @@ const initializeStudio = async function initializeStudio() {
         group,
         hasSharedSpan: spec.hasSharedSpan,
         length: (spec.max - spec.min) * program.grid,
-        normal: new THREE.Vector3(...normals[side]),
+        normal: new THREE.Vector3(normal[0], 0, normal[1]),
         position,
         room,
         rooms: spec.rooms,
@@ -2680,14 +3477,17 @@ const initializeStudio = async function initializeStudio() {
             r.doors.includes(entry.sides.get(r)) &&
             !(r.openings || []).some((opening) => opening.side === entry.sides.get(r)),
         ),
-        door = Boolean(specified) || ((shared || !entry.hasSharedSpan) && generic),
+        door =
+          entry.axis !== "diagonal" &&
+          (Boolean(specified) || ((shared || !entry.hasSharedSpan) && generic)),
         outer =
           entry.position[entry.axis === "x" ? "z" : "x"] ===
           (room[entry.axis === "x" ? "z" : "x"] +
             (side === "east" ? room.cols : side === "south" ? room.rows : 0)) *
             program.grid -
             program.center[entry.axis === "x" ? 1 : 0],
-        window = !door && !shared && outer && room.windows.includes(side),
+        window =
+          entry.axis !== "diagonal" && !door && !shared && outer && room.windows.includes(side),
         t = shared ? program.interiorWallThickness : program.exteriorWallThickness,
         { height } = room,
         offset = specified
@@ -2823,6 +3623,39 @@ const initializeStudio = async function initializeStudio() {
           );
         }
         box(openingDecor, width + 0.13, 0.065, 0.09, 0, top + 0.032, 0.025, m.white, 0.003);
+        if (specified?.kind === "shutter") {
+          const shutterHeight = 0.25,
+            count = 5,
+            slats = new THREE.InstancedMesh(
+              library.geometry("shutter-slat", () => new THREE.BoxGeometry(1, 1, 1)),
+              m.white,
+              count,
+            ),
+            matrix = new THREE.Matrix4();
+          for (let i = 0; i < count; i += 1) {
+            matrix.makeScale(width - 0.02, shutterHeight / count - 0.003, 0.022);
+            matrix.setPosition(0, top - ((i + 0.5) * shutterHeight) / count, -t - 0.025);
+            slats.setMatrixAt(i, matrix);
+          }
+          slats.castShadow = true;
+          slats.receiveShadow = true;
+          openingDecor.add(slats);
+          owned.push(slats);
+          box(openingDecor, width + 0.12, 0.17, 0.16, 0, top + 0.09, -t - 0.08, m.white, 0.008);
+          for (const sign of [-1, 1]) {
+            box(
+              openingDecor,
+              0.025,
+              top,
+              0.035,
+              sign * (width / 2 + 0.015),
+              top / 2,
+              -t - 0.025,
+              m.metal,
+              0,
+            );
+          }
+        }
       }
       entry.opening = width
         ? {
@@ -2833,6 +3666,7 @@ const initializeStudio = async function initializeStudio() {
               entry.position.z +
                 (entry.axis === "z" ? offset * (["north", "east"].includes(side) ? 1 : -1) : 0),
             ],
+            kind: specified?.kind || (window ? "window" : "door"),
             offset,
             top,
             width,
@@ -3282,7 +4116,7 @@ const initializeStudio = async function initializeStudio() {
         this.perspective.fov = 42;
         this.camera.up.set(0, 1, 0);
         const radius = Math.max(size.x, size.z, size.y, 3),
-          distance = radius * 1.55 * Math.max(1, 1.15 / this.perspective.aspect);
+          distance = radius * 1.25 * Math.max(1, 1.15 / this.perspective.aspect);
         this.controls.target.set(center.x, bounds.min.y + size.y * 0.28, center.z);
         this.camera.position.set(
           center.x + distance * 0.75,
@@ -3290,6 +4124,29 @@ const initializeStudio = async function initializeStudio() {
           center.z + distance * 0.98,
         );
         this.camera.lookAt(this.controls.target);
+        this.camera.updateMatrixWorld(true);
+        const halfFov = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 0.88;
+        let padding = 0;
+        for (const x of [bounds.min.x, bounds.max.x]) {
+          for (const y of [bounds.min.y, bounds.max.y]) {
+            for (const z of [bounds.min.z, bounds.max.z]) {
+              const point = new THREE.Vector3(x, y, z).applyMatrix4(this.camera.matrixWorldInverse);
+              padding = Math.max(
+                padding,
+                Math.max(
+                  Math.abs(point.x) / (halfFov * this.perspective.aspect),
+                  Math.abs(point.y) / halfFov,
+                ) + point.z,
+              );
+            }
+          }
+        }
+        if (padding > 0) {
+          this.camera.position.addScaledVector(
+            this.camera.position.clone().sub(this.controls.target).normalize(),
+            padding,
+          );
+        }
       }
       this.camera.updateProjectionMatrix();
       this.controls.update();
@@ -3337,7 +4194,7 @@ const initializeStudio = async function initializeStudio() {
           wall.group.matrixWorld.clone().invert(),
         );
         if (
-          Math.abs(local.z) < 0.18 + wall.thickness / 2 &&
+          Math.abs(local.z + wall.thickness / 2) < 0.18 + wall.thickness / 2 &&
           Math.abs(local.x) < wall.length / 2 + 0.1 &&
           (!wall.opening ||
             wall.opening.bottom > 0 ||
@@ -3523,11 +4380,17 @@ const initializeStudio = async function initializeStudio() {
         }
         const wall = this.model.walls.find(
           (entry) =>
+            entry.axis !== "diagonal" &&
             entry.sides.get(object.userData.room) === object.userData.token.side &&
             Math.abs(object.position[entry.axis] - entry.position[entry.axis]) <=
               entry.length / 2 + 0.00001,
         );
-        if (wall && (!wall.group.visible || this.mode === "top")) {
+        if (
+          wall &&
+          (!wall.group.visible ||
+            (this.mode === "top" &&
+              !["wall_tv", "air_conditioner"].includes(object.userData.token.name)))
+        ) {
           object.visible = false;
         }
       }
@@ -3851,7 +4714,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|SHUTTER|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -3924,18 +4787,12 @@ const initializeStudio = async function initializeStudio() {
       $("floorFocus").hidden = program.floors.length < 2;
       $("floorFocus").value = studio.options.floor;
       status(program.warnings.join(" "));
-      const area = program.rooms.reduce(
-        (total, room) =>
-          total +
-          room.footprint.reduce(
-            (sum, [left, top, right, bottom]) =>
-              sum + (right - left) * (bottom - top) * program.grid ** 2,
-            0,
-          ),
-        0,
-      );
-      $("projectSummary").textContent =
-        `${program.rooms.length} ${program.rooms.length === 1 ? "space" : "spaces"} · ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(area)} m²`;
+      const formatArea = (area) =>
+          `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(area)} m²`,
+        { indoor, outdoor, total } = program.areas;
+      $("projectSummary").textContent = outdoor
+        ? `${formatArea(indoor)} indoors · ${formatArea(outdoor)} outdoors · ${formatArea(total)} total`
+        : `${formatArea(total)} total`;
       $("designStatus").textContent = "Preview up to date";
       $("designStatus").dataset.state = "ready";
       try {
@@ -4086,7 +4943,7 @@ const initializeStudio = async function initializeStudio() {
     if (/table|desk/u.test(name)) {
       return "tables";
     }
-    if (/kitchen|fridge|stove|sink|coffee/u.test(name)) {
+    if (/kitchen|fridge|stove|sink|coffee|hood/u.test(name)) {
       return "kitchen";
     }
     if (/tree|plant|garden|pergola|flower|trellis|palm|pot|bbq|hedge/u.test(name)) {

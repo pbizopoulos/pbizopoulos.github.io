@@ -237,6 +237,11 @@ async function run({ assetsOnly = false } = {}) {
       await page.click("#firstPersonButton");
       await ready();
       assert.equal(
+        await page.locator("#projectSummary").isVisible(),
+        true,
+        "Area remains available while walking",
+      );
+      assert.equal(
         await page.evaluate(() =>
           Boolean(
             interior.studio.canStand(
@@ -345,6 +350,10 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(Math.abs(bounds.max[2] - bounds.min[2] - 3.496) < 0.001);
       }
       if (name === "Apartment") {
+        assert.match(
+          await page.locator("#projectSummary").textContent(),
+          /60 m² indoors.*16\.6 m² outdoors.*76\.6 m² total/,
+        );
         await page.click("#sceneOptions summary");
         await page.click("#projectDetailsButton");
         assert.equal(await page.locator("#projectDetails").evaluate((dialog) => dialog.open), true);
@@ -441,11 +450,20 @@ async function run({ assetsOnly = false } = {}) {
           return s.model.roomGroups.every((group) => {
             const r = group.userData.room,
               floor = group.children.find((mesh) => mesh.isInstancedMesh),
-              matrix = floor.matrix.clone();
+              matrix = floor.matrix.clone(),
+              inside = (x, z) =>
+                r.regions.some((region) =>
+                  region.every(([ax, az], i) => {
+                    const [bx, bz] = region[(i + 1) % region.length];
+                    return (bx - ax) * (z - az) - (bz - az) * (x - ax) >= -0.00001;
+                  }),
+                );
+            let covered = 0;
             for (let i = 0; i < floor.count; i += 1) {
               floor.getMatrixAt(i, matrix);
               const e = matrix.elements;
               if (e[0] <= 0 || e[10] <= 0) return false;
+              covered += e[0] * e[10];
               for (const [a, b] of [
                 [-1, -1],
                 [1, -1],
@@ -454,19 +472,46 @@ async function run({ assetsOnly = false } = {}) {
               ]) {
                 const x = (e[12] + (a * e[0]) / 2) / p.grid + r.cols / 2,
                   z = (e[14] + (b * e[10]) / 2) / p.grid + r.rows / 2;
+                if (!inside(x, z)) return false;
+              }
+            }
+            const clipped = group.children.find((mesh) => mesh.userData.clippedFloor);
+            if (r.diagonal && !clipped) return false;
+            if (clipped) {
+              if (
+                !clipped.material.color.equals(floor.material.color) ||
+                clipped.material.map !== floor.material.map
+              )
+                return false;
+              const vertices = clipped.geometry.getAttribute("position");
+              for (let i = 0; i < vertices.count; i++)
                 if (
-                  !r.footprint.some(
-                    ([left, top, right, bottom]) =>
-                      x >= left - 0.00001 &&
-                      x <= right + 0.00001 &&
-                      z >= top - 0.00001 &&
-                      z <= bottom + 0.00001,
+                  !inside(
+                    vertices.getX(i) / p.grid + r.cols / 2,
+                    vertices.getZ(i) / p.grid + r.rows / 2,
                   )
                 )
                   return false;
+              for (let i = 0; i < vertices.count; i += 3) {
+                if (
+                  vertices.getY(i) > 0 &&
+                  Math.abs(vertices.getY(i) - vertices.getY(i + 1)) < 1e-8 &&
+                  Math.abs(vertices.getY(i) - vertices.getY(i + 2)) < 1e-8
+                ) {
+                  const area =
+                    ((vertices.getZ(i + 1) - vertices.getZ(i)) *
+                      (vertices.getX(i + 2) - vertices.getX(i)) -
+                      (vertices.getX(i + 1) - vertices.getX(i)) *
+                        (vertices.getZ(i + 2) - vertices.getZ(i))) /
+                    2;
+                  if (area < -1e-9) return false;
+                  covered += area;
+                }
               }
             }
-            return true;
+            return (
+              covered / (r.area * p.grid ** 2) > 0.94 && covered <= r.area * p.grid ** 2 + 0.00001
+            );
           });
         });
         assert.equal(floorFits, true, "Batched floor pieces remain inside the mapped outlines");
@@ -553,8 +598,8 @@ async function run({ assetsOnly = false } = {}) {
             window.retiredInstances.expected++;
             node.addEventListener("dispose", () => window.retiredInstances.disposed++);
             if (node.geometry.parameters?.width === 0.016) rails++;
-            else if (node.parent.userData.room) floors++;
-            else fringes++;
+            else if (interior.studio.model.roomGroups.includes(node.parent)) floors++;
+            else if (node.geometry.parameters?.width === 0.005) fringes++;
           });
           return { rails, floors, fringes };
         });
@@ -650,9 +695,118 @@ async function run({ assetsOnly = false } = {}) {
       }),
       "Thin floor pieces beside a fractional outline edge retain positive dimensions",
     );
+    await page.evaluate(async () => {
+      interior.editor.dispatch({
+        changes: {
+          from: 0,
+          to: interior.editor.state.doc.length,
+          insert:
+            "GRID 1\nROOF flat\nROOM main 4x4 AT 0,0\nOUTLINE 0,0 4,0 4,4 2,4 0,2\nWALLS north east south west\nLAYOUT main\n.\nEND",
+        },
+      });
+      await interior.compile(true);
+    });
+    await ready();
+    const diagonalRendering = await page.evaluate(() => {
+      const s = interior.studio,
+        { model } = s,
+        wall = model.walls.find(({ axis }) => axis === "diagonal"),
+        inside = (distance) => wall.position.clone().addScaledVector(wall.normal, -distance),
+        near = inside(0.06),
+        free = inside(0.3),
+        outside = inside(-0.3);
+      model.root.updateMatrixWorld(true);
+      const roofFits =
+        model.ceilings.length === 2 &&
+        model.ceilings.every((mesh) => {
+          const positions = mesh.geometry.getAttribute("position");
+          for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i) + 2,
+              z = positions.getZ(i) + 2;
+            if (x < -0.00001 || x > 4.00001 || z < -0.00001 || z > 4.00001 || z - x > 2.00001)
+              return false;
+          }
+          return true;
+        });
+      const room = model.roomGroups[0],
+        floor = room.children.find((mesh) => mesh.isInstancedMesh),
+        clipped = room.children.find((mesh) => mesh.userData.clippedFloor),
+        resources = new Set([
+          ...model.ceilings.map((mesh) => mesh.geometry),
+          clipped.geometry,
+          clipped.material,
+        ]);
+      window.retiredDiagonal = { expected: resources.size, disposed: 0 };
+      for (const resource of resources)
+        resource.addEventListener("dispose", () => window.retiredDiagonal.disposed++);
+      return {
+        roofFits,
+        wallLength: wall.length,
+        nearBlocked: !s.canStand(near.x, near.z),
+        freeInside: Boolean(s.canStand(free.x, free.z)),
+        outsideBlocked: !s.canStand(outside.x, outside.z),
+        finishMatches:
+          clipped.material.color.equals(floor.material.color) &&
+          clipped.material.map === floor.material.map,
+      };
+    });
+    assert.ok(Math.abs(diagonalRendering.wallLength - Math.sqrt(8)) < 0.00001);
+    for (const key of ["roofFits", "nearBlocked", "freeInside", "outsideBlocked", "finishMatches"])
+      assert.equal(diagonalRendering[key], true, `Diagonal rendering: ${key}`);
+    assert.equal(await page.locator("#projectSummary").textContent(), "14 m² total");
+    for (const finish of ["wood", "tile"]) {
+      await page.evaluate(async (surface) => {
+        interior.editor.dispatch({
+          changes: {
+            from: 0,
+            to: interior.editor.state.doc.length,
+            insert: `GRID 1\nROOM main 4x4 AT 0,0\nOUTLINE 0,0 4,0 4,4 2.5,4 1.5,2 1,2 2,4 0,4\nWALLS north east south west\nSURFACE ${surface}\nLAYOUT main\n.\nEND`,
+          },
+        });
+        await interior.compile(true);
+      }, finish);
+      await ready();
+      const coverage = await page.evaluate(() => {
+        const s = interior.studio,
+          group = s.model.roomGroups[0],
+          floor = group.children.find((mesh) => mesh.isInstancedMesh),
+          matrix = floor.matrix.clone(),
+          clipped = group.children.find((mesh) => mesh.userData.clippedFloor),
+          vertices = clipped.geometry.getAttribute("position"),
+          normals = clipped.geometry.getAttribute("normal"),
+          inside = (x, z) => Boolean(s.roomAt(x + group.position.x, z + group.position.z));
+        let area = 0;
+        for (let i = 0; i < floor.count; i++) {
+          floor.getMatrixAt(i, matrix);
+          const e = matrix.elements;
+          area += e[0] * e[10];
+          if (!inside(e[12], e[14])) return -1;
+        }
+        for (let i = 0; i < vertices.count; i += 3) {
+          if (normals.getY(i) < 0.5) continue;
+          const x = [0, 1, 2].map((offset) => vertices.getX(i + offset)),
+            z = [0, 1, 2].map((offset) => vertices.getZ(i + offset));
+          area += Math.abs((x[1] - x[0]) * (z[2] - z[0]) - (z[1] - z[0]) * (x[2] - x[0])) / 2;
+          if (!inside((x[0] + x[1] + x[2]) / 3, (z[0] + z[1] + z[2]) / 3)) return -1;
+        }
+        return area;
+      });
+      assert.ok(
+        coverage > 15 * 0.94 && coverage <= 15.00001,
+        `${finish} finish covers the angled recess without filling or duplicating its gap: ${coverage}`,
+      );
+      assert.equal(await page.locator("#projectSummary").textContent(), "15 m² total");
+    }
     await page.locator(".cm-content").fill(original);
     await page.locator(".cm-content").press("Control+Enter");
     await ready();
+    const retiredDiagonal = await page.evaluate(() => window.retiredDiagonal);
+    assert.equal(retiredDiagonal.expected, 3);
+    assert.equal(
+      retiredDiagonal.disposed,
+      retiredDiagonal.expected,
+      "Diagonal floor and roof geometry and finish materials are disposed",
+    );
     await page.locator(".cm-content").fill("ROOM broken");
     await page.locator(".cm-content").press("Control+Enter");
     await page.waitForFunction(() =>
@@ -739,7 +893,19 @@ async function run({ assetsOnly = false } = {}) {
     const details = await page.evaluate(() => {
       const library = interior.studio.library,
         rug = library.create("jute_rug"),
-        bed = library.create("bed");
+        bed = library.create("bed"),
+        table = library.create("aabenraa_table"),
+        frame = table.getObjectByProperty("isInstancedMesh", true),
+        frameClear = Array.from({ length: frame.count }, (_, i) => {
+          const values = frame.instanceMatrix.array.slice(i * 16, (i + 1) * 16),
+            dimensions = [values[0], values[5], values[10]];
+          return (
+            values.every(Number.isFinite) &&
+            Math.min(...dimensions) > 0 &&
+            dimensions.toSorted((a, b) => a - b)[1] < 0.06 &&
+            values[13] - dimensions[1] / 2 >= -0.000001
+          );
+        }).every(Boolean);
       let rugMeshes = 0,
         fringes = 0,
         cloth = 0;
@@ -757,6 +923,7 @@ async function run({ assetsOnly = false } = {}) {
         rugMeshes,
         fringes,
         cloth,
+        frameClear,
         standard:
           library.material.wall.isMeshStandardNodeMaterial &&
           !library.material.wall.isMeshPhysicalNodeMaterial,
@@ -769,6 +936,7 @@ async function run({ assetsOnly = false } = {}) {
     assert.equal(details.rugMeshes, 2, "Rug body and all fringes need only two meshes");
     assert.ok(details.fringes > 40, "Instanced fringe retains its visible detail");
     assert.equal(details.cloth, 2, "Bedding has two draped surfaces with finite normals");
+    assert.equal(details.frameClear, true, "The table has thin steel members and open leg space");
     assert.equal(details.standard, true, "Matte plaster uses standard shading");
     assert.equal(details.glassCasts, false, "Shower glass does not cast opaque shadows");
     await page.evaluate(async () => {
@@ -906,6 +1074,30 @@ async function run({ assetsOnly = false } = {}) {
     assert.ok(
       orbitAfterResize.every((value, i) => Math.abs(value - orbitBeforeResize[i]) < 0.001),
       `Resizing preserves the user's orbit and restores framing: ${orbitBeforeResize} → ${orbitAfterResize}`,
+    );
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await ready();
+    await page.selectOption("#exampleSelect", "Bedroom");
+    await ready();
+    await page.click("#resetButton");
+    await ready();
+    assert.ok(
+      await page.evaluate(() => {
+        const s = interior.studio,
+          bounds = s.focusBounds();
+        s.camera.updateMatrixWorld(true);
+        for (const x of [bounds.min.x, bounds.max.x]) {
+          for (const y of [bounds.min.y, bounds.max.y]) {
+            for (const z of [bounds.min.z, bounds.max.z]) {
+              const point = bounds.min.clone().set(x, y, z).project(s.camera);
+              if (Math.abs(point.x) > 0.9 || Math.abs(point.y) > 0.9 || Math.abs(point.z) >= 1)
+                return false;
+            }
+          }
+        }
+        return true;
+      }),
+      "Default 3D framing includes every room corner with a visible margin",
     );
     const unavailable = await context.newPage();
     await unavailable.setViewportSize({ width: 390, height: 844 });

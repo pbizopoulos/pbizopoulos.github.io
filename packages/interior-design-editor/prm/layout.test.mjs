@@ -5,8 +5,16 @@ import { readFileSync } from "node:fs";
 // Exercise the exact pure layout implementation shipped in script.js.
 const source = readFileSync(new URL("../script.js", import.meta.url), "utf8");
 const core = source.split("const initializeStudio =")[0];
-const { examples, parseProgram, parseToken, productUrl, furniturePosition, insideRoom } =
-  new Function(core + "\nreturn createLayoutCore();")();
+const {
+  examples,
+  parseProgram,
+  parseToken,
+  productUrl,
+  furniturePosition,
+  insideRoom,
+  polygonArea,
+  clipPolygon,
+} = new Function(core + "\nreturn createLayoutCore();")();
 
 const room = (row = ".") =>
   `GRID 1\nROOM main 4x4 AT 0,0\nWALLS north east south west\nLAYOUT main\n${row}\nEND`;
@@ -227,12 +235,17 @@ test("mounted sub-layouts respect expanded asset and light budgets", () => {
 test("Apartment keeps mapped rooms and passages, exact balcony depth and raised product furniture", () => {
   const p = parseProgram(examples["Apartment"]);
   assert.equal(p.rooms.length, 7);
-  assert.equal(p.rooms.find((room) => room.kind === "balcony").cols * p.grid, 1.56);
+  assert.ok(Math.abs(p.rooms.find((room) => room.kind === "balcony").cols * p.grid - 1.56) < 1e-9);
+  assert.ok(Math.abs(p.areas.indoor - 60) < 0.1);
+  assert.ok(Math.abs(p.areas.total - p.areas.indoor - p.areas.outdoor) < 1e-9);
   assert.equal(p.rooms.find((room) => room.name === "study").mounts[0].height, 1.2);
   assert.ok(
     p.rooms
       .find((room) => room.name === "living")
-      .mounts.some((mount) => mount.name === "tv_stand" && mount.height === 0.45),
+      .mounts.some(
+        (mount) =>
+          mount.name === "floating_tv_console" && mount.side === "north" && mount.height === 0.45,
+      ),
   );
   assert.deepEqual(p.warnings, []);
 });
@@ -269,9 +282,10 @@ test("project details preserve room inventory and safe links as parsed data", ()
 test("apartment matches the supplied map and the balcony continues beside the bedroom", () => {
   const p = parseProgram(examples.Apartment),
     rooms = Object.fromEntries(p.rooms.map((room) => [room.name, room]));
-  assert.ok(rooms.study.z + rooms.study.rows === rooms.living.z);
+  assert.equal(rooms.study.z + rooms.study.rows, rooms.living.z + 3);
+  assert.equal(rooms.bathroom.z + rooms.bathroom.rows, rooms.living.z);
   assert.ok(rooms.bathroom.z < rooms.living.z);
-  assert.ok(rooms.bedroom.z > rooms.living.z + rooms.living.rows);
+  assert.equal(rooms.bedroom.z, rooms.living.z + rooms.living.rows);
   assert.equal(rooms.balcony.x, rooms.living.x + rooms.living.cols);
   assert.equal(rooms.balcony.x, rooms.bedroom.x + rooms.bedroom.cols);
   assert.equal(rooms.balcony.z + rooms.balcony.rows, rooms.bedroom.z + rooms.bedroom.rows);
@@ -292,13 +306,14 @@ test("the mapped outline preserves recesses without adding floor to unmapped are
   assert.equal(insideRoom(rooms.entry, 0.25, 2), true);
   assert.deepEqual(p.warnings, []);
   assert.ok(
-    rooms.study.openings.some(({ side, at }) => side === "south" && at < rooms.study.cols / 2),
+    rooms.study.openings.some(
+      ({ side, at, kind }) => side === "west" && at > rooms.study.rows / 2 && kind === "door",
+    ),
   );
 });
 
-test("outline validation rejects crossing, diagonal, repeated and unbounded edges", () => {
+test("outline validation rejects crossing, repeated and unbounded edges", () => {
   for (const outline of [
-    "0,0 4,0 4,4 1,3 0,4",
     "0,0 4,0 4,4 0,4 0,0",
     "0,0 4,0 4,3 0,3",
     "0,0 4,0 4,4 1,4 1,1 3,1 3,3 0,3",
@@ -341,6 +356,97 @@ test("rooms can meet inside a recess and shaped walls support furniture", () => 
   assert.ok(Math.abs(furniturePosition(p, p.rooms[0], token, 2, 3)[0] - 0.13) < 0.001);
   assert.throws(() => parseProgram(text.replace("AT 0,2", "AT 1,2")), /overlap/u);
   assert.throws(() => parseProgram(text.replace("AT 3 WIDTH 0.8", "AT 2 WIDTH 0.8")), /DOOR/u);
+});
+
+test("diagonal outlines calculate polygon area, clip corners and share one wall", () => {
+  const first = room().replace("LAYOUT", "OUTLINE 0,0 4,0 4,4 2,4 0,2\nLAYOUT"),
+    second =
+      "ROOM inset 2x2 AT 0,2\nOUTLINE 0,0 2,2 0,2 0,1\nWALLS north east south west\nLAYOUT inset\n.\nEND",
+    p = parseProgram(first + "\n" + second),
+    main = p.rooms[0],
+    diagonal = p.wallSpecs.filter(({ axis }) => axis === "diagonal");
+  assert.equal(main.area, 14);
+  assert.equal(p.areas.indoor, 16);
+  assert.equal(insideRoom(main, 0.1, 3), false);
+  assert.equal(insideRoom(main, 1.1, 3), true);
+  assert.equal(diagonal.length, 1);
+  assert.equal(diagonal[0].rooms.length, 2);
+  assert.ok(Math.abs(diagonal[0].max - diagonal[0].min - Math.sqrt(8)) < 1e-9);
+  assert.throws(
+    () => parseProgram(first + "\n" + second.replace("AT 0,2", "AT 0.25,2")),
+    /overlap/,
+  );
+  const corner = clipPolygon(
+    [
+      [0, 2],
+      [2, 2],
+      [2, 4],
+      [0, 4],
+    ],
+    [
+      [0, 2],
+      [4, 2],
+      [4, 4],
+      [2, 4],
+    ],
+  );
+  assert.equal(polygonArea(corner), 2);
+  assert.ok(corner.every(([x, z]) => insideRoom(main, x, z)));
+});
+
+test("areas exclude balconies and gardens from indoor totals and honor fractional dimensions", () => {
+  const p = parseProgram(
+    room() +
+      "\nBALCONY terrace 2.5x4 AT 4.25,0\nLAYOUT terrace\n.\nEND\nGARDEN yard 4x2.25 AT 0,4.5\nLAYOUT yard\n.\nEND",
+  );
+  assert.deepEqual(p.areas, { indoor: 16, outdoor: 19, total: 35 });
+  const diagonal = parseProgram(room().replace("LAYOUT", "OUTLINE 0,0 4,0 4,4 2,4 0,2\nLAYOUT"));
+  assert.equal(diagonal.areas.total, 14);
+});
+
+test("apartment puts the requested fixtures on their confirmed walls", () => {
+  const p = parseProgram(examples.Apartment),
+    rooms = Object.fromEntries(p.rooms.map((r) => [r.name, r])),
+    find = (roomName, name) => p.layouts[roomName].flat().find((token) => token?.name === name);
+  for (const name of ["study", "bedroom"]) {
+    assert.deepEqual(rooms[name].windows, []);
+    assert.equal(rooms[name].openings.filter(({ kind }) => kind === "shutter").length, 1);
+    assert.equal(rooms[name].openings.find(({ kind }) => kind === "shutter").side, "east");
+  }
+  const bathDoor = p.wallSpecs.find(
+    (wall) => wall.rooms.includes(rooms.bathroom) && wall.opening?.kind === "door",
+  );
+  assert.equal(bathDoor.axis, "x");
+  assert.equal(bathDoor.coordinate, rooms.bathroom.z + rooms.bathroom.rows);
+  assert.ok(bathDoor.rooms.includes(rooms.living));
+  const studyDoor = p.wallSpecs.find(
+    (wall) => wall.rooms.includes(rooms.study) && wall.opening?.kind === "door",
+  );
+  assert.equal(studyDoor.axis, "z");
+  assert.equal(studyDoor.coordinate, rooms.study.x);
+  assert.ok(studyDoor.rooms.includes(rooms.living));
+  for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
+    assert.equal(find("living", name).wall, "south");
+  assert.equal(find("living", "robot_vacuum").wall, "north");
+  assert.equal(find("bedroom", "bed").wall, "south");
+  assert.equal(find("bathroom", "toilet").wall, "east");
+  assert.ok(
+    p.layouts.bathroom
+      .slice(0, 3)
+      .flat()
+      .some((token) => token?.name === "toilet"),
+  );
+  const air = rooms.living.mounts.find(({ name }) => name === "air_conditioner");
+  assert.equal(air.side, "east");
+  assert.ok(air.cell > rooms.living.rows - 3 && air.height > 2);
+  const condenser = find("balcony", "ac_condenser");
+  assert.equal(condenser.wall, "west");
+  const chairs = p.layouts.balcony.flat().filter((token) => token?.name === "hogsten_chair");
+  assert.deepEqual(
+    chairs.map(({ yaw }) => yaw),
+    [0, 180],
+  );
+  assert.ok(rooms.bedroom.diagonal && rooms.entry.diagonal);
 });
 
 test("room labels preserve Greek text, validate their position and stay within source limits", () => {

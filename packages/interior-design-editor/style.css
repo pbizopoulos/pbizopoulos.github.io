@@ -586,6 +586,7 @@ h2 {
   padding: 10px 12px;
   border-radius: 7px;
   background: #fbfaf6e8;
+  max-width: calc(100% - 52px);
 }
 .viewport-caption .eyebrow {
   font-size: 8px;
@@ -613,7 +614,15 @@ h2 {
   color: #89927f;
 }
 .viewport[data-mode="walk"] .viewport-caption {
+  bottom: 150px;
+  padding: 6px 10px;
+}
+.viewport[data-mode="walk"] .viewport-caption .eyebrow {
   display: none;
+}
+.viewport[data-mode="walk"] #projectSummary {
+  font-family: inherit;
+  font-size: 11px;
 }
 .viewport[data-mode="walk"] .navigation-hint {
   bottom: 72px;
@@ -1116,7 +1125,13 @@ button.icon-button {
     margin-bottom: 14px;
   }
   .viewport-caption {
+    padding: 5px 9px;
+  }
+  .viewport-caption .eyebrow {
     display: none;
+  }
+  #projectSummary {
+    font-size: 13px;
   }
 } /* The preview can also narrow when the source panel is resized on desktop. */
 @container (max-width: 440px) {
