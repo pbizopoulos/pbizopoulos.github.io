@@ -417,31 +417,34 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(
           await page.evaluate(() => {
             const s = interior.studio,
-              passage = s.model.walls.find((wall) => wall.opening?.kind === "passage"),
+              passages = s.model.walls.filter((wall) => wall.opening?.kind === "passage"),
               entrance = s.model.walls.find(
                 (wall) => wall.rooms.length === 1 && wall.opening?.kind === "door",
               );
             return (
-              passage &&
-              passage.opening.top === passage.room.height &&
-              passage.elevation.children.every(
-                (node) => !node.isGroup || node.children.length === 0,
+              passages.length === 2 &&
+              passages.every(
+                (passage) =>
+                  passage.opening.top === passage.room.height &&
+                  passage.elevation.children.every(
+                    (node) => !node.isGroup || node.children.length === 0,
+                  ) &&
+                  passage.elevation.children
+                    .filter((node) => node.isMesh)
+                    .every((node) => {
+                      const half = node.geometry.parameters.width / 2;
+                      return (
+                        node.position.x + half <=
+                          passage.opening.offset - passage.opening.width / 2 + 0.00001 ||
+                        node.position.x - half >=
+                          passage.opening.offset + passage.opening.width / 2 - 0.00001
+                      );
+                    }),
               ) &&
-              passage.elevation.children
-                .filter((node) => node.isMesh)
-                .every((node) => {
-                  const half = node.geometry.parameters.width / 2;
-                  return (
-                    node.position.x + half <=
-                      passage.opening.offset - passage.opening.width / 2 + 0.00001 ||
-                    node.position.x - half >=
-                      passage.opening.offset + passage.opening.width / 2 - 0.00001
-                  );
-                }) &&
               Boolean(s.canStand(...entrance.opening.center))
             );
           }),
-          "The entrance stays clear and the living-room passage has no door frame or lintel",
+          "Both living-room passages are open without door frames or lintels",
         );
         const reachable = await page.evaluate(() => {
           const s = interior.studio,
@@ -657,6 +660,49 @@ async function run({ assetsOnly = false } = {}) {
           }),
           "Full-wall shutters leave clear plan openings without zero-width wall pieces",
         );
+        const radiatorCost = await page.evaluate(() => {
+          const s = interior.studio,
+            quality = s.quality,
+            radiators = s.model.objects.filter((g) => g.userData.token.name === "radiator"),
+            parts = radiators.flatMap((g) => g.getObjectsByProperty("isMesh", true));
+          s.setQuality("fast");
+          s.render();
+          for (const mesh of parts) mesh.visible = false;
+          s.render();
+          const baseline = {
+            calls: s.renderer.info.render.drawCalls,
+            triangles: s.renderer.info.render.triangles,
+          };
+          for (const mesh of parts) mesh.visible = true;
+          s.render();
+          const result = {
+            count: radiators.length,
+            visible: radiators.every((g) => g.visible),
+            sharedGeometry: parts.every((mesh) => mesh.geometry === parts[0].geometry),
+            batched: parts.every((mesh) => mesh.isInstancedMesh && mesh.count === 20),
+            calls: s.renderer.info.render.drawCalls - baseline.calls,
+            triangles: s.renderer.info.render.triangles - baseline.triangles,
+            sofaMeshes: s.model.objects
+              .find((g) => g.userData.token.name === "grey_sofa")
+              .getObjectsByProperty("isMesh", true).length,
+          };
+          s.setQuality(quality);
+          return result;
+        });
+        assert.deepEqual(
+          radiatorCost,
+          {
+            count: 4,
+            visible: true,
+            sharedGeometry: true,
+            batched: true,
+            calls: 4,
+            triangles: 960,
+            sofaMeshes: 6,
+          },
+          "Radiators use one shared low-poly mesh and one draw call each; sofa parts stay batched",
+        );
+        console.log("Radiators / rendering cost:", JSON.stringify(radiatorCost));
         if (!assetsOnly) await capture("apartment-plan");
         await page.evaluate(() => { interior.studio.options.ceilings = false; });
         await page.click("#resetButton");

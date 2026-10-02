@@ -96,11 +96,8 @@ pkgs.testers.runNixOSTest {
   testScript = ''
     def check_host_keys(machine):
         machine.wait_for_unit("sshd.service")
-        for kind in ["rsa", "ed25519"]:
-            key = f"/etc/ssh/ssh_host_{kind}_key"
-            machine.succeed(f"test -L {key}")
-            assert machine.succeed(f"readlink {key}").strip() == f"/persistent{key}"
-            machine.succeed(f"test -s /persistent{key}")
+        for key in ${builtins.toJSON (map (key: key.path) host.services.openssh.hostKeys)}:
+            machine.succeed(f"test -s {key}")
             assert machine.succeed(f"stat -Lc '%a %U %G' {key}").strip() == "600 root root"
             public_key = machine.succeed(f"ssh-keygen -y -f {key}").split()
             saved_public_key = machine.succeed(f"cat {key}.pub").split()

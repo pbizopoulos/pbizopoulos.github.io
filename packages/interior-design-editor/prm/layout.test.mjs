@@ -450,7 +450,7 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   const passageExit = p.wallSpecs.find(
     (wall) => wall.rooms.includes(rooms.passage) && wall.rooms.includes(rooms.living),
   );
-  assert.equal(passageExit.opening.kind, "door");
+  assert.equal(passageExit.opening.kind, "passage");
   assert.ok(passageExit.opening.width > 1.5);
   for (const name of ["pitsos_fridge", "sink", "stove"])
     assert.equal(find("living", name).wall, "south");
@@ -795,4 +795,43 @@ test("apartment uses English labels, retracted awnings and wooden wall hooks", (
   const hall = p.rooms.find((r) => r.name === "hall");
   assert.ok(hall.mounts.some((m) => m.name === "wall_coat_hooks" && m.height > 1));
   assert.equal(p.layouts.hall.flat().find((t) => t?.name === "shoe_rack").wall, "south");
+});
+test("apartment radiators leave furniture and the bathroom entrance clear", () => {
+  const p = parseProgram(examples.Apartment);
+  const rooms = Object.fromEntries(p.rooms.map((r) => [r.name, r]));
+  const radiators = p.rooms.flatMap((room) =>
+    room.mounts.filter((m) => m.name === "radiator").map((mount) => ({ room, mount })),
+  );
+  assert.equal(radiators.length, 4);
+  assert.deepEqual(
+    radiators.map(({ room, mount }) => [room.name, mount.side]).sort(),
+    [["bathroom", "east"], ["bedroom", "south"], ["living", "north"], ["study", "south"]],
+  );
+  const locate = (room, name) => {
+    for (const [z, row] of p.layouts[room.name].entries()) {
+      const x = row.findIndex((t) => t?.name === name);
+      if (x >= 0) return { token: row[x], position: furniturePosition(p, room, row[x], x, z) };
+    }
+  };
+  const wardrobe = locate(rooms.study, "wardrobe");
+  const gap =
+    (rooms.study.x + rooms.study.cols) * p.grid -
+    p.center[0] - wardrobe.position[0] - wardrobe.token.dimensions[0] / 2;
+  assert.ok(gap >= 0.02 && gap < 0.021, "Wardrobe meets the corner with only wall clearance");
+  const studyRadiator = rooms.study.mounts.find((m) => m.name === "radiator");
+  assert.ok(
+    Math.abs(
+      (studyRadiator.cell + 0.5) * p.grid -
+      (wardrobe.position[0] + p.center[0] - rooms.study.x * p.grid),
+    ) < 0.01,
+    "Guitar room radiator sits across from the wardrobe",
+  );
+  const shower = locate(rooms.bathroom, "frameless_shower");
+  const small = rooms.bathroom.mounts.find((m) => m.name === "radiator");
+  const radiatorStart =
+    rooms.bathroom.z * p.grid - p.center[1] +
+    (small.cell + 0.5) * p.grid - small.dimensions[0] / 2;
+  assert.ok(radiatorStart > shower.position[2] + shower.token.dimensions[0] / 2);
+  assert.ok(small.dimensions[0] < 0.4);
+  assert.deepEqual(p.warnings, []);
 });
