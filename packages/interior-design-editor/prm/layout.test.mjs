@@ -254,18 +254,24 @@ test("Apartment keeps mapped rooms and passages, exact balcony depth and raised 
   assert.deepEqual(p.warnings, []);
 });
 
-test("project details preserve room inventory and safe links as parsed data", () => {
+test("project details preserve selected inventory and exclude pending purchases", () => {
   const p = parseProgram(examples["Apartment"]);
   assert.ok(
     p.details.some(
-      (detail) => detail.room === "living" && detail.text.includes("πλυντήριο πιάτων"),
+      (detail) => detail.room === "living" && detail.text.includes("Pitsos PKNB36NLE0"),
     ),
   );
   assert.ok(
-    p.details.some((detail) => detail.room === "study" && detail.text.includes("CMOS ML1220")),
+    p.details.some((detail) => detail.room === "study" && detail.text.includes("VATTENKAR")),
   );
   assert.ok(
-    p.details.some((detail) => detail.room === "balcony" && detail.url?.includes("freebox.gr")),
+    p.details.some((detail) => detail.room === "balcony" && detail.url?.includes("89291326")),
+  );
+  assert.ok(
+    !p.details.some(
+      ({ text, url }) =>
+        /Εκκρεμ|CMOS|πλυντήριο πιάτων|Έρευνα/iu.test(text) || url?.includes("freebox.gr"),
+    ),
   );
   for (const source of Object.values(examples)) assert.ok(!/^\s*#/mu.test(source));
   const detail = 'Quotes " and # signs <script> remain text';
@@ -412,7 +418,10 @@ test("areas exclude balconies and gardens from indoor totals and honor fractiona
 test("apartment puts the requested fixtures on their confirmed walls", () => {
   const p = parseProgram(examples.Apartment),
     rooms = Object.fromEntries(p.rooms.map((r) => [r.name, r])),
-    find = (roomName, name) => p.layouts[roomName].flat().find((token) => token?.name === name);
+    find = (roomName, name) =>
+      [...p.layouts[roomName].flat(), ...rooms[roomName].mounts].find(
+        (token) => token?.name === name,
+      );
   for (const room of p.rooms) assert.deepEqual(room.windows, []);
   assert.equal(
     p.rooms.reduce(
@@ -491,10 +500,22 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
     assert.ok(shutter.full);
   }
   const condenser = find("balcony", "ac_condenser");
-  assert.equal(condenser.yaw, 90);
+  assert.equal(condenser.yaw, 0);
   assert.ok(
     position("balcony", "ac_condenser")[0] + p.center[0] >
-      (rooms.balcony.x + rooms.balcony.cols * 0.7) * p.grid,
+      (rooms.balcony.x + rooms.balcony.cols * 0.55) * p.grid,
+  );
+  assert.ok(localZ("balcony", "ac_condenser") < p.grid * 2);
+  assert.equal(find("study", "single_bed").wall, "west");
+  assert.equal(find("study", "single_bed").yaw, 90);
+  assert.ok(localZ("study", "single_bed") < (rooms.study.rows * p.grid) / 2);
+  assert.equal(find("study", "wardrobe").wall, "north");
+  assert.ok(position("study", "wardrobe")[0] > position("study", "single_bed")[0]);
+  assert.equal(air.cell, 4);
+  assert.ok(position("living", "pitsos_fridge")[0] > sofa[0]);
+  assert.equal(
+    find("living", "round_coffee_table").dimensions[0],
+    find("living", "round_coffee_table").dimensions[1],
   );
   const chairs = p.layouts.balcony.flat().filter((token) => token?.name === "hogsten_chair");
   assert.deepEqual(
@@ -507,7 +528,33 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   const washer = position("bathroom", "washing_machine");
   assert.ok(washer[0] + p.center[0] < (rooms.bathroom.x + rooms.bathroom.openings[0].at) * p.grid);
   assert.ok(rooms.bathroom.area * p.grid ** 2 > 4);
-  assert.equal(find("bedroom", "builtin_wardrobe").yaw, 116.565051177078);
+  const builtin = find("bedroom", "builtin_wardrobe"),
+    edge = builtin.edge,
+    fraction = (builtin.cell + 0.5 - edge.start[1]) / (edge.end[1] - edge.start[1]),
+    front = edge.start.map(
+      (value, axis) =>
+        value +
+        fraction * (edge.end[axis] - value) -
+        (edge.normal[axis] * (builtin.dimensions[1] + 0.02)) / p.grid,
+    );
+  assert.equal(edge.axis, "diagonal");
+  assert.equal(builtin.height, 0);
+  assert.ok(Math.abs((front[0] - 0.875) * edge.normal[0] + (front[1] - 4) * edge.normal[1]) < 1e-9);
+  assert.equal(rooms.bedroom.area, 95.75);
+  assert.deepEqual(rooms.balcony.railing, { style: "horizontal", finish: "silver", spacing: 1.5 });
+  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "double_awning").length, 2);
+  assert.equal(rooms.balcony.mounts.filter(({ name }) => name === "side_awning").length, 1);
+  for (const name of ["coat_rack", "shoe_rack"]) {
+    assert.ok(find("hall", name));
+    assert.ok(localZ("hall", name) < rooms.hall.openings[0].at * p.grid);
+  }
+  const entryPassage = p.wallSpecs.find(
+    ({ rooms: adjoining, opening }) =>
+      adjoining.includes(rooms.living) && adjoining.includes(rooms.hall) && opening,
+  );
+  assert.equal(entryPassage.opening.kind, "passage");
+  assert.ok(!p.layouts.study.flat().some((token) => token?.name === "suitcase"));
+  assert.ok(!p.layouts.bedroom.flat().some((token) => /coat|fan/u.test(token?.name || "")));
   assert.ok(
     !Object.values(p.layouts)
       .flat(2)
@@ -654,4 +701,48 @@ test("curtains can mount at fractional wall centres without overflowing their su
   assert.equal(curtain.height, 0);
   assert.throws(() => parseProgram(text.replace("east 1.5", "east 1.6")), /MOUNT must fit/u);
   assert.throws(() => parseProgram(text.replace("HEIGHT 0", "HEIGHT 1")), /MOUNT HEIGHT/u);
+});
+
+test("open passages preserve shared openings without becoming entrance doors", () => {
+  const source =
+      room().replace("LAYOUT main", "PASSAGE south AT 2 WIDTH 1.2\nLAYOUT main") +
+      "\nROOM hall 4x2 AT 0,4\nWALLS north east south west\nLAYOUT hall\n.\nEND",
+    program = parseProgram(source),
+    shared = program.wallSpecs.find(({ rooms }) => rooms.length === 2);
+  assert.equal(shared.opening.kind, "passage");
+  assert.equal(shared.opening.width, 1.2);
+  assert.throws(() => parseProgram(source.replace("WIDTH 1.2", "WIDTH 0.2")), /width/u);
+});
+
+test("built-in cabinets mount along diagonal walls within their physical span", () => {
+  const source = room().replace(
+      "LAYOUT main",
+      "OUTLINE 0,0 4,0 4,4 1,4 0,2\nMOUNT west 2.5 builtin_wardrobe[1.2x0.4x2.4] HEIGHT 0\nLAYOUT main",
+    ),
+    cabinet = parseProgram(source).rooms[0].mounts[0];
+  assert.equal(cabinet.edge.axis, "diagonal");
+  assert.throws(() => parseProgram(source.replace("[1.2x", "[2.4x")), /MOUNT must fit/u);
+  assert.throws(
+    () => parseProgram(source.replace("builtin_wardrobe[1.2x0.4x2.4]", "mirror")),
+    /MOUNT must fit/u,
+  );
+});
+
+test("balcony railing spacing and side awning supports are validated", () => {
+  const source = room()
+      .replace("ROOM main", "BALCONY main")
+      .replace(
+        "WALLS north east south west",
+        "WALLS west\nRAILS north east south\nRAILING horizontal silver SPACING 1.5\nMOUNT north 1.5 side_awning HEIGHT 0.75",
+      ),
+    balcony = parseProgram(source).rooms[0];
+  assert.deepEqual(balcony.railing, { style: "horizontal", finish: "silver", spacing: 1.5 });
+  assert.equal(balcony.mounts[0].name, "side_awning");
+  for (const spacing of ["0.05", "2.1", "NaN"])
+    assert.throws(() => parseProgram(source.replace("SPACING 1.5", `SPACING ${spacing}`)));
+  assert.throws(
+    () => parseProgram(source.replace("RAILS north east south", "RAILS east south")),
+    /MOUNT must fit/u,
+  );
+  assert.throws(() => parseProgram(source.replace("BALCONY main", "ROOM main")), /RAILING/u);
 });

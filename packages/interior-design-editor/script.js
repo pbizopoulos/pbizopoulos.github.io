@@ -48,6 +48,7 @@
         cypress: [1.2, 1.2, 3.5],
         desk: [1.35, 0.7, 0.75],
         dining_table: [1.55, 0.9, 0.75],
+        double_awning: [4.4, 1.48, 0.42],
         downlight: [0.22, 0.22, 2.7],
         dresser: [1.03, 0.49, 0.92],
         dumbbells: [0.85, 0.48, 0.32],
@@ -122,6 +123,7 @@
         robot_vacuum: [0.35, 0.35, 0.095],
         roller_shutter: [1.8, 0.18, 2.5],
         roman_blind: [1.6, 0.12, 1.5],
+        round_coffee_table: [0.8, 0.8, 0.4],
         round_dining_table: [1.2, 1.2, 0.75],
         rug: [1.55, 1.15, 0.025],
         sculpture: [0.9, 0.9, 1.8],
@@ -130,6 +132,7 @@
         shoe_rack: [0.9, 0.32, 0.48],
         shower: [0.93, 0.93, 2.05],
         shower_set: [0.5, 0.2, 1.9],
+        side_awning: [1.44, 0.12, 1.85],
         side_table: [0.48, 0.48, 0.54],
         sideboard: [1.38, 0.48, 0.83],
         single_bed: [0.9, 2, 0.56],
@@ -196,33 +199,20 @@
           'DETAIL living "ΣΑΛΟΝΙ — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."',
           'DETAIL living "Aristo: επιτοίχιο 135×31.6×25 cm, ενδεικτικό ύψος βάσης 45 cm."',
           'DETAIL living "HAMA 220810 (στήριξη TV)" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>',
-          'DETAIL living "Εκκρεμεί ντίζα μανιβέλας" <https://karol.gr/product/ntiza-manivelas-exagoni/>',
           'DETAIL living "ΚΟΥΖΙΝΑ — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."',
           'DETAIL living "Απορροφητήρας Franke" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>',
           'DETAIL living "Ανταλλακτικό GEYSER ARAGON EH" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>',
-          'DETAIL living "Έρευνα αγοράς: πλυντήριο πιάτων — δεν έχει επιλεγεί, δεν τοποθετήθηκε."',
           'DETAIL bedroom "ΚΡΕΒΑΤΟΚΑΜΑΡΑ — Grecostrom Structure."',
           'DETAIL bedroom "GRUSNARV (προστατευτικό στρώματος)" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>',
-          'DETAIL bedroom "Εκκρεμότητες: αλλαγή ανεμιστήρα με του Πευκοχωρίου, διάφανες IKEA με γάντζο."',
-          'DETAIL bedroom "Ο Morris και οι κουρτίνες τοποθετήθηκαν ως ενδεικτικά υπάρχοντα/μελλοντικά."',
           'DETAIL study "ΔΩΜΑΤΙΟ — Dell XPS 13 9343, κλασική κιθάρα, ρούχα, βαλίτσα/back-packs."',
           'DETAIL study "VATTENKAR 52×26 cm ως ράφι, ενδεικτικό ύψος βάσης 1.20 m."',
           'DETAIL study "Δεν τοποθετήθηκε γραφείο· τελικά επιλέχθηκε το stand ως ράφι."',
-          'DETAIL study "Εκκρεμεί: CMOS ML1220 με καλώδια/φις, εσώρουχα Tezenis (Cosmos), χορδές κιθάρας."',
-          'DETAIL study "Έρευνα shelf bracket· ο δοσμένος σύνδεσμος αφορά steppers" <https://www.skroutz.gr/c/811/steppers.html>',
-          'DETAIL study "Προηγούμενες επιλογές γραφείου, όχι επιλεγμένες" <https://www.skroutz.gr/s/55807212/Grafeio-Ravan-Xylino-sapphire-oak-me-Metallika-Podia-72x45x29ek-GP041-0079-2.html?product_id=271186251>',
-          'DETAIL study "Προηγούμενη επιλογή γραφείου" <https://www.skroutz.gr/s/60752062/grafeio-xylino-leyko-80x40ek-02842134.html>',
           'DETAIL bathroom "ΜΠΑΝΙΟ — πλυντήριο (manual), καθρέπτης Drop Gusto Wood Cut 60 cm."',
           'DETAIL balcony "ΜΠΑΛΚΟΝΙ — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."',
-          'DETAIL balcony "Έρευνα κούνιας — δεν έχει επιλεγεί."',
-          'DETAIL balcony "MADORA" <https://www.leroymerlin.gr/gr/epipla-diamorfosi-exoterikou-horou/epipla-kipou-axesouar/kounies/kounia-dithesia-madora-alouminiowicker-se-kafe-hroma-86492377>',
-          'DETAIL balcony "HM5905.02, 150×90×128h cm" <https://www.freebox.gr/en/product/hanging-nest-for-2-hm5905-02-cappuccino-rope-cream-cushions-150x90x128hcm/>',
-          'DETAIL balcony "Βάθος 1.56 m: το σώμα 0.90 m αφήνει 0.66 m συνολικά, πριν από βάση/αιώρηση."',
-          'DETAIL balcony "Απαιτούνται πραγματικές διαστάσεις βάσης και περιθώρια κατασκευαστή για έλεγχο."',
           'DETAIL balcony "Μαξιλάρι καρέκλας FRÖSÖN/DUVHOLMEN" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>',
           'DETAIL bedroom "ALPSTUGA" <https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/>',
           'DETAIL bedroom "SMAHAGEL" <https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>',
-          "GRID 0.3758451335985026",
+          "GRID 0.37419692305371843",
           "ROOM living 15x13 AT 0,9",
           'LABEL "Σαλόνι / κουζίνα" AT 4,8',
           "OUTLINE 0,0 15,0 15,13 3,13 3,11 0,11",
@@ -230,12 +220,12 @@
           "DOORS none",
           "WINDOWS none",
           "SURFACE wood",
-          "DOOR south AT 1.5 WIDTH 0.85",
+          "PASSAGE south AT 1.5 WIDTH 1.1",
           "SHUTTER east FULL",
-          "MOUNT east 6 curtain_pair[4.844986736780533x0.12x2.16] HEIGHT 0",
+          "MOUNT east 6 curtain_pair[4.82355999969834x0.12x2.16] HEIGHT 0",
           "MOUNT north 7 floating_tv_console[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45",
           "MOUNT north 7 wall_tv[1.1164x0.0915x0.6513]<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>",
-          "MOUNT east 8 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.28",
+          "MOUNT east 4 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.28",
           "MOUNT south 10 cooker_hood<https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html> HEIGHT 1.6",
           "LIGHT ceiling_light AT 9,6 POWER 18",
           "ROOM passage 5x2.5 AT 0,6.5",
@@ -253,7 +243,7 @@
           "SURFACE wood",
           "DOOR west AT 5.75 WIDTH 0.85",
           "SHUTTER east FULL",
-          "MOUNT east 3 curtain_pair[2.5899159351895182x0.12x2.16] HEIGHT 0",
+          "MOUNT east 3 curtain_pair[2.578378461376029x0.12x2.16] HEIGHT 0",
           "MOUNT south 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2",
           "LIGHT ceiling_light AT 5,3 POWER 12",
           "ROOM bathroom 6x7.5 AT -1,-1",
@@ -266,16 +256,17 @@
           "DOOR south AT 4.5 WIDTH 0.85",
           "MOUNT east 6 mirror<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029>",
           "LIGHT ceiling_light AT 3,3 POWER 12",
-          "ROOM bedroom 12x8 AT 3,22",
-          'LABEL "Κρεβατοκάμαρα" AT 6.5,1.1',
+          "ROOM bedroom 12.875x8 AT 2.125,22",
+          'LABEL "Κρεβατοκάμαρα" AT 7.375,1.1',
           "WALLS north east south west",
           "DOORS none",
           "WINDOWS none",
           "SURFACE wood",
-          "OUTLINE 0,0 12,0 12,8 2,8 0,4",
+          "OUTLINE 0.875,0 12.875,0 12.875,8 2.875,8 2.5,7.25 1.5,7.75 0,4.75 1,4.25 0.875,4",
           "DOOR west AT 2.5 WIDTH 0.8",
           "SHUTTER east FULL",
-          "MOUNT east 3.5 curtain_pair[2.9657610687880207x0.12x2.16] HEIGHT 0",
+          "MOUNT east 3.5 curtain_pair[2.9525753844297475x0.12x2.16] HEIGHT 0",
+          "MOUNT west 5.75 builtin_wardrobe[1.2x0.3983648784596863x2.5] HEIGHT 0",
           "LIGHT ceiling_light AT 8,4 POWER 12",
           "ROOM hall 6x6 AT -3,20",
           "WALLS north east south west",
@@ -284,36 +275,40 @@
           "SURFACE wood",
           "OUTLINE 3,0 6,0 6,6 3,6 3,5 1,6 0,5.25 0,2.75 1,2 3,2",
           "DOOR west AT 4 WIDTH 0.8",
-          "BALCONY balcony 4.1506457328950646x28 AT 15,2",
+          "BALCONY balcony 4.168927919741478x28 AT 15,2",
           'LABEL "Μπαλκόνι" AT 2.25,4',
           "WALLS west",
           "DOORS none",
           "WINDOWS none",
           "SURFACE tile",
           "RAILS north east south",
+          "RAILING horizontal silver SPACING 1.5",
+          "MOUNT west 6 double_awning HEIGHT 2.18",
+          "MOUNT west 20 double_awning HEIGHT 2.18",
+          "MOUNT north 1.5 side_awning HEIGHT 0.75",
           "LAYOUT living",
           ". | . | . | . | . | . | robot_vacuum~north<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>",
+          ". | . | . | . | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
           ".",
           ".",
-          ".",
-          ". | . | . | . | grey_armchair[0.66x0.68x0.84]@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys>",
-          ". | . | . | . | . | . | . | coffee_table[0.9x0.5x0.4]@0 | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
-          ".",
-          ".",
-          ". | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> | . | . | . | . | . | aabenraa_table(tableware_on_top)@270<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa>",
-          ".",
+          ". | . | . | . | grey_armchair[0.66x0.68x0.84]@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> | . | . | . | . | . | . | . | . | aabenraa_table(tableware_on_top)@270<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa>",
+          ". | . | . | . | . | . | . | round_coffee_table",
           ".",
           ". | . | . | . | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>",
-          ". | . | . | . | pitsos_fridge~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> | . | kitchen_counter[0.6x0.6x0.9]~south | . | sink[0.9x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/>",
+          ". | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>",
+          ".",
+          ".",
+          ".",
+          ". | . | . | . | . | . | kitchen_counter[0.6x0.6x0.9]~south | . | sink[0.9x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | pitsos_fridge~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>",
           "END",
           "LAYOUT study",
-          ". | . | . | suitcase~north | . | single_bed~north | . | . | guitar~north",
+          ". | . | . | . | . | . | . | wardrobe[1.1x0.56x2.4]~north",
           ".",
-          "wardrobe[1.1x0.56x2.4]~west",
-          ".",
-          ".",
+          "single_bed~west",
           ".",
           ".",
+          ".",
+          ". | . | . | . | . | . | . | . | guitar~south",
           "END",
           "LAYOUT bathroom",
           ". | . | frameless_shower[0.8x0.9x2.05]~north",
@@ -325,24 +320,24 @@
           ". | . | washing_machine[0.6x0.6x0.85]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf> | . | . | bathroom_vanity[0.45x0.3x0.85]~east",
           "END",
           "LAYOUT bedroom",
-          ". | . | . | . | . | . | . | . | . | . | pedestal_fan~north<https://www.skroutz.gr/s/53469611/Morris-MFS-16246-Anemistiras-Orthostatis-28W-Diametrou-41cm-me-Tilecheiristirio-Mayros.html>",
           ".",
           ".",
           ".",
           ".",
-          ". | builtin_wardrobe[1.5x0.48x2.5]@116.565051177078",
           ".",
-          ". | . | . | . | . | . | bed[1.6x2x0.56]~south<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>",
+          ".",
+          ".",
+          ". | . | . | . | . | . | . | bed[1.6x2x0.56]~south<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>",
           "END",
           "LAYOUT balcony",
           ".",
+          ". | . | ac_condenser@0<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>",
           ".",
           ".",
           ".",
           ".",
           ".",
           ".",
-          ". | . | . | ac_condenser@90<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>",
           ".",
           ".",
           ".",
@@ -371,7 +366,7 @@
           "LAYOUT hall",
           ".",
           ".",
-          ".",
+          ". | . | shoe_rack[0.6x0.25x0.48] | . | coat_rack[0.42x0.42x1.75]",
           ".",
           ".",
           ".",
@@ -497,6 +492,9 @@
         "floating_tv_console",
         "cooker_hood",
         "curtain_pair",
+        "builtin_wardrobe",
+        "double_awning",
+        "side_awning",
       ]),
       directions = ["north", "east", "south", "west"],
       aliases = Object.fromEntries(
@@ -821,7 +819,7 @@
           }
         } else if (
           (m =
-            /^(DOOR|SHUTTER)\s+(north|east|south|west)\s+(?:AT\s+(\d+(?:\.\d+)?)(?:\s+WIDTH\s+(\d+(?:\.\d+)?))?|(FULL))$/iu.exec(
+            /^(DOOR|SHUTTER|PASSAGE)\s+(north|east|south|west)\s+(?:AT\s+(\d+(?:\.\d+)?)(?:\s+WIDTH\s+(\d+(?:\.\d+)?))?|(FULL))$/iu.exec(
               text,
             ))
         ) {
@@ -835,7 +833,7 @@
             width = Number(m[4] || 0.85);
           room.openings ??= [];
           if (room.openings.length >= 8) {
-            fail("Use at most eight DOOR or SHUTTER statements per room", line);
+            fail("Use at most eight DOOR, SHUTTER or PASSAGE statements per room", line);
           }
           if (full && kind !== "shutter") {
             fail("FULL is supported for balcony SHUTTER openings", line);
@@ -868,6 +866,22 @@
             fail("Use north, east, south, west, or none", line);
           }
           room[m[1].toLowerCase()] = values[0] === "none" ? [] : [...new Set(values)];
+        } else if (
+          (m = /^RAILING\s+(horizontal|vertical)\s+(silver|timber)\s+SPACING\s+([\d.]+)$/iu.exec(
+            text,
+          ))
+        ) {
+          const spacing = Number(m[3]);
+          if (
+            !room ||
+            room.kind !== "balcony" ||
+            !Number.isFinite(spacing) ||
+            spacing < 0.1 ||
+            spacing > 2
+          ) {
+            fail("RAILING needs a balcony and SPACING 0.1–2 metres", line);
+          }
+          room.railing = { finish: m[2].toLowerCase(), spacing, style: m[1].toLowerCase() };
         } else if ((m = /^(SURFACE|STYLE|HEIGHT)\s+(\S+)$/iu.exec(text))) {
           if (!room) {
             fail("Define a room first", line);
@@ -1062,8 +1076,11 @@
             mount.side,
             (mount.cell + 0.5) * program.grid,
             mount.dimensions[0],
+            mount.name === "builtin_wardrobe",
           );
-          if (!r.walls.includes(mount.side) || !edge) {
+          const railSupport =
+            mount.name === "side_awning" && r.kind === "balcony" && r.rails.includes(mount.side);
+          if ((!r.walls.includes(mount.side) && !railSupport) || !edge) {
             fail("MOUNT must fit within an existing outline edge", mount.line);
           }
           mount.edge = edge;
@@ -1430,7 +1447,10 @@
             }
           }
           if (specified.size > 1) {
-            fail("Use one matching DOOR per wall segment", [...specified.values()][1].line);
+            fail(
+              "Use one matching DOOR, SHUTTER or PASSAGE per wall segment",
+              [...specified.values()][1].line,
+            );
           }
           const [opening] = specified.values();
           result.push({
@@ -1509,14 +1529,24 @@
       }
       return result;
     }
-    function supportingEdge(program, room, side, along, width) {
-      return room.edges.find(
-        (edge) =>
-          edge.axis !== "diagonal" &&
-          edge.side === side &&
-          along - width / 2 >= edge.min * program.grid + 0.02 &&
-          along + width / 2 <= edge.max * program.grid - 0.02,
-      );
+    function supportingEdge(program, room, side, along, width, diagonal = false) {
+      return room.edges.find((edge) => {
+        if (edge.side !== side || (edge.axis === "diagonal" && !diagonal)) {
+          return false;
+        }
+        const axis = ["east", "west"].includes(side) ? 1 : 0,
+          projection =
+            edge.axis === "diagonal"
+              ? Math.abs(edge.end[axis] - edge.start[axis]) /
+                Math.hypot(edge.end[0] - edge.start[0], edge.end[1] - edge.start[1])
+              : 1,
+          min = Math.min(edge.start[axis], edge.end[axis]) * program.grid,
+          max = Math.max(edge.start[axis], edge.end[axis]) * program.grid;
+        return (
+          along - (width * projection) / 2 >= min + 0.02 * projection &&
+          along + (width * projection) / 2 <= max - 0.02 * projection
+        );
+      });
     }
     function furniturePosition(program, room, token, col, row) {
       let x = (col + 0.5) * program.grid,
@@ -2031,7 +2061,7 @@ const initializeStudio = async function initializeStudio() {
           }
         },
         table = () => {
-          legs(h - 0.06);
+          legs(h - 0.06, name === "round_coffee_table" ? 0.14 : 0.08);
           if (/round|bistro|slatted|sea_table|ochre_table/u.test(name)) {
             cyl(w / 2, w / 2, 0.055, 0, h - 0.028, 0);
           } else {
@@ -2440,6 +2470,134 @@ const initializeStudio = async function initializeStudio() {
             );
           }
         }
+      } else if (name === "double_awning") {
+        const frontHeight = 0.12,
+          rise = h - frontHeight,
+          slope = Math.atan2(rise, d),
+          canvasDepth = Math.hypot(d, rise),
+          frame = [
+            [
+              [-w / 2, h, -d / 2],
+              [w / 2, h, -d / 2],
+            ],
+            [
+              [-w / 2, frontHeight, d / 2],
+              [w / 2, frontHeight, d / 2],
+            ],
+          ];
+        for (const side of [-1, 1]) {
+          const center = (side * w) / 4,
+            panel = box(
+              w / 2 - 0.025,
+              0.016,
+              canvasDepth,
+              center,
+              (h + frontHeight) / 2,
+              0,
+              m.linen,
+              0,
+            );
+          panel.rotation.x = slope;
+          panel.userData.awningPanel = true;
+          box(w / 2 - 0.025, 0.085, 0.02, center, frontHeight - 0.0425, d / 2, m.linen, 0);
+          for (const offset of [-w / 5, w / 5]) {
+            const x = center + offset;
+            frame.push(
+              [
+                [x, h - 0.04, -d / 2],
+                [x + side * 0.12, (h + frontHeight) / 2 - 0.08, 0],
+              ],
+              [
+                [x + side * 0.12, (h + frontHeight) / 2 - 0.08, 0],
+                [x, frontHeight - 0.02, d / 2],
+              ],
+            );
+          }
+        }
+        this.rods(group, frame, 0.014, m.stainless);
+      } else if (name === "side_awning") {
+        const panel = box(w - 0.055, h - 0.08, 0.014, 0, h / 2, 0, m.linen, 0);
+        panel.userData.awningPanel = true;
+        this.rods(
+          group,
+          [
+            [
+              [-w / 2, h, 0],
+              [w / 2, h, 0],
+            ],
+            [
+              [-w / 2, 0, 0],
+              [w / 2, 0, 0],
+            ],
+            [
+              [-w / 2, 0, 0],
+              [-w / 2, h, 0],
+            ],
+            [
+              [w / 2, 0, 0],
+              [w / 2, h, 0],
+            ],
+          ],
+          0.012,
+          m.stainless,
+        );
+      } else if (name === "coat_rack") {
+        const frame = [
+          [
+            [0, 0.08, 0],
+            [0, h, 0],
+          ],
+        ];
+        for (let i = 0; i < 4; i += 1) {
+          const angle = (i * Math.PI) / 2;
+          frame.push(
+            [
+              [0, 0.07, 0],
+              [Math.cos(angle) * w * 0.45, 0.025, Math.sin(angle) * d * 0.45],
+            ],
+            [
+              [0, h * 0.77, 0],
+              [Math.cos(angle) * w * 0.35, h * 0.86, Math.sin(angle) * d * 0.35],
+            ],
+            [
+              [Math.cos(angle) * w * 0.35, h * 0.86, Math.sin(angle) * d * 0.35],
+              [Math.cos(angle) * w * 0.35, h * 0.91, Math.sin(angle) * d * 0.35],
+            ],
+          );
+        }
+        this.rods(group, frame, 0.015, m.darkWood);
+      } else if (name === "shoe_rack") {
+        const frame = [],
+          levels = [0.06, h / 2, h - 0.025],
+          shoes = new THREE.InstancedMesh(
+            this.geometry("shoe", () => new RoundedBoxGeometry(0.09, 0.05, 0.22, 2, 0.018)),
+            m.charcoalFabric,
+            12,
+          ),
+          matrix = new THREE.Matrix4();
+        for (const x of [-1, 1]) {
+          for (const z of [-1, 1]) {
+            frame.push([
+              [x * (w / 2 - 0.025), 0, z * (d / 2 - 0.025)],
+              [x * (w / 2 - 0.025), h, z * (d / 2 - 0.025)],
+            ]);
+          }
+        }
+        this.rods(group, frame, 0.012, m.metal);
+        let index = 0;
+        for (const y of levels) {
+          box(w, 0.018, d, 0, y, 0, m.wood, 0.003);
+          for (const pair of [-1, 1]) {
+            for (const shoe of [-1, 1]) {
+              matrix.makeTranslation(pair * w * 0.24 + shoe * 0.055, y + 0.034, 0);
+              shoes.setMatrixAt(index, matrix);
+              index += 1;
+            }
+          }
+        }
+        shoes.castShadow = true;
+        shoes.receiveShadow = true;
+        group.add(shoes);
       } else if (name === "garment_rack") {
         const frame = [
             [
@@ -3409,7 +3567,13 @@ const initializeStudio = async function initializeStudio() {
       for (const side of room.rails) {
         const rail = new THREE.Group(),
           vertical = ["east", "west"].includes(side),
-          length = vertical ? d : w;
+          length = vertical ? d : w,
+          setting = room.railing || { finish: "timber", spacing: 0.16, style: "vertical" },
+          horizontal = setting.style === "horizontal",
+          material = setting.finish === "silver" ? m.stainless : m.darkWood,
+          intervals = Math.ceil(length / setting.spacing),
+          count = horizontal ? intervals + 1 : Math.floor(length / setting.spacing) + 1;
+        rail.userData.railing = setting;
         rail.position.set(
           side === "east" ? w / 2 : side === "west" ? -w / 2 : 0,
           0,
@@ -3417,22 +3581,47 @@ const initializeStudio = async function initializeStudio() {
         );
         rail.rotation.y = turns[side];
         roomRoot.add(rail);
-        box(rail, length, 0.045, 0.055, 0, 1.04, 0, m.darkWood);
-        const count = Math.floor(length / 0.16) + 1,
+        box(rail, length, 0.045, 0.055, 0, 1.04, 0, material);
+        const postWidth = horizontal ? 0.035 : 0.016,
           posts = new THREE.InstancedMesh(
-            library.geometry("rail-post", () => new THREE.BoxGeometry(0.016, 1, 0.016)),
-            m.metal,
+            library.geometry(
+              `rail-post:${postWidth}`,
+              () => new THREE.BoxGeometry(postWidth, 1, postWidth),
+            ),
+            setting.finish === "silver" ? m.stainless : m.metal,
             count,
           ),
           matrix = new THREE.Matrix4();
         for (let i = 0; i < count; i += 1) {
-          matrix.makeTranslation(-length / 2 + i * 0.16, 0.52, 0);
+          matrix.makeTranslation(
+            -length / 2 + i * (horizontal ? length / intervals : setting.spacing),
+            0.52,
+            0,
+          );
           posts.setMatrixAt(i, matrix);
         }
+        posts.userData.railPosts = true;
         posts.castShadow = true;
         posts.receiveShadow = true;
         rail.add(posts);
         owned.push(posts);
+        if (horizontal) {
+          const bars = new THREE.InstancedMesh(
+            library.geometry("horizontal-rail", () => new THREE.BoxGeometry(1, 0.025, 0.025)),
+            material,
+            4,
+          );
+          for (let i = 0; i < 4; i += 1) {
+            matrix.makeScale(length, 1, 1);
+            matrix.setPosition(0, 0.2 + i * 0.2, 0);
+            bars.setMatrixAt(i, matrix);
+          }
+          bars.userData.horizontalRails = true;
+          bars.castShadow = true;
+          bars.receiveShadow = true;
+          rail.add(bars);
+          owned.push(bars);
+        }
       }
       program.layouts[room.name].forEach((row, z) =>
         row.forEach((token, x) => {
@@ -3446,22 +3635,41 @@ const initializeStudio = async function initializeStudio() {
           [mw, md, mh] = mount.dimensions,
           vertical = ["east", "west"].includes(mount.side),
           along = (mount.cell + 0.5) * program.grid,
+          alongAxis = vertical ? 1 : 0,
+          fraction =
+            edge.axis === "diagonal"
+              ? (along / program.grid - edge.start[alongAxis]) /
+                (edge.end[alongAxis] - edge.start[alongAxis])
+              : 0,
           token = {
             ...mount,
             dimensions: [mw, md, mh],
             mount: true,
-            yaw: { east: 270, north: 0, south: 180, west: 90 }[mount.side],
+            yaw:
+              edge.axis === "diagonal"
+                ? THREE.MathUtils.radToDeg(Math.atan2(-edge.normal[0], -edge.normal[1]))
+                : { east: 270, north: 0, south: 180, west: 90 }[mount.side],
           },
-          x = vertical
-            ? mount.side === "east"
-              ? edge.across * program.grid - w / 2 - md / 2 - 0.02
-              : edge.across * program.grid - w / 2 + md / 2 + 0.02
-            : -w / 2 + along,
-          z = vertical
-            ? -d / 2 + along
-            : mount.side === "south"
-              ? edge.across * program.grid - d / 2 - md / 2 - 0.02
-              : edge.across * program.grid - d / 2 + md / 2 + 0.02;
+          x =
+            edge.axis === "diagonal"
+              ? (edge.start[0] + fraction * (edge.end[0] - edge.start[0])) * program.grid -
+                w / 2 -
+                edge.normal[0] * (md / 2 + 0.02)
+              : vertical
+                ? mount.side === "east"
+                  ? edge.across * program.grid - w / 2 - md / 2 - 0.02
+                  : edge.across * program.grid - w / 2 + md / 2 + 0.02
+                : -w / 2 + along,
+          z =
+            edge.axis === "diagonal"
+              ? (edge.start[1] + fraction * (edge.end[1] - edge.start[1])) * program.grid -
+                d / 2 -
+                edge.normal[1] * (md / 2 + 0.02)
+              : vertical
+                ? -d / 2 + along
+                : mount.side === "south"
+                  ? edge.across * program.grid - d / 2 - md / 2 - 0.02
+                  : edge.across * program.grid - d / 2 + md / 2 + 0.02;
         addObject(token, [cx + x, y + (mount.height ?? Math.max(0.3, 1.5 - mh / 2)), cz + z], room);
       }
       for (const light of room.lights) {
@@ -3560,7 +3768,14 @@ const initializeStudio = async function initializeStudio() {
           ? Math.min(1.9, length * 0.6)
           : 0;
       const bottom = window ? 0.85 : 0,
-        top = door ? Math.min(2.12, height - 0.12) : window ? Math.min(2.25, height - 0.16) : 0;
+        top =
+          specified?.kind === "passage"
+            ? height
+            : door
+              ? Math.min(2.12, height - 0.12)
+              : window
+                ? Math.min(2.25, height - 0.16)
+                : 0;
       const wallMat =
         room.style === "industrial"
           ? m.concrete
@@ -3616,7 +3831,9 @@ const initializeStudio = async function initializeStudio() {
           );
         }
       }
-      box(group, length, 0.07, 0.045, 0, height - 0.035, 0.025, m.white, 0.003);
+      if (specified?.kind !== "passage") {
+        box(group, length, 0.07, 0.045, 0, height - 0.035, 0.025, m.white, 0.003);
+      }
       const openingDecor = new THREE.Group();
       openingDecor.position.x = offset;
       group.add(openingDecor);
@@ -3672,7 +3889,7 @@ const initializeStudio = async function initializeStudio() {
           m.brass,
         );
       }
-      if (door) {
+      if (door && specified?.kind !== "passage") {
         for (const s of [-1, 1]) {
           box(
             openingDecor,
@@ -4463,9 +4680,15 @@ const initializeStudio = async function initializeStudio() {
           (this.mode === "walk" || this.mode === "top" || !front);
       }
       for (const object of this.model.objects) {
+        if (object.userData.token.name === "double_awning") {
+          object.visible = visible(object.userData.room) && this.mode !== "top";
+          continue;
+        }
         if (
           !object.userData.token.mount ||
-          ["curtain_pair", "air_conditioner"].includes(object.userData.token.name)
+          ["curtain_pair", "air_conditioner", "side_awning", "builtin_wardrobe"].includes(
+            object.userData.token.name,
+          )
         ) {
           continue;
         }
@@ -4805,7 +5028,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|SHUTTER|DOORS|WINDOWS|RAILS|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|PASSAGE|SHUTTER|DOORS|WINDOWS|RAILS|RAILING|SPACING|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {

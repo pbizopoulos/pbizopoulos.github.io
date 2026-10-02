@@ -352,17 +352,21 @@ async function run({ assetsOnly = false } = {}) {
       if (name === "Apartment") {
         assert.match(
           await page.locator("#projectSummary").textContent(),
-          /60 m² indoors.*16\.4 m² outdoors.*76\.4 m² total/,
+          /60 m² indoors.*16\.3 m² outdoors.*76\.3 m² total/,
         );
         await page.click("#sceneOptions summary");
         await page.click("#projectDetailsButton");
         assert.equal(await page.locator("#projectDetails").evaluate((dialog) => dialog.open), true);
-        assert.match(await page.locator("#projectDetailsContent").textContent(), /CMOS ML1220/);
+        assert.match(await page.locator("#projectDetailsContent").textContent(), /VATTENKAR/);
         assert.match(
           await page.locator("#projectDetailsContent").textContent(),
-          /πλυντήριο πιάτων/,
+          /Grecostrom Structure/,
         );
-        assert.equal(await page.locator('#projectDetailsContent a[href*="freebox.gr"]').count(), 1);
+        assert.doesNotMatch(
+          await page.locator("#projectDetailsContent").textContent(),
+          /Εκκρεμ|CMOS|πλυντήριο πιάτων/iu,
+        );
+        assert.equal(await page.locator('#projectDetailsContent a[href*="freebox.gr"]').count(), 0);
         assert.ok(
           await page
             .locator("#projectDetailsContent a")
@@ -410,11 +414,40 @@ async function run({ assetsOnly = false } = {}) {
             `The ${pair} doorway is shared and clear of furniture`,
           );
         }
+        assert.ok(
+          await page.evaluate(() => {
+            const s = interior.studio,
+              passage = s.model.walls.find((wall) => wall.opening?.kind === "passage"),
+              entrance = s.model.walls.find(
+                (wall) => wall.rooms.length === 1 && wall.opening?.kind === "door",
+              );
+            return (
+              passage &&
+              passage.opening.top === passage.room.height &&
+              passage.elevation.children.every(
+                (node) => !node.isGroup || node.children.length === 0,
+              ) &&
+              passage.elevation.children
+                .filter((node) => node.isMesh)
+                .every((node) => {
+                  const half = node.geometry.parameters.width / 2;
+                  return (
+                    node.position.x + half <=
+                      passage.opening.offset - passage.opening.width / 2 + 0.00001 ||
+                    node.position.x - half >=
+                      passage.opening.offset + passage.opening.width / 2 - 0.00001
+                  );
+                }) &&
+              Boolean(s.canStand(...entrance.opening.center))
+            );
+          }),
+          "The entrance stays clear and the living-room passage has no door frame or lintel",
+        );
         const reachable = await page.evaluate(() => {
           const s = interior.studio,
             p = s.model.program,
             hall = p.rooms.find(({ name }) => name === "hall"),
-            origin = [(hall.x + 1.5) * p.grid - p.center[0], (hall.z + 3) * p.grid - p.center[1]],
+            origin = [(hall.x + 4.5) * p.grid - p.center[0], (hall.z + 4) * p.grid - p.center[1]],
             step = 0.08,
             nodes = [[0, 0]],
             seen = new Set(["0,0"]),
@@ -458,6 +491,10 @@ async function run({ assetsOnly = false } = {}) {
                   "frameless_shower",
                   "washing_machine",
                   "toilet",
+                  "coat_rack",
+                  "shoe_rack",
+                  "pitsos_fridge",
+                  "aabenraa_table",
                 ].includes(userData.token.name),
               )
               .map((group) => {
@@ -486,7 +523,7 @@ async function run({ assetsOnly = false } = {}) {
           ["balcony", "bathroom", "bedroom", "hall", "living", "passage", "study"],
           "Continuous walking routes connect every area, including turns around furniture",
         );
-        assert.equal(reachable.fixtures.length, 7);
+        assert.equal(reachable.fixtures.length, 11);
         assert.ok(
           reachable.fixtures.every(({ occupied, reachable }) => occupied && reachable),
           JSON.stringify(reachable.fixtures),
@@ -571,6 +608,9 @@ async function run({ assetsOnly = false } = {}) {
               m.walls.every((wall) => !wall.elevation.visible && wall.plan.visible) &&
               m.labels.length === 6 &&
               m.labels.every((label) => label.visible) &&
+              m.objects
+                .filter(({ userData }) => userData.token.name === "double_awning")
+                .every((group) => !group.visible) &&
               m.root.children
                 .filter((group) => group.userData.ceilingFixture)
                 .every((group) => !group.visible)
@@ -628,6 +668,45 @@ async function run({ assetsOnly = false } = {}) {
         assert.ok(
           await page.evaluate(() => interior.studio.model.labels.every((label) => !label.visible)),
           "Labels stay in plan view",
+        );
+        assert.ok(
+          await page.evaluate(() => {
+            const m = interior.studio.model,
+              doubles = m.objects.filter(({ userData }) => userData.token.name === "double_awning"),
+              singles = m.objects.filter(({ userData }) => userData.token.name === "side_awning"),
+              balcony = m.roomGroups.find(({ userData }) => userData.room.kind === "balcony"),
+              rails = balcony.children.filter(({ userData }) => userData.railing);
+            return (
+              doubles.length === 2 &&
+              doubles.every(
+                (group) =>
+                  group.visible &&
+                  group
+                    .getObjectsByProperty("isMesh", true)
+                    .filter(({ userData }) => userData.awningPanel).length === 2,
+              ) &&
+              singles.length === 1 &&
+              singles[0].visible &&
+              rails.length === 3 &&
+              rails.every((rail) => {
+                const posts = rail.children.find(({ userData }) => userData.railPosts),
+                  bars = rail.children.find(({ userData }) => userData.horizontalRails),
+                  matrix = rail.matrix.clone();
+                let previous;
+                for (let i = 0; i < posts.count; i += 1) {
+                  posts.getMatrixAt(i, matrix);
+                  if (i > 0 && matrix.elements[12] - previous > 1.500001) return false;
+                  previous = matrix.elements[12];
+                }
+                return (
+                  bars?.count === 4 &&
+                  posts.material.metalness > 0.7 &&
+                  bars.material === posts.material
+                );
+              })
+            );
+          }),
+          "Two double awnings, one side awning and silver horizontal railing remain visible",
         );
         const mounted = await page.evaluate(() =>
           interior.studio.model.objects
@@ -688,7 +767,7 @@ async function run({ assetsOnly = false } = {}) {
             if (!node.isInstancedMesh) return;
             window.retiredInstances.expected++;
             node.addEventListener("dispose", () => window.retiredInstances.disposed++);
-            if (node.geometry.parameters?.width === 0.016) rails++;
+            if (node.userData.railPosts) rails++;
             else if (interior.studio.model.roomGroups.includes(node.parent)) floors++;
             else if (node.geometry.parameters?.width === 0.005) fringes++;
           });
