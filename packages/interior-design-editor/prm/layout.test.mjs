@@ -236,7 +236,7 @@ test("Apartment keeps mapped rooms and passages, exact balcony depth and raised 
   const p = parseProgram(examples["Apartment"]);
   assert.equal(p.rooms.length, 7);
   assert.ok(Math.abs(p.rooms.find((room) => room.kind === "balcony").cols * p.grid - 1.56) < 1e-9);
-  assert.ok(Math.abs(p.areas.indoor - 60) < 0.1);
+  assert.ok(Math.abs(p.areas.indoor - 61.68) < 0.01);
   assert.ok(Math.abs(p.areas.total - p.areas.indoor - p.areas.outdoor) < 1e-9);
   assert.equal(
     p.rooms.find((room) => room.name === "study").mounts.find(({ name }) => name === "wall_shelf")
@@ -306,10 +306,10 @@ test("apartment matches the supplied map and the balcony continues beside the be
   assert.ok(!Object.keys(examples).some((name) => name.includes("Καλαμαριά")));
 });
 
-test("the mapped outline preserves recesses without adding floor to unmapped areas", () => {
+test("the bathroom is rectangular and the bedroom and hall retain their recesses", () => {
   const p = parseProgram(examples.Apartment),
     rooms = Object.fromEntries(p.rooms.map((room) => [room.name, room]));
-  assert.equal(insideRoom(rooms.bathroom, 0.5, 4.5), false);
+  assert.equal(insideRoom(rooms.bathroom, 0.5, 4.5), true);
   assert.equal(insideRoom(rooms.bathroom, 3, 4.5), true);
   assert.equal(insideRoom(rooms.bedroom, 0.5, 6.5), false);
   assert.equal(insideRoom(rooms.bedroom, 3, 6.5), true);
@@ -472,10 +472,10 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
       row = layout.findIndex((cells) => cells.includes(token));
     return furniturePosition(p, rooms[roomName], token, layout[row].indexOf(token), row);
   };
-  assert.equal(find("living", "aabenraa_table").yaw, 270);
+  assert.equal(find("living", "aabenraa_table").yaw, 0);
   const localZ = (roomName, name) =>
     position(roomName, name)[2] + p.center[1] - rooms[roomName].z * p.grid;
-  assert.ok(Math.abs(localZ("living", "aabenraa_table") - (air.cell + 0.5) * p.grid) < 0.001);
+  assert.ok((air.cell + 0.5) * p.grid < localZ("living", "aabenraa_table"));
   assert.equal(find("living", "grey_sofa").yaw, 180);
   const sofa = position("living", "grey_sofa"),
     tv = rooms.living.mounts.find(({ name }) => name === "wall_tv");
@@ -511,7 +511,7 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.ok(localZ("study", "single_bed") < (rooms.study.rows * p.grid) / 2);
   assert.equal(find("study", "wardrobe").wall, "north");
   assert.ok(position("study", "wardrobe")[0] > position("study", "single_bed")[0]);
-  assert.equal(air.cell, 4);
+  assert.equal(air.cell, 1.5);
   assert.ok(position("living", "pitsos_fridge")[0] > sofa[0]);
   assert.equal(
     find("living", "round_coffee_table").dimensions[0],
@@ -527,7 +527,20 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.ok(find("bathroom", "frameless_shower"));
   const washer = position("bathroom", "washing_machine");
   assert.ok(washer[0] + p.center[0] < (rooms.bathroom.x + rooms.bathroom.openings[0].at) * p.grid);
-  assert.ok(rooms.bathroom.area * p.grid ** 2 > 4);
+  assert.equal(rooms.bathroom.area, rooms.bathroom.cols * rooms.bathroom.rows);
+  const mirror = rooms.bathroom.mounts.find((m) => m.name === "mirror");
+  const lamp = rooms.bathroom.mounts.find((m) => m.name === "wall_lamp");
+  assert.equal(rooms.bathroom.lights.length, 0);
+  assert.equal(lamp.side, mirror.side);
+  assert.equal(lamp.cell, mirror.cell);
+  assert.ok(lamp.height > mirror.height + mirror.dimensions[2]);
+  assert.equal(find("bathroom", "bathroom_vanity").wall, "west");
+  assert.ok(Math.abs(localZ("bathroom", "bathroom_vanity") - (mirror.cell + 0.5) * p.grid) < 1e-9);
+  const vanity = position("bathroom", "bathroom_vanity");
+  assert.ok(vanity[2] - washer[2] < 0.7);
+  const shower = position("bathroom", "frameless_shower");
+  assert.ok(Math.abs(rooms.bathroom.rows * p.grid - localZ("bathroom", "frameless_shower") - 0.35 - 0.02) < 1e-9);
+  assert.ok(shower[0] > vanity[0]);
   const builtin = find("bedroom", "builtin_wardrobe"),
     edge = builtin.edge,
     fraction = (builtin.cell + 0.5 - edge.start[1]) / (edge.end[1] - edge.start[1]),
@@ -752,7 +765,7 @@ test("apartment kitchen sink sits between the oven and fridge with a separating 
   const cabinets = living.mounts.filter((m) => m.name === "kitchen_cabinet");
   assert.equal(cabinets.filter((m) => m.height > 0).length, 4);
   const bases = cabinets.filter((m) => m.height === 0);
-  assert.equal(bases.length, 5);
+  assert.equal(bases.length, 3);
   const run = bases.map((m) => ({ name: m.name, center: (m.cell + 0.5) * p.grid, width: m.dimensions[0] }));
   p.layouts.living.forEach((row, z) => row.forEach((token, x) => {
     if (token && ["stove", "sink", "pitsos_fridge"].includes(token.name)) {
@@ -762,12 +775,19 @@ test("apartment kitchen sink sits between the oven and fridge with a separating 
   }));
   run.sort((a, b) => a.center - b.center);
   for (let i = 1; i < run.length; i++) {
-    assert.ok(run[i].center - run[i].width / 2 >= run[i - 1].center + run[i - 1].width / 2);
+    assert.ok(run[i].center - run[i].width / 2 >= run[i - 1].center + run[i - 1].width / 2 - 1e-9);
   }
   assert.deepEqual(run.map((item) => item.name), [
     "kitchen_cabinet", "stove", "kitchen_cabinet", "sink", "kitchen_cabinet",
-    "kitchen_cabinet", "kitchen_cabinet", "pitsos_fridge",
+    "pitsos_fridge",
   ]);
+  const fridge = run.at(-1), largeCabinet = run.at(-2);
+  assert.ok(Math.abs(largeCabinet.width - 0.6 * 1.5) < 1e-9);
+  assert.ok(Math.abs(largeCabinet.center + largeCabinet.width / 2 - (fridge.center - fridge.width / 2)) < 1e-9);
+  assert.ok(Math.abs(run[0].center - run[0].width / 2 - 3 * p.grid) < 0.025);
+  const openReturn = p.wallSpecs.find((wall) => wall.rooms.includes(living) && wall.opening?.side === "west");
+  assert.equal(openReturn.opening.kind, "passage");
+  assert.ok(Math.abs(openReturn.opening.width - (openReturn.max - openReturn.min) * p.grid) < 1e-9);
   assert.equal(living.lights.filter((l) => l.name === "downlight").length, 4);
 });
 test("offsets preserve wall alignment and underneath layouts keep their placement", () => {
@@ -831,7 +851,7 @@ test("apartment radiators leave furniture and the bathroom entrance clear", () =
   const radiatorStart =
     rooms.bathroom.z * p.grid - p.center[1] +
     (small.cell + 0.5) * p.grid - small.dimensions[0] / 2;
-  assert.ok(radiatorStart > shower.position[2] + shower.token.dimensions[0] / 2);
+  assert.ok(radiatorStart + small.dimensions[0] < shower.position[2] - shower.token.dimensions[0] / 2);
   assert.ok(small.dimensions[0] < 0.4);
   assert.deepEqual(p.warnings, []);
 });

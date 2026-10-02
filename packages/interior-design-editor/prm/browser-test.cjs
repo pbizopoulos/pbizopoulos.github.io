@@ -352,7 +352,7 @@ async function run({ assetsOnly = false } = {}) {
       if (name === "Apartment") {
         assert.match(
           await page.locator("#projectSummary").textContent(),
-          /60 m² indoors.*16\.3 m² outdoors.*76\.3 m² total/,
+          /61\.7 m² indoors.*16\.3 m² outdoors.*78 m² total/,
         );
         await page.click("#sceneOptions summary");
         await page.click("#projectDetailsButton");
