@@ -234,17 +234,21 @@ test("mounted sub-layouts respect expanded asset and light budgets", () => {
 
 test("Apartment keeps mapped rooms and passages, exact balcony depth and raised product furniture", () => {
   const p = parseProgram(examples["Apartment"]);
-  assert.equal(p.rooms.length, 8);
+  assert.equal(p.rooms.length, 7);
   assert.ok(Math.abs(p.rooms.find((room) => room.kind === "balcony").cols * p.grid - 1.56) < 1e-9);
   assert.ok(Math.abs(p.areas.indoor - 60) < 0.1);
   assert.ok(Math.abs(p.areas.total - p.areas.indoor - p.areas.outdoor) < 1e-9);
-  assert.equal(p.rooms.find((room) => room.name === "study").mounts[0].height, 1.2);
+  assert.equal(
+    p.rooms.find((room) => room.name === "study").mounts.find(({ name }) => name === "wall_shelf")
+      .height,
+    1.2,
+  );
   assert.ok(
     p.rooms
       .find((room) => room.name === "living")
       .mounts.some(
         (mount) =>
-          mount.name === "floating_tv_console" && mount.side === "west" && mount.height === 0.45,
+          mount.name === "floating_tv_console" && mount.side === "north" && mount.height === 0.45,
       ),
   );
   assert.deepEqual(p.warnings, []);
@@ -303,8 +307,8 @@ test("the mapped outline preserves recesses without adding floor to unmapped are
   assert.equal(insideRoom(rooms.bathroom, 3, 4.5), true);
   assert.equal(insideRoom(rooms.bedroom, 0.5, 6.5), false);
   assert.equal(insideRoom(rooms.bedroom, 3, 6.5), true);
-  assert.equal(insideRoom(rooms.entry, 0.25, 0.25), false);
-  assert.equal(insideRoom(rooms.entry, 0.25, 2), true);
+  assert.equal(insideRoom(rooms.hall, 0.25, 0.25), false);
+  assert.equal(insideRoom(rooms.hall, 0.25, 4), true);
   assert.deepEqual(p.warnings, []);
   assert.ok(
     rooms.study.openings.some(
@@ -440,18 +444,18 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
   assert.equal(passageExit.opening.kind, "door");
   assert.ok(passageExit.opening.width > 1.5);
   for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
-    assert.equal(find("living", name).wall, "east");
-  assert.equal(find("living", "robot_vacuum").wall, "west");
-  assert.equal(find("bedroom", "bed").wall, "north");
+    assert.equal(find("living", name).wall, "south");
+  assert.equal(find("living", "robot_vacuum").wall, "north");
+  assert.equal(find("bedroom", "bed").wall, "south");
   assert.equal(find("bathroom", "toilet").wall, "east");
   assert.ok(
     p.layouts.bathroom
-      .slice(0, 3)
+      .slice(0, 4)
       .flat()
       .some((token) => token?.name === "toilet"),
   );
   const air = rooms.living.mounts.find(({ name }) => name === "air_conditioner");
-  assert.equal(air.side, "west");
+  assert.equal(air.side, "east");
   assert.ok(air.height > 2);
   const position = (roomName, name) => {
     const layout = p.layouts[roomName],
@@ -459,40 +463,61 @@ test("apartment puts the requested fixtures on their confirmed walls", () => {
       row = layout.findIndex((cells) => cells.includes(token));
     return furniturePosition(p, rooms[roomName], token, layout[row].indexOf(token), row);
   };
-  assert.equal(find("living", "aabenraa_table").yaw, 90);
+  assert.equal(find("living", "aabenraa_table").yaw, 270);
   const localZ = (roomName, name) =>
     position(roomName, name)[2] + p.center[1] - rooms[roomName].z * p.grid;
   assert.ok(Math.abs(localZ("living", "aabenraa_table") - (air.cell + 0.5) * p.grid) < 0.001);
-  assert.equal(find("living", "grey_sofa").yaw, 270);
+  assert.equal(find("living", "grey_sofa").yaw, 180);
   const sofa = position("living", "grey_sofa"),
     tv = rooms.living.mounts.find(({ name }) => name === "wall_tv");
-  assert.equal(tv.side, "west");
-  assert.ok(Math.abs((tv.cell + 0.5) * p.grid - localZ("living", "grey_sofa")) < 0.001);
+  assert.equal(tv.side, "north");
+  assert.ok(
+    Math.abs((tv.cell + 0.5) * p.grid - (sofa[0] + p.center[0] - rooms.living.x * p.grid)) < 0.001,
+  );
   for (const name of ["pitsos_fridge", "sink", "stove", "kitchen_counter"])
-    assert.ok(position("living", name)[0] > sofa[0]);
-  const curtains = Object.entries(p.layouts).flatMap(([roomName, layout]) =>
-    layout
-      .flat()
-      .filter((token) => token?.name === "curtain_pair")
-      .map((token) => ({ roomName, token })),
+    assert.ok(position("living", name)[2] > sofa[2]);
+  const curtains = p.rooms.flatMap(({ name: roomName, mounts }) =>
+    mounts.filter((token) => token.name === "curtain_pair").map((token) => ({ roomName, token })),
   );
   assert.equal(curtains.length, 3);
   assert.deepEqual(curtains.map(({ roomName }) => roomName).sort(), ["bedroom", "living", "study"]);
   for (const { roomName, token } of curtains) {
     const shutter = rooms[roomName].openings.find(({ kind }) => kind === "shutter");
-    assert.equal(token.wall, shutter.side);
-    const offset = Math.abs(localZ(roomName, "curtain_pair") - shutter.at * p.grid);
-    assert.ok(offset < 0.05);
-    assert.ok(token.dimensions[0] / 2 >= shutter.width / 2 + offset);
+    assert.equal(token.side, shutter.side);
+    assert.equal(token.height, 0);
+    assert.ok(Math.abs((token.cell + 0.5) * p.grid - shutter.at * p.grid) < 0.001);
+    assert.ok(Math.abs(token.dimensions[0] - shutter.width) < 0.05);
+    assert.ok(Math.abs(shutter.width - rooms[roomName].rows * p.grid) < 0.001);
+    assert.ok(shutter.full);
   }
   const condenser = find("balcony", "ac_condenser");
-  assert.equal(condenser.wall, "west");
+  assert.equal(condenser.yaw, 90);
+  assert.ok(
+    position("balcony", "ac_condenser")[0] + p.center[0] >
+      (rooms.balcony.x + rooms.balcony.cols * 0.7) * p.grid,
+  );
   const chairs = p.layouts.balcony.flat().filter((token) => token?.name === "hogsten_chair");
   assert.deepEqual(
     chairs.map(({ yaw }) => yaw),
     [0, 180],
   );
-  assert.ok(rooms.bedroom.diagonal && rooms.entry.diagonal);
+  assert.ok(rooms.bedroom.diagonal && rooms.hall.diagonal);
+  assert.ok(find("study", "wardrobe") && find("study", "single_bed"));
+  assert.ok(find("bathroom", "frameless_shower"));
+  const washer = position("bathroom", "washing_machine");
+  assert.ok(washer[0] + p.center[0] < (rooms.bathroom.x + rooms.bathroom.openings[0].at) * p.grid);
+  assert.ok(rooms.bathroom.area * p.grid ** 2 > 4);
+  assert.equal(find("bedroom", "builtin_wardrobe").yaw, 116.565051177078);
+  assert.ok(
+    !Object.values(p.layouts)
+      .flat(2)
+      .some((token) => token && /rug|nightstand/.test(token.name)),
+  );
+  const outsideDoors = p.wallSpecs.filter(
+    (wall) => wall.opening?.kind === "door" && wall.rooms.length === 1,
+  );
+  assert.equal(outsideDoors.length, 1);
+  assert.ok(outsideDoors[0].rooms.includes(rooms.hall));
 });
 
 test("room labels preserve Greek text, validate their position and stay within source limits", () => {
@@ -585,7 +610,48 @@ test("mounted shelves fit their full supporting edge beside outline recesses", (
     /MOUNT must fit/u,
   );
   const apartment = parseProgram(examples.Apartment),
-    study = apartment.rooms.find(({ name }) => name === "study");
-  assert.equal(study.mounts[0].side, "south");
-  assert.equal(study.mounts[0].cell, 4);
+    study = apartment.rooms.find(({ name }) => name === "study"),
+    mountedShelf = study.mounts.find(({ name }) => name === "wall_shelf");
+  assert.equal(mountedShelf.side, "south");
+  assert.equal(mountedShelf.cell, 2);
+});
+
+test("full balcony shutters span one continuous edge and preserve shared-wall ownership", () => {
+  const text =
+      room().replace("LAYOUT main", "SHUTTER east FULL\nLAYOUT main") +
+      "\nBALCONY terrace 2x4 AT 4,0\nWALLS west\nLAYOUT terrace\n.\nEND",
+    p = parseProgram(text),
+    shutter = p.rooms[0].openings[0],
+    shared = p.wallSpecs.find((wall) => wall.rooms.length === 2);
+  assert.equal(shutter.at, 2);
+  assert.equal(shutter.width, 4);
+  assert.equal(shared.opening.kind, "shutter");
+  assert.equal(shared.opening.width, 4);
+  assert.throws(() => parseProgram(text.replace("SHUTTER east FULL", "DOOR east FULL")), /FULL/u);
+  assert.throws(
+    () => parseProgram(text.replace("2x4 AT 4,0", "2x2 AT 4,0")),
+    /shared wall boundary/u,
+  );
+  assert.throws(
+    () =>
+      parseProgram(
+        room().replace(
+          "LAYOUT main",
+          "OUTLINE 0,0 4,0 4,2 2,2 2,4 0,4\nSHUTTER east FULL\nLAYOUT main",
+        ),
+      ),
+    /continuous wall edge/u,
+  );
+});
+
+test("curtains can mount at fractional wall centres without overflowing their support", () => {
+  const text = room().replace(
+      "LAYOUT main",
+      "MOUNT east 1.5 curtain_pair[3.95x0.12x2.16] HEIGHT 0\nLAYOUT main",
+    ),
+    curtain = parseProgram(text).rooms[0].mounts[0];
+  assert.equal(curtain.cell, 1.5);
+  assert.equal(curtain.height, 0);
+  assert.throws(() => parseProgram(text.replace("east 1.5", "east 1.6")), /MOUNT must fit/u);
+  assert.throws(() => parseProgram(text.replace("HEIGHT 0", "HEIGHT 1")), /MOUNT HEIGHT/u);
 });

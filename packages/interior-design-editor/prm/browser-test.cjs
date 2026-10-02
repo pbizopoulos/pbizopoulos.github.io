@@ -352,7 +352,7 @@ async function run({ assetsOnly = false } = {}) {
       if (name === "Apartment") {
         assert.match(
           await page.locator("#projectSummary").textContent(),
-          /60 m² indoors.*16\.6 m² outdoors.*76\.6 m² total/,
+          /60 m² indoors.*16\.4 m² outdoors.*76\.4 m² total/,
         );
         await page.click("#sceneOptions summary");
         await page.click("#projectDetailsButton");
@@ -383,7 +383,16 @@ async function run({ assetsOnly = false } = {}) {
                 .map((room) => room.name)
                 .sort()
                 .join("/"),
-              clear: Boolean(s.canStand(...wall.opening.center)),
+              clear: [-0.3, 0, 0.3].some((offset) => {
+                const [x, z] = wall.opening.center,
+                  distance = offset * wall.opening.width;
+                return Boolean(
+                  s.canStand(
+                    x + (wall.axis === "x" ? distance : 0),
+                    z + (wall.axis === "z" ? distance : 0),
+                  ),
+                );
+              }),
             }));
         });
         for (const pair of [
@@ -395,7 +404,6 @@ async function run({ assetsOnly = false } = {}) {
           "balcony/study",
           "bedroom/hall",
           "hall/living",
-          "entry/hall",
         ]) {
           assert.ok(
             connections.some((connection) => connection.pair === pair && connection.clear),
@@ -439,12 +447,49 @@ async function run({ assetsOnly = false } = {}) {
                 nodes.push([x + dx, z + dz]);
             }
           }
-          return [...rooms].sort();
+          const reached = new Set(nodes.map(([x, z]) => `${x},${z}`)),
+            fixtures = s.model.objects
+              .filter(({ userData }) =>
+                [
+                  "bed",
+                  "single_bed",
+                  "builtin_wardrobe",
+                  "wardrobe",
+                  "frameless_shower",
+                  "washing_machine",
+                  "toilet",
+                ].includes(userData.token.name),
+              )
+              .map((group) => {
+                const token = group.userData.token,
+                  yaw = (token.yaw * Math.PI) / 180,
+                  distance = token.dimensions[1] / 2 + 0.28,
+                  position = group.getWorldPosition(group.position.clone()),
+                  x = position.x + Math.sin(yaw) * distance,
+                  z = position.z + Math.cos(yaw) * distance,
+                  gx = Math.round((x - origin[0]) / step),
+                  gz = Math.round((z - origin[1]) / step);
+                return {
+                  name: `${group.userData.room.name}/${token.name}`,
+                  occupied: !s.canStand(position.x, position.z),
+                  reachable:
+                    Boolean(s.canStand(x, z)) &&
+                    [-1, 0, 1].some((dx) =>
+                      [-1, 0, 1].some((dz) => reached.has(`${gx + dx},${gz + dz}`)),
+                    ),
+                };
+              });
+          return { rooms: [...rooms].sort(), fixtures };
         });
         assert.deepEqual(
-          reachable,
-          ["balcony", "bathroom", "bedroom", "entry", "hall", "living", "passage", "study"],
+          reachable.rooms,
+          ["balcony", "bathroom", "bedroom", "hall", "living", "passage", "study"],
           "Continuous walking routes connect every area, including turns around furniture",
+        );
+        assert.equal(reachable.fixtures.length, 7);
+        assert.ok(
+          reachable.fixtures.every(({ occupied, reachable }) => occupied && reachable),
+          JSON.stringify(reachable.fixtures),
         );
         const floorFits = await page.evaluate(() => {
           const s = interior.studio,
@@ -533,9 +578,53 @@ async function run({ assetsOnly = false } = {}) {
           }),
           "Plan view shows room labels and low walls without overhead lintels or fixtures",
         );
+        assert.ok(
+          await page.evaluate(() => {
+            const walls = interior.studio.model.walls,
+              shutters = walls.filter(
+                (wall) =>
+                  wall.opening?.kind === "shutter" &&
+                  Math.abs(wall.opening.width - wall.length) < 0.00001,
+              );
+            return (
+              shutters.length === 3 && shutters.every((wall) => wall.plan.children.length === 0)
+            );
+          }),
+          "Full-wall shutters leave clear plan openings without zero-width wall pieces",
+        );
         if (!assetsOnly) await capture("apartment-plan");
         await page.click("#resetButton");
         await ready();
+        assert.ok(
+          await page.evaluate(() => {
+            const objects = interior.studio.model.objects,
+              curtains = objects.filter(({ userData }) => userData.token.name === "curtain_pair"),
+              air = objects.find(({ userData }) => userData.token.name === "air_conditioner");
+            return (
+              curtains.length === 3 &&
+              curtains.every((group) => {
+                const panels = group
+                  .getObjectsByProperty("isMesh", true)
+                  .filter(({ geometry }) => geometry.type === "PlaneGeometry");
+                return (
+                  group.visible &&
+                  panels.length === 2 &&
+                  panels.every(({ geometry }) => {
+                    geometry.computeBoundingBox();
+                    return (
+                      Math.abs(
+                        (geometry.boundingBox.max.x - geometry.boundingBox.min.x) * group.scale.x -
+                          group.userData.token.dimensions[0] * 0.19,
+                      ) < 0.00001
+                    );
+                  })
+                );
+              }) &&
+              air.visible
+            );
+          }),
+          "All three curtains and the A/C remain visible in the default cutaway",
+        );
         assert.ok(
           await page.evaluate(() => interior.studio.model.labels.every((label) => !label.visible)),
           "Labels stay in plan view",
@@ -608,10 +697,10 @@ async function run({ assetsOnly = false } = {}) {
         assert.equal(instanceCounts.rails, 3, "Three balcony rails each batch all posts");
         assert.equal(
           instanceCounts.floors,
-          8,
+          7,
           "Mapped rooms and passages retain their floor batches",
         );
-        assert.equal(instanceCounts.fringes, 1, "Apartment rug retains its fringe batch");
+        assert.equal(instanceCounts.fringes, 0, "Apartment has no rug");
       }
       if (!assetsOnly)
         await capture(
