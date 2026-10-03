@@ -1194,7 +1194,6 @@ button.icon-button {
   width: fit-content;
   color: var(--ink);
 }
-
 .language-toolbar {
   display: flex;
   flex-wrap: wrap;

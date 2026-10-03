@@ -8,8 +8,6 @@
 !/checks/
 !/checks/installIsoVmWithDisko/
 !/checks/installIsoVmWithDisko/default.nix
-!/checks/interior-design-editor/
-!/checks/interior-design-editor/default.nix
 !/checks/interior-design-editor-video/
 !/checks/interior-design-editor-video/default.nix
 !/checks/laptopVmWithDisko/

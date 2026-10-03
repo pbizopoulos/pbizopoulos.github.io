@@ -29,11 +29,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1790980208,
-        "narHash": "sha256-ih74dlEq6uv7P/ON8b/PHM6I7rNq+fAot4iYjb6eoXM=",
+        "lastModified": 1791014282,
+        "narHash": "sha256-Jz6xwjtSluQXKzM9UlStpSNa25mYuk5b5aCtwWR3tq4=",
         "owner": "pbizopoulos",
         "repo": "canonical",
-        "rev": "a848f5d377b3db98ae41f14be79d906a1d1bac17",
+        "rev": "207ba3e889eeb19bb32ff2a72d299bee251d9804",
         "type": "github"
       },
       "original": {
@@ -45,6 +45,7 @@
     "disko": {
       "inputs": {
         "nixpkgs": [
+          "canonical",
           "nixpkgs"
         ]
       },
@@ -97,10 +98,6 @@
       "inputs": {
         "canonical": "canonical",
         "disko": "disko",
-        "nixpkgs": [
-          "canonical",
-          "nixpkgs"
-        ],
         "preservation": "preservation"
       }
     },
