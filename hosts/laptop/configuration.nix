@@ -115,11 +115,15 @@
           inInitrd = true;
         }
         {
+          configureParent = true;
           file = "/etc/ssh/ssh_host_ed25519_key";
+          how = "symlink";
           mode = "0600";
         }
         {
+          configureParent = true;
           file = "/etc/ssh/ssh_host_rsa_key";
+          how = "symlink";
           mode = "0600";
         }
       ];
@@ -151,20 +155,7 @@
   };
   security.pam.services.waylock = { };
   services = {
-    openssh = {
-      enable = true;
-      hostKeys = [
-        {
-          bits = 4096;
-          path = "/persistent/etc/ssh/ssh_host_rsa_key";
-          type = "rsa";
-        }
-        {
-          path = "/persistent/etc/ssh/ssh_host_ed25519_key";
-          type = "ed25519";
-        }
-      ];
-    };
+    openssh.enable = true;
     pipewire = {
       enable = true;
       pulse.enable = true;

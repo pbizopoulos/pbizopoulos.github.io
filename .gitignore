@@ -6,8 +6,6 @@
 !/LICENSE
 !/README
 !/checks/
-!/checks/installIsoVmWithDisko/
-!/checks/installIsoVmWithDisko/default.nix
 !/checks/interior-design-editor-video/
 !/checks/interior-design-editor-video/default.nix
 !/checks/laptopVmWithDisko/
@@ -15,8 +13,6 @@
 !/flake.lock
 !/flake.nix
 !/hosts/
-!/hosts/installIso/
-!/hosts/installIso/configuration.nix
 !/hosts/laptop/
 !/hosts/laptop/configuration.nix
 !/hosts/laptop/hardware-configuration.nix
