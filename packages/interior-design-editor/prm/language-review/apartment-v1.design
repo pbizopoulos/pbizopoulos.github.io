@@ -1,0 +1,208 @@
+DETAIL project "Bedroom, balcony, living room, kitchen, guitar room and bathroom."
+DETAIL project "Map layout: room1 guitar room, room2 balcony, room3 living room/kitchen, room4 bedroom; bathroom at the top."
+DETAIL project "Scaled to approximately 62 m² indoors, excluding the balcony; balcony depth 1.56 m."
+DETAIL project "Map proportions are approximate, not a measured floor plan."
+DETAIL project "Furniture dimensions and shapes follow product references, with simplified geometry."
+DETAIL bedroom "Structure mattress: 26 cm high, 160×200 cm based on GRUSNARV; bed base is approximate."
+DETAIL project "Recesses follow the scanned outline and may represent walls or obstacles."
+DETAIL living "LIVING ROOM — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."
+DETAIL living "Aristo: wall mounted, 135×31.6×25 cm; approximate bottom height 45 cm."
+DETAIL living "HAMA 220810 TV bracket" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>
+DETAIL living "KITCHEN — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."
+DETAIL living "Franke cooker hood" <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>
+DETAIL living "GEYSER ARAGON EH replacement filter" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>
+DETAIL bedroom "BEDROOM — Grecostrom Structure."
+DETAIL bedroom "GRUSNARV mattress protector" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>
+DETAIL study "GUITAR ROOM — Dell XPS 13 9343, classical guitar, clothes, suitcase and backpacks."
+DETAIL study "VATTENKAR 52×26 cm used as a shelf, with an approximate bottom height of 1.20 m."
+DETAIL study "No desk; the stand is used as a shelf."
+DETAIL bathroom "BATHROOM — washing machine (manual), Drop Gusto Wood Cut 60 cm mirror."
+DETAIL balcony "BALCONY — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."
+DETAIL balcony "FRÖSÖN/DUVHOLMEN outdoor chair cushion" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>
+DETAIL bedroom "ALPSTUGA" <https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/>
+DETAIL bedroom "SMAHAGEL" <https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>
+GRID 0.37419692305371843
+ROOM living 15x13 AT 0,9
+LABEL "Living room / kitchen" AT 4,8
+OUTLINE 0,0 15,0 15,13 3,13 3,11 0,11
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE wood
+PASSAGE south AT 1.5 WIDTH 1.1
+PASSAGE west AT 12 WIDTH 0.7483938461074369
+SHUTTER east FULL
+MOUNT east 6 curtain_pair[4.82355999969834x0.12x2.16] HEIGHT 0
+MOUNT north 7 floating_tv_console[1.35x0.316x0.25]<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45
+MOUNT north 7 wall_tv[1.1164x0.0915x0.6513]<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>
+MOUNT east 1.5 air_conditioner<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf> HEIGHT 2.28
+MOUNT south 6 cooker_hood<https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html> HEIGHT 1.6
+LIGHT downlight AT 7,6 POWER 6
+LIGHT downlight AT 8,6 POWER 6
+LIGHT downlight AT 9,6 POWER 6
+LIGHT downlight AT 2,6 POWER 6
+MOUNT west 1 wall_lamp HEIGHT 2.1
+MOUNT west 9 wall_lamp HEIGHT 2.1
+MOUNT north 13 radiator HEIGHT 0.15
+MOUNT south 7.3 kitchen_cabinet[0.35x0.6x0.9] HEIGHT 0
+MOUNT south 11.594849277072225 kitchen_cabinet[0.9x0.6x0.9] HEIGHT 0
+MOUNT south 3.850477244358109 kitchen_cabinet[0.9686892306880147x0.6x0.9] HEIGHT 0
+MOUNT south 4.28 kitchen_cabinet[0.55x0.32x0.7] HEIGHT 1.55
+MOUNT south 6 kitchen_cabinet[0.6x0.32x0.55] HEIGHT 2.02
+MOUNT south 8.5 kitchen_cabinet[0.6x0.32x0.7] HEIGHT 1.55
+MOUNT south 10.15 kitchen_cabinet[0.6x0.32x0.7] HEIGHT 1.55
+ROOM passage 5x2.5 AT 0,6.5
+LABEL "Passage" AT 2.5,1.25
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE wood
+PASSAGE south AT 2.5 WIDTH 1.55
+ROOM study 10x7 AT 5,2
+LABEL "Guitar room" AT 6,6
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE wood
+DOOR west AT 5.75 WIDTH 0.85
+SHUTTER east FULL
+MOUNT east 3 curtain_pair[2.578378461376029x0.12x2.16] HEIGHT 0
+MOUNT south 2 wall_shelf(laptop_on_top)[0.52x0.26x0.08]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2
+MOUNT south 8 radiator[0.8x0.12x0.6] HEIGHT 0.15
+LIGHT ceiling_light AT 5,3 POWER 12
+ROOM bathroom 6x7.5 AT -1,-1
+LABEL "Bathroom" AT 4.2,5
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE tile
+DOOR south AT 2.9 WIDTH 0.65
+MOUNT east 3.5 radiator[0.28x0.1x0.55] HEIGHT 0.15
+MOUNT west 4.1 mirror[0.45x0.045x0.6]<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029> HEIGHT 1.2
+MOUNT west 4.1 wall_lamp[0.45x0.16x0.12] HEIGHT 1.95
+ROOM bedroom 12.875x8 AT 2.125,22
+LABEL "Bedroom" AT 7.375,1.1
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE wood
+OUTLINE 0.875,0 12.875,0 12.875,8 2.875,8 2.5,7.25 1.5,7.75 0,4.75 1,4.25 0.875,4
+DOOR west AT 2.5 WIDTH 0.8
+SHUTTER east FULL
+MOUNT east 3.5 curtain_pair[2.9525753844297475x0.12x2.16] HEIGHT 0
+MOUNT west 5.75 builtin_wardrobe[1.2x0.3983648784596863x2.5] HEIGHT 0
+MOUNT south 11 radiator[0.8x0.12x0.6] HEIGHT 0.15
+LIGHT ceiling_light AT 8,4 POWER 12
+ROOM hall 6x6 AT -3,20
+WALLS north east south west
+DOORS none
+WINDOWS none
+SURFACE wood
+OUTLINE 3,0 6,0 6,6 3,6 3,5 1,6 0,5.25 0,2.75 1,2 3,2
+DOOR west AT 4 WIDTH 0.8
+MOUNT north 1.5 wall_coat_hooks[0.65x0.12x0.3] HEIGHT 1.45
+BALCONY balcony 4.168927919741478x28 AT 15,2
+LABEL "Balcony" AT 2.25,4
+WALLS west south
+DOORS none
+WINDOWS none
+SURFACE tile
+RAILS north east
+RAILING horizontal silver SPACING 1.5
+MOUNT west 7.5 retracted_double_awning HEIGHT 2.42
+MOUNT west 19.5 retracted_double_awning HEIGHT 2.42
+MOUNT north 0.2 retracted_side_awning HEIGHT 0.75
+LAYOUT living
+. | . | . | . | . | . | robot_vacuum~north<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf>
+. | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | kitchen_chair[0.52x0.51x0.79]@0<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | .
+.
+.
+. | . | . | . | grey_armchair[0.66x0.68x0.84]@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> | . | . | . | . | . | . | aabenraa_table(tableware_on_top)[1.5x1x0.75]@0<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa>
+. | . | . | . | . | . | . | round_coffee_table
+.
+. | . | . | . | . | . | . | . | . | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | kitchen_chair[0.52x0.51x0.79]@180<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma> | . | .
+. | . | . | . | . | . | . | grey_sofa[1.54x0.84x0.85]@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma>
+.
+.
+.
+. | . | . | . | . | . | stove[0.6x0.6x0.88]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> | . | . | sink[0.9x0.6x0.9]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> | . | . | . | . | pitsos_fridge[-0.15,0]~south<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf>
+END
+LAYOUT study
+. | . | . | . | . | . | . | . | wardrobe[1.1x0.56x2.4][-0.009,0]~north
+single_bed~west
+.
+.
+.
+.
+. | . | . | . | . | . | guitar~south
+END
+LAYOUT bathroom
+. | . | . | toilet[0.32x0.68x0.8]~north
+.
+washing_machine[0.6x0.6x0.85][0,0.2]~west<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf>
+.
+bathroom_vanity[0.45x0.3x0.85][0,0.03741969230537184]~west
+.
+. | . | . | . | . | frameless_shower[0.7x0.8x2.05][0,0.00419692305371843]~east
+END
+LAYOUT bedroom
+.
+.
+.
+.
+.
+.
+.
+. | . | . | . | . | . | . | bed[1.6x2x0.56]~south<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf>
+END
+LAYOUT balcony
+.
+. | . | ac_condenser@0<https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+. | hogsten_chair(hose_underneath)[0.73x0.65x0.83][-0.12,0]<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+.
+.
+. | folding_table[0.65x0.65x0.71][-0.12,0]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/>
+.
+.
+. | hogsten_chair[0.73x0.65x0.83]@180[-0.12,0]<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+.
+.
+.
+.
+END
+LAYOUT hose
+watering_hose
+END
+LAYOUT passage
+.
+.
+END
+LAYOUT hall
+.
+.
+.
+.
+.
+. | . | . | . | shoe_rack[0.6x0.25x0.48]~south
+END
+LAYOUT tableware
+plate<https://www.ikea.gr/proioda/fargklar-piato-mat-4-tem-26-cm/70479644/> | water_bottle<https://www.e-jumbo.gr/kouzina/potiria-boukalia-koupes/gyalina-boukalia-nerou/boukalia-vidota/boukalia-vidota-diafana/boukali-nerou-gyalino-kymatisto-schedio-metalliko-kapaki-1.25lt_1642315/> | water_glass<https://www.ikea.com/lt/en/p/ikea-365-glass-clear-glass-60279711/>
+END
+LAYOUT laptop
+laptop<https://web.archive.org/web/20260422013443/https://dl.dell.com/manuals/all-products/esuprt_laptop/esuprt_xps_laptop/xps-13-9343-laptop_reference%20guide_en-us.pdf>
+END

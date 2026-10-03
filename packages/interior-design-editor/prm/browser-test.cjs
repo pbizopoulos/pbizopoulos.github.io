@@ -422,7 +422,7 @@ async function run({ assetsOnly = false } = {}) {
                 (wall) => wall.rooms.length === 1 && wall.opening?.kind === "door",
               );
             return (
-              passages.length === 2 &&
+              passages.length === 3 &&
               passages.every(
                 (passage) =>
                   passage.opening.top === passage.room.height &&
@@ -444,7 +444,7 @@ async function run({ assetsOnly = false } = {}) {
               Boolean(s.canStand(...entrance.opening.center))
             );
           }),
-          "Both living-room passages are open without door frames or lintels",
+          "All three passages are open without door frames or lintels",
         );
         const reachable = await page.evaluate(() => {
           const s = interior.studio,
@@ -517,7 +517,7 @@ async function run({ assetsOnly = false } = {}) {
                   occupied: !s.canStand(position.x, position.z),
                   reachable: [
                     [x, z, gx, gz],
-                    ...(/bed/u.test(token.name) ? [-1, 1].map(side => {
+                    ...(/bed|table/u.test(token.name) ? [-1, 1].map(side => {
                       const distance = token.dimensions[0] / 2 + 0.28;
                       const x = position.x + side * Math.cos(yaw) * distance;
                       const z = position.z - side * Math.sin(yaw) * distance;
@@ -788,7 +788,7 @@ async function run({ assetsOnly = false } = {}) {
           const uppers = objects.filter((g) => g.userData.token.name === "kitchen_cabinet" && g.userData.token.height > 0);
           return hooks.getObjectsByProperty("isMesh", true).filter((m) => m.userData.woodenCoatHook).length === 5 &&
             hose.parent.userData.token.name === "hogsten_chair" && hose.position.y === 0 &&
-            sconces.length === 2 && sconces.every((g) => g.getObjectsByProperty("isMesh", true).some((m) => m.userData.wallSconce)) &&
+            sconces.length === 3 && sconces.every((g) => g.getObjectsByProperty("isMesh", true).some((m) => m.userData.wallSconce)) &&
             uppers.length === 4 && uppers.every((g) => g.visible && g.position.y >= 1.55);
         }), "Wooden coat hooks, wall sconces, under-chair hose and overhead cabinets are modelled");
         const mounted = await page.evaluate(() =>
@@ -1084,7 +1084,7 @@ async function run({ assetsOnly = false } = {}) {
         const { doc, selection } = interior.editor.state;
         return doc.sliceString(selection.main.from, selection.main.to);
       }),
-      "bed[1.5x2x0.56]~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/>",
+      "bed~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/>",
       "Selecting an object highlights its source without editing it",
     );
     assert.equal(await page.locator("#selectionCard > *").count(), 1);
@@ -1094,7 +1094,7 @@ async function run({ assetsOnly = false } = {}) {
     );
     assert.equal(await page.locator("#selectionCard").isVisible(), false);
     assert.equal(await page.locator("#undoButton, #redoButton").count(), 0);
-    await page.locator(".cm-content").fill(original.replace("bed[1.5x2x0.56]", "bed[1.4x2x0.56]"));
+    await page.locator(".cm-content").fill(original.replace("bed~", "bed[1.4x2x0.56m]~"));
     await page.locator(".cm-content").press("Control+Enter");
     await ready();
     assert.equal(
@@ -1121,7 +1121,7 @@ async function run({ assetsOnly = false } = {}) {
     assert.equal(await page.evaluate(() => interior.editor.state.doc.toString()), beforeBrowsing);
     await page
       .locator(".cm-content")
-      .fill(beforeBrowsing.replace(". | . | . | . | . | . | .", "plant | . | . | . | . | . | ."));
+      .fill(beforeBrowsing.replace("  PLACE dresser", "  PLACE plant AT 0.5,7.5g\n  PLACE dresser"));
     await page.locator(".cm-content").press("Control+Enter");
     await ready();
     assert.ok(

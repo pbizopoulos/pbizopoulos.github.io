@@ -1,0 +1,152 @@
+DESIGN 2
+LINK ref1 = <https://web.archive.org/web/20260908154209/https://www.franke.com/gr/el/home-solutions/%CF%80%CF%81%CE%BF%CF%8A%CF%8C%CE%BD%CF%84%CE%B1/%CE%B1%CF%80%CE%BF%CF%81%CF%81%CE%BF%CF%86%CE%B7%CF%84%CE%AE%CF%81%CE%B5%CF%82/product-detail-page.html/315.0532.375.html>
+LINK ref2 = <https://web.archive.org/web/20260721145901/https://gscs-b2c.lge.com/open/downloadFile?fileId=KROWM000067734.pdf>
+GRID 0.37419692305371843m
+DETAIL project "Bedroom, balcony, living room, kitchen, guitar room and bathroom."
+DETAIL project "Map layout: room1 guitar room, room2 balcony, room3 living room/kitchen, room4 bedroom; bathroom at the top."
+DETAIL project "Scaled to approximately 62 m² indoors, excluding the balcony; balcony depth 1.56 m."
+DETAIL project "Map proportions are approximate, not a measured floor plan."
+DETAIL project "Furniture dimensions and shapes follow product references, with simplified geometry."
+DETAIL bedroom "Structure mattress: 26 cm high, 160×200 cm based on GRUSNARV; bed base is approximate."
+DETAIL project "Recesses follow the scanned outline and may represent walls or obstacles."
+DETAIL living "LIVING ROOM — GEDVED, UDSBJERG, Sharp 50FN2EL, Aristo, LG, Xiaomi S10."
+DETAIL living "Aristo: wall mounted, 135×31.6×25 cm; approximate bottom height 45 cm."
+DETAIL living "HAMA 220810 TV bracket" <https://web.archive.org/web/20260727101442/https://www.public.gr/product/tileoraseis/accessories-vision/baseis-tileoraseon/basi-tileorasis-epitoixia-hama-220810-me-klisi-32--65-eos-35-kg/1904844>
+DETAIL living "KITCHEN — Franke CA 52 M XS, Primato USA2GB12, Pitsos PKNB36NLE0."
+DETAIL living "Franke cooker hood" <$ref1>
+DETAIL living "GEYSER ARAGON EH replacement filter" <https://web.archive.org/web/20260727095943/https://www.skroutz.gr/s/24636659/Geyser-Antallaktiko-Filtro-Nerou-Ano-kai-Kato-Pagou-10-Aragon-EH-0-1-mm.html>
+DETAIL bedroom "BEDROOM — Grecostrom Structure."
+DETAIL bedroom "GRUSNARV mattress protector" <https://web.archive.org/web/20260823115455/https://www.ikea.gr/proioda/grusnarv-adiabroxo-prostateytiko-strwmatos-160x200-cm/60522129/>
+DETAIL study "GUITAR ROOM — Dell XPS 13 9343, classical guitar, clothes, suitcase and backpacks."
+DETAIL study "VATTENKAR 52×26 cm used as a shelf, with an approximate bottom height of 1.20 m."
+DETAIL study "No desk; the stand is used as a shelf."
+DETAIL bathroom "BATHROOM — washing machine (manual), Drop Gusto Wood Cut 60 cm mirror."
+DETAIL balcony "BALCONY — HÖGSTEN, SUNDSÖ, FRÖSÖN/DUVHOLMEN."
+DETAIL balcony "FRÖSÖN/DUVHOLMEN outdoor chair cushion" <https://www.ikea.gr/proioda/froson-duvholmen-maksilari-kareklas-ekswterikoy-xwroy/89291326/>
+DETAIL bedroom "ALPSTUGA" <https://web.archive.org/web/20260823111634/https://www.ikea.gr/en/products/alpstuga-smart-air-quality-sensor/50604187/>
+DETAIL bedroom "SMAHAGEL" <https://web.archive.org/web/20260823111932/https://www.ikea.com/ee/en/p/smahagel-1-port-usb-charger-white-10544077/>
+
+ASSET kitchen_chair_item = kitchen_chair<https://web.archive.org/web/20260721133228/https://jysk.gr/trapezaria/karekles-trapezarias/karekla-trapezarias-hvidovre-fysiki-drys-mayro-yfasma>
+ASSET hogsten_chair_item = hogsten_chair<https://web.archive.org/web/20260727191836/https://www.ikea.com/jo/en/p/hoegsten-chair-with-armrests-outdoor-white-20209862/>
+
+ROOM living 15x13g AT 0,9g
+  LABEL "Living room / kitchen" AT 4,8g
+  OUTLINE 0,0g 15,0g 15,13g 3,13g 3,11g 0,11g
+  WALLS all
+  PASSAGE south AT 1.5g WIDTH 1.1m
+  PASSAGE west AT 12g WIDTH 0.7483938461074369m
+  SHUTTER east FULL
+  MOUNT east AT 6.5g curtain_pair[4.82355999969834x0.12x2.16m] HEIGHT 0m
+  MOUNT north AT 7.5g floating_tv_console<https://web.archive.org/web/20260721131723/https://www.megapap.com/epiplo-tileorasis-epitoixio-aristo-megapap-me-led-xroma-sapphire-oak-135x31-6x25ek-el> HEIGHT 0.45m
+  MOUNT north AT 7.5g wall_tv[1.1164x0.0915x0.6513m]<https://web.archive.org/web/20260727101118/https://www.public.gr/product/tileoraseis/tileoraseis/tileorasi-sharp-led-50-4k-android-50fn2el/1771820>
+  MOUNT east AT 2g air_conditioner<$ref2> HEIGHT 2.28m
+  MOUNT south AT 6.5g cooker_hood<$ref1> HEIGHT 1.6m
+  LIGHT downlight AT 7.5,6.5g POWER 6
+  LIGHT downlight AT 8.5,6.5g POWER 6
+  LIGHT downlight AT 9.5,6.5g POWER 6
+  LIGHT downlight AT 2.5,6.5g POWER 6
+  MOUNT west AT 1.5g wall_lamp HEIGHT 2.1m
+  MOUNT west AT 9.5g wall_lamp HEIGHT 2.1m
+  MOUNT north AT 13.5g radiator HEIGHT 0.15m
+  MOUNT south AT 7.8g kitchen_cabinet[0.35x0.6x0.9m] HEIGHT 0m
+  MOUNT south AT 12.094849277072225g kitchen_cabinet[0.9x0.6x0.9m] HEIGHT 0m
+  MOUNT south AT 4.350477244358109g kitchen_cabinet[0.9686892306880147x0.6x0.9m] HEIGHT 0m
+  MOUNT south AT 4.78g kitchen_cabinet[0.55x0.32x0.7m] HEIGHT 1.55m
+  MOUNT south AT 6.5g kitchen_cabinet[0.6x0.32x0.55m] HEIGHT 2.02m
+  MOUNT south AT 9g kitchen_cabinet[0.6x0.32x0.7m] HEIGHT 1.55m
+  MOUNT south AT 10.65g kitchen_cabinet[0.6x0.32x0.7m] HEIGHT 1.55m
+  PLACE robot_vacuum~north<https://web.archive.org/web/20260721124503/https://www.mistore-greece.gr/xiaomi-hellas/media/xiaomi-greece/manuals/Smart%20Devices/Mi_Robot_Vacuum_15_10.pdf> AT 6.5,0.5g
+  PLACE kitchen_chair_item AT 10.5,1.5g
+  PLACE kitchen_chair_item AT 12.5,1.5g
+  PLACE grey_armchair@35<https://web.archive.org/web/20260721133830/https://jysk.gr/kathistiko/polythrones/polythrona-udsbjerg-gkri-yfasma-drys> AT 4.5,4.5g
+  PLACE aabenraa_table(tableware_on_top)[1.5x1x0.75m]<https://web.archive.org/web/20260721133032/https://jysk.gr/trapezaria/trapezia-trapezarias/trapezi-trapezarias-aabenraa-80x120-hromatism-th-drys-mayro?search_category=auto_suggestion&query=aabenraa> AT 11.5,4.5g
+  PLACE round_coffee_table AT 7.5,5.5g
+  PLACE kitchen_chair_item@180 AT 10.5,7.5g
+  PLACE kitchen_chair_item@180 AT 12.5,7.5g
+  PLACE grey_sofa@180<https://jysk.gr/kathistiko/kanapedes/2-thesios-kanapes-gedved-anoihto-gkri-yfasma> AT 7.5,8.5g
+  PLACE stove[0.6x0.6x0.88m]~south<https://manuall.gr/franke-ca-52-m-xs-fournos/> AT 6.5,12.5g
+  PLACE sink[0.9x0.6x0.9m]~south<https://web.archive.org/web/20260727095439/https://www.primato.gr/products/water-filters/under-sink/usa2gb12-en.html?selected_section=product_reviews&page=2> AT 9.5,12.5g
+  PLACE pitsos_fridge~south[-0.15,0m]<https://web.archive.org/web/20260721125409/https://media3.bsh-group.com/Documents/9001805015_B.pdf> AT 14.5,12.5g
+END
+
+ROOM passage 5x2.5g AT 0,6.5g
+  LABEL "Passage" AT 2.5,1.25g
+  WALLS all
+  PASSAGE south AT 2.5g WIDTH 1.55m
+END
+
+ROOM study 10x7g AT 5,2g
+  LABEL "Guitar room" AT 6,6g
+  WALLS all
+  DOOR west AT 5.75g WIDTH 0.85m
+  SHUTTER east FULL
+  MOUNT east AT 3.5g curtain_pair[2.578378461376029x0.12x2.16m] HEIGHT 0m
+  MOUNT south AT 2.5g wall_shelf(laptop_on_top)[0.52x0.26x0.08m]<https://web.archive.org/web/20260721132156/https://www.ikea.gr/en/products/vattenkar-laptop-monitor-stand-52x26-cm/80541565/> HEIGHT 1.2m
+  MOUNT south AT 8.5g radiator[0.8x0.12x0.6m] HEIGHT 0.15m
+  LIGHT ceiling_light AT 5.5,3.5g POWER 12
+  PLACE wardrobe[1.1x0.56x2.4m]~north[-0.009,0m] AT 8.5,0.5g
+  PLACE single_bed~west AT 0.5,1.5g
+  PLACE guitar~south AT 6.5,6.5g
+END
+
+ROOM bathroom 6x7.5g AT -1,-1g
+  LABEL "Bathroom" AT 4.2,5g
+  WALLS all
+  SURFACE tile
+  DOOR south AT 2.9g WIDTH 0.65m
+  MOUNT east AT 4g radiator[0.28x0.1x0.55m] HEIGHT 0.15m
+  MOUNT west AT 4.6g mirror[0.45x0.045x0.6m]<https://www.praktiker.gr/p/kathreptis-epiplou-mpaniou-drop-gusto-wood-cut-60cm-77029> HEIGHT 1.2m
+  MOUNT west AT 4.6g wall_lamp[0.45x0.16x0.12m] HEIGHT 1.95m
+  PLACE toilet[0.32x0.68x0.8m]~north AT 3.5,0.5g
+  PLACE washing_machine[0.6x0.6x0.85m]~west[0,0.2m]<https://web.archive.org/web/20260721130831/https://media3.bsh-group.com/Documents/9000129660_A.pdf> AT 0.5,2.5g
+  PLACE bathroom_vanity[0.45x0.3x0.85m]~west[0,0.03741969230537184m] AT 0.5,4.5g
+  PLACE frameless_shower[0.7x0.8x2.05m]~east[0,0.00419692305371843m] AT 5.5,6.5g
+END
+
+ROOM bedroom 12.875x8g AT 2.125,22g
+  LABEL "Bedroom" AT 7.375,1.1g
+  WALLS all
+  OUTLINE 0.875,0g 12.875,0g 12.875,8g 2.875,8g 2.5,7.25g 1.5,7.75g 0,4.75g 1,4.25g 0.875,4g
+  DOOR west AT 2.5g WIDTH 0.8m
+  SHUTTER east FULL
+  MOUNT east AT 4g curtain_pair[2.9525753844297475x0.12x2.16m] HEIGHT 0m
+  MOUNT west AT 6.25g builtin_wardrobe[1.2x0.3983648784596863x2.5m] HEIGHT 0m
+  MOUNT south AT 11.5g radiator[0.8x0.12x0.6m] HEIGHT 0.15m
+  LIGHT ceiling_light AT 8.5,4.5g POWER 12
+  PLACE bed[1.6x2x0.56m]~south<https://web.archive.org/web/20260721124835/https://grecostrom.gr/app/uploads/2024/03/BODYTOPIA_CATALOGUE.pdf> AT 7.5,7.5g
+END
+
+ROOM hall 6x6g AT -3,20g
+  WALLS all
+  OUTLINE 3,0g 6,0g 6,6g 3,6g 3,5g 1,6g 0,5.25g 0,2.75g 1,2g 3,2g
+  DOOR west AT 4g WIDTH 0.8m
+  MOUNT north AT 2g wall_coat_hooks[0.65x0.12x0.3m] HEIGHT 1.45m
+  PLACE shoe_rack[0.6x0.25x0.48m]~south AT 4.5,5.5g
+END
+
+BALCONY balcony 4.168927919741478x28g AT 15,2g
+  LABEL "Balcony" AT 2.25,4g
+  WALLS west south
+  SURFACE tile
+  RAILS north east
+  RAILING horizontal silver SPACING 1.5m
+  MOUNT west AT 8g retracted_double_awning HEIGHT 2.42m
+  MOUNT west AT 20g retracted_double_awning HEIGHT 2.42m
+  MOUNT north AT 0.7g retracted_side_awning HEIGHT 0.75m
+  PLACE ac_condenser<$ref2> AT 2.5,1.5g
+  PLACE hogsten_chair_item(hose_underneath)[-0.12,0m] AT 1.5,17.5g
+  PLACE folding_table[-0.12,0m]<https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/> AT 1.5,20.5g
+  PLACE hogsten_chair_item@180[-0.12,0m] AT 1.5,23.5g
+END
+
+LAYOUT hose
+  watering_hose
+END
+
+LAYOUT tableware
+  plate<https://www.ikea.gr/proioda/fargklar-piato-mat-4-tem-26-cm/70479644/> | water_bottle<https://www.e-jumbo.gr/kouzina/potiria-boukalia-koupes/gyalina-boukalia-nerou/boukalia-vidota/boukalia-vidota-diafana/boukali-nerou-gyalino-kymatisto-schedio-metalliko-kapaki-1.25lt_1642315/> | water_glass<https://www.ikea.com/lt/en/p/ikea-365-glass-clear-glass-60279711/>
+END
+
+LAYOUT laptop
+  laptop<https://web.archive.org/web/20260422013443/https://dl.dell.com/manuals/all-products/esuprt_laptop/esuprt_xps_laptop/xps-13-9343-laptop_reference%20guide_en-us.pdf>
+END

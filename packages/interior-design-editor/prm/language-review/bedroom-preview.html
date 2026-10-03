@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bedroom — Source and scene</title><style>*{box-sizing:border-box}body{margin:0;background:#f1eee7;color:#292d2c;font:16px system-ui}main{max-width:1920px;margin:auto;padding:40px}h1{font-size:36px;margin:0 0 8px}h2{font-size:26px;margin:0}p{line-height:1.6}a{color:#365f50}section{margin:38px 0 64px}.meta{color:#58665d}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}.panel{background:#fff;border:1px solid #dcd8ce;border-radius:12px;padding:20px;min-width:0}.panel h3{margin:0 0 14px}.panel img{width:100%;display:block;background:#eae8df;border-radius:8px}.code-view{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start;margin-top:20px}pre{margin:0;font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f8f8f3;padding:20px;border-radius:8px}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:12px;border-bottom:1px solid #dcd8ce}details{margin-top:20px}summary{cursor:pointer;padding:12px;background:#e8e6de}.caption{font-size:13px;color:#5e665f}.badge{background:#dceadd;color:#31583c;padding:6px 12px;border-radius:20px;font-size:14px} @media(max-width:900px){.comparison,.code-view{grid-template-columns:1fr}main{padding:18px}}</style><main><h1>Bedroom</h1><p class="meta">DESIGN 2 · <span class="badge">21.9% fewer bytes</span> · 53 → 0 empty grid cells</p><p>Complete source shown. Both versions render the same design.</p><div class="code-view"><div class="panel"><h3>DESIGN 2 source</h3><pre>DESIGN 2
+GRID 0.5m
+DETAIL project &quot;Bedroom: 3.5 × 4 m. GRID is metres per cell.&quot;
+DETAIL project &quot;Furniture: asset[width x depth x height]~wall&lt;product URL&gt;.&quot;
+DETAIL project &quot;Links are product references; the renderer uses generic shapes.&quot;
+
+ROOM main 7x8g AT 0,0g
+  WALLS all
+  DOORS south
+  WINDOWS north
+  MOUNT east AT 4.5g mirror
+  LIGHT ceiling_light AT 3.5,4.5g
+  PLACE bed~north&lt;https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/&gt; AT 3.5,1.5g
+  PLACE side_table[0.55x0.55x0.45m]&lt;https://www.ikea.com/us/en/p/lack-side-table-white-30449908/&gt; AT 1.5,5.5g
+  PLACE dresser~east AT 5.5,6.5g
+END</pre></div><div class="panel"><h3>Rendered result · unchanged from original</h3><img src="bedroom-v2.png" alt="Bedroom"><p class="caption">0 changed pixels in before/after comparison. <a href="bedroom.html">Before / after</a></p></div></div><p><a href="bedroom-v2.design">Complete source</a> · <a href="index.html">All examples</a></p></main></html>

@@ -1,0 +1,16 @@
+DESIGN 2
+GRID 0.5m
+DETAIL project "Bedroom: 3.5 × 4 m. GRID is metres per cell."
+DETAIL project "Furniture: asset[width x depth x height]~wall<product URL>."
+DETAIL project "Links are product references; the renderer uses generic shapes."
+
+ROOM main 7x8g AT 0,0g
+  WALLS all
+  DOORS south
+  WINDOWS north
+  MOUNT east AT 4.5g mirror
+  LIGHT ceiling_light AT 3.5,4.5g
+  PLACE bed~north<https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/> AT 3.5,1.5g
+  PLACE side_table[0.55x0.55x0.45m]<https://www.ikea.com/us/en/p/lack-side-table-white-30449908/> AT 1.5,5.5g
+  PLACE dresser~east AT 5.5,6.5g
+END

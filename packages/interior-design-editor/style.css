@@ -1194,3 +1194,28 @@ button.icon-button {
   width: fit-content;
   color: var(--ink);
 }
+
+.language-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.35rem 1rem;
+  border-bottom: 1px solid #dedbd1;
+  font-size: 0.75rem;
+}
+.language-toolbar button,
+.language-toolbar a {
+  color: #514d43;
+  font: inherit;
+}
+.language-toolbar button {
+  background: transparent;
+  border: 1px solid #dedbd1;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+.language-toolbar [hidden] {
+  display: none;
+}

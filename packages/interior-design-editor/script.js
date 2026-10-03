@@ -665,7 +665,615 @@
         yaw,
       };
     }
+    /* Version 2 lowers to the same validated scene model. Lengths are metres; g is the drawing-grid unit. */
+    function sourceLines(source) {
+      let from = 0;
+      return source.split("\n").map((raw, index) => {
+        let quote = false,
+          link = false,
+          escape = false,
+          end = raw.length;
+        for (let i = 0; i < raw.length; i++) {
+          const c = raw[i];
+          if (quote) {
+            if (escape) escape = false;
+            else if (c === "\\") escape = true;
+            else if (c === '"') quote = false;
+          } else if (c === '"' && !link) quote = true;
+          else if (c === "<") link = true;
+          else if (c === ">") link = false;
+          else if (c === "#" && !link) {
+            end = i;
+            break;
+          }
+        }
+        const result = {
+          raw,
+          text: raw.slice(0, end).trim(),
+          comment: raw.slice(end),
+          line: index + 1,
+          from,
+          to: from + raw.length,
+        };
+        from += raw.length + 1;
+        return result;
+      });
+    }
+    function decimal(value) {
+      const text = String(Number(value));
+      if (!text.includes("e")) return text;
+      const [mantissa, exponent] = text.split("e"),
+        sign = mantissa.startsWith("-") ? "-" : "",
+        unsigned = mantissa.replace("-", ""),
+        digits = unsigned.replace(".", ""),
+        point =
+          (unsigned.includes(".") ? unsigned.indexOf(".") : unsigned.length) + Number(exponent);
+      return (
+        sign +
+        (point <= 0
+          ? `0.${"0".repeat(-point)}${digits}`
+          : point >= digits.length
+            ? digits + "0".repeat(point - digits.length)
+            : `${digits.slice(0, point)}.${digits.slice(point)}`)
+      );
+    }
+    function measurement(text, grid, line, count = 1, separator = ",", physical = false) {
+      const match = /^(.+?)(cm|mm|m|g)$/iu.exec(text);
+      if (!match || (physical && match[2].toLowerCase() === "g")) {
+        fail(
+          `Use an explicit ${physical ? "m, cm or mm" : "m, cm, mm or g"} unit in “${text}”`,
+          line,
+        );
+      }
+      const values = match[1].split(separator),
+        scale = { m: 1, cm: 0.01, mm: 0.001, g: grid }[match[2].toLowerCase()];
+      if (values.length !== count || values.some((v) => !/^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v))) {
+        fail(`Expected ${count} numeric component${count === 1 ? "" : "s"} in “${text}”`, line);
+      }
+      const result = values.map((v) => Number(v) * scale);
+      if (result.some((v) => !Number.isFinite(v))) fail("Measurements must be finite", line);
+      return result;
+    }
+    function tokenSource(token, units = false) {
+      return (
+        token.name +
+        (token.child ? `(${token.child}_${token.childPlacement})` : "") +
+        (token.dimensions.some((n, i) => n !== catalog[token.name][i])
+          ? `[${token.dimensions.map(decimal).join("x")}${units ? "m" : ""}]`
+          : "") +
+        (token.wall ? `~${token.wall}` : token.yaw ? `@${decimal(token.yaw)}` : "") +
+        (token.offset?.some(Boolean)
+          ? `[${token.offset.map(decimal).join(",")}${units ? "m" : ""}]`
+          : "") +
+        (token.url ? `<${token.url}>` : "")
+      );
+    }
+    function parseDesign(source) {
+      if (source.length > 200_000) fail("Layout exceeds 200,000 characters", 1);
+      const lines = sourceLines(source),
+        first = lines.find((node) => node.text);
+      if (!first || !/^DESIGN\b/iu.test(first.text)) return undefined;
+      if (!/^DESIGN\s+2$/iu.test(first.text))
+        fail("Supported language version is DESIGN 2", first.line);
+      const ast = { type: "design", version: 2, source, children: [], from: 0, to: source.length },
+        definitions = new Map(),
+        links = new Map(),
+        output = [],
+        mapping = [],
+        places = new Map(),
+        replacements = new Map();
+      let grid = 0.82,
+        scope,
+        gridSeen = false,
+        roomSeen = false;
+      const emit = (text, node) => {
+          output.push(text);
+          mapping.push(node);
+          return output.length;
+        },
+        lengths = (text, node, count = 1, separator = ",", physical = false) =>
+          measurement(text, grid, node.line, count, separator, physical),
+        cells = (text, node, count = 1, separator = ",") => {
+          const values = lengths(text, node, count, separator);
+          return /g$/iu.test(text)
+            ? text.slice(0, -1).split(separator).map(decimal).join(separator)
+            : values.map((v) => decimal(v / grid)).join(separator);
+        },
+        metres = (text, node) => decimal(lengths(text, node, 1, ",", true)[0]),
+        resolveLinks = (text, node) =>
+          text.replace(/<\$(\w+)>/gu, (_, name) => {
+            const url = links.get(name.toLowerCase());
+            if (!url) fail(`Unknown LINK “${name}”; define it before use`, node.line);
+            return `<${url}>`;
+          }),
+        expand = (text, node) => {
+          text = resolveLinks(text, node);
+          if ([".", "-", "0"].includes(text)) return text;
+          const normalized = text.replace(/(<[^<>]*>)|\[([^\]]+)\]/gu, (_, link, content) => {
+              if (link) return link;
+              const sep = content.includes("x") ? "x" : ",",
+                count = sep === "x" ? 3 : 2;
+              return `[${lengths(content, node, count, sep, true).map(decimal).join(sep)}]`;
+            }),
+            base = /^(\w+)/u.exec(normalized),
+            definition = definitions.get(base?.[1].toLowerCase());
+          if (!definition) {
+            return tokenSource(parseToken(normalized, node.line));
+          }
+          const rest = normalized.slice(base[0].length),
+            token = parseToken(definition.name + rest, node.line);
+          if (!/\[[^\]]*x/u.test(rest.replace(/<[^<>]*>/gu, "")))
+            token.dimensions = definition.dimensions;
+          if (!rest.includes("<")) token.url = definition.url;
+          return tokenSource(token);
+        },
+        statement = (node, type) => {
+          node.type = type;
+          (scope ? scope.node.children : ast.children).push(node);
+        };
+      for (const node of lines) {
+        const { text } = node;
+        if (node === first) continue;
+        if (!text) {
+          statement(node, node.comment ? "comment" : "blank");
+          continue;
+        }
+        let m;
+        if (/^END$/iu.test(text)) {
+          if (!scope) fail("END needs an open ROOM, BALCONY, GARDEN or LAYOUT", node.line);
+          scope.node.to = node.to;
+          scope.node.endLine = node.line;
+          if (scope.kind === "layout") emit("END", node);
+          else {
+            emit(`LAYOUT ${scope.name}`, scope.node);
+            if (scope.rows.length) for (const row of scope.rows) emit(row.text, row.node);
+            else emit(".", node);
+            emit("END", node);
+            if (scope.placements.length) places.set(scope.name, scope.placements);
+          }
+          scope = undefined;
+        } else if ((m = /^LINK\s+(\w+)\s*=\s*<([^<>]+)>$/iu.exec(text))) {
+          if (scope) fail("LINK definitions belong outside rooms and layouts", node.line);
+          const name = m[1].toLowerCase();
+          if (links.has(name)) fail(`Duplicate LINK “${name}”`, node.line);
+          links.set(name, productUrl(m[2], node.line));
+          statement(node, "link");
+        } else if ((m = /^ASSET\s+(\w+)\s*=\s*(\S+)$/iu.exec(text))) {
+          if (scope) fail("ASSET definitions belong outside rooms and layouts", node.line);
+          const name = m[1].toLowerCase();
+          if (
+            name === "0" ||
+            definitions.has(name) ||
+            Object.hasOwn(catalog, name) ||
+            Object.hasOwn(aliases, name)
+          )
+            fail(`Duplicate or reserved asset “${name}”`, node.line);
+          const token = parseToken(expand(m[2], node), node.line);
+          if (
+            !token ||
+            /[@~(]|\[[^\]]*,/u.test(m[2].replace(/<[^<>]*>/gu, "")) ||
+            token.wall ||
+            token.offset ||
+            token.child ||
+            token.yaw
+          )
+            fail(
+              "ASSET defines a model, size and product URL; place and rotate each instance separately",
+              node.line,
+            );
+          definitions.set(name, token);
+          statement(node, "asset");
+        } else if ((m = /^(ROOM|BALCONY|GARDEN)\s+(\w+)\s+(\S+)\s+AT\s+(\S+)$/iu.exec(text))) {
+          if (scope) fail("Close the current block with END before starting a room", node.line);
+          const size = cells(m[3], node, 2, "x"),
+            position = cells(m[4], node, 2);
+          statement(node, "room");
+          node.children = [];
+          node.name = m[2].toLowerCase();
+          scope = { kind: "room", name: node.name, node, rows: [], placements: [] };
+          roomSeen = true;
+          emit(`${m[1]} ${m[2]} ${size} AT ${position}`, node);
+        } else if ((m = /^LAYOUT\s+(\w+)$/iu.exec(text))) {
+          if (scope) fail("LAYOUT definitions belong outside room blocks", node.line);
+          statement(node, "layout");
+          node.children = [];
+          node.name = m[1].toLowerCase();
+          scope = { kind: "layout", node, name: node.name };
+          emit(text, node);
+        } else if (scope?.kind === "layout" || /^ROW\s/iu.test(text)) {
+          if (!scope) fail("ROW needs a room", node.line);
+          if (scope.kind === "room" && scope.placements.length)
+            fail("Use either ROW grids or PLACE statements in a room", node.line);
+          const row = scope.kind === "layout" ? text : text.replace(/^ROW\s+/iu, ""),
+            converted = row.replace(/(?:<[^<>]*>|[^\s|<>])+/gu, (token) => expand(token, node));
+          statement(node, "row");
+          if (scope.kind === "layout") emit(converted, node);
+          else scope.rows.push({ text: converted, node });
+        } else if ((m = /^PLACE\s+(\S+)\s+AT\s+(\S+)$/iu.exec(text))) {
+          if (scope?.kind !== "room") fail("PLACE needs a room", node.line);
+          if (scope.rows.length)
+            fail("Use either ROW grids or PLACE statements in a room", node.line);
+          const position = lengths(m[2], node, 2),
+            expanded = expand(m[1], node),
+            line = emit("# placement", node),
+            token = parseToken(expanded, line);
+          if (!token) fail("PLACE needs an asset", node.line);
+          if (position.some((v) => Math.abs(v) > 120))
+            fail("PLACE coordinates must be within ±120 metres", node.line);
+          token.position = position;
+          scope.placements.push(token);
+          replacements.set(token, { node, text: m[1], start: node.raw.indexOf(m[1]) });
+          statement(node, "place");
+        } else if ((m = /^GRID\s+(\S+)$/iu.exec(text))) {
+          if (scope || gridSeen || roomSeen) fail("Define GRID once, before rooms", node.line);
+          grid = lengths(m[1], node, 1, ",", true)[0];
+          if (grid < 0.2 || grid > 3) fail("GRID must be 0.2–3 metres", node.line);
+          gridSeen = true;
+          statement(node, "grid");
+          emit(`GRID ${decimal(grid)}`, node);
+        } else {
+          const keyword = text.split(/\s/u)[0].toUpperCase(),
+            global = ["DETAIL", "FLOOR", "SITE", "FACADE", "ROOF", "WALL_THICKNESS"].includes(
+              keyword,
+            );
+          if (
+            [
+              "ASSET",
+              "LINK",
+              "PLACE",
+              "ROW",
+              "ROOM",
+              "BALCONY",
+              "GARDEN",
+              "LAYOUT",
+              "GRID",
+              "DESIGN",
+              "END",
+            ].includes(keyword)
+          )
+            fail(`Invalid ${keyword} syntax; see the language guide`, node.line);
+          if (global && scope) fail(`${keyword} belongs outside room blocks`, node.line);
+          if (!global && scope?.kind !== "room")
+            fail(`${keyword} needs a room or is not a supported statement`, node.line);
+          let translated = text;
+          if (keyword === "DETAIL") {
+            const detail = /^(DETAIL\s+\w+\s+"(?:[^"\\]|\\.)*")(?:\s+(<[^<>]+>))?$/iu.exec(text);
+            if (detail?.[2]) translated = `${detail[1]} ${resolveLinks(detail[2], node)}`;
+          }
+          if (
+            (m =
+              /^MOUNT\s+(north|east|south|west)\s+AT\s+(\S+)\s+(\S+)(?:\s+HEIGHT\s+(\S+))?$/iu.exec(
+                text,
+              ))
+          ) {
+            translated = `MOUNT ${m[1]} ${decimal(Number(cells(m[2], node)) - 0.5)} ${expand(m[3], node)}${m[4] ? ` HEIGHT ${metres(m[4], node)}` : ""}`;
+          } else if ((m = /^LIGHT\s+(\w+)\s+AT\s+(\S+)(?:\s+POWER\s+(\S+))?$/iu.exec(text))) {
+            const point = lengths(m[2], node, 2).map((v) => decimal(v / grid - 0.5));
+            translated = `LIGHT ${m[1]} AT ${point.join(",")}${m[3] ? ` POWER ${m[3]}` : ""}`;
+          } else if (
+            (m =
+              /^(DOOR|PASSAGE|SHUTTER)\s+(north|east|south|west)\s+AT\s+(\S+)(?:\s+WIDTH\s+(\S+))?$/iu.exec(
+                text,
+              ))
+          ) {
+            translated = `${m[1]} ${m[2]} AT ${cells(m[3], node)}${m[4] ? ` WIDTH ${metres(m[4], node)}` : ""}`;
+          } else if ((m = /^OUTLINE\s+(.+)$/iu.exec(text))) {
+            translated = `OUTLINE ${m[1]
+              .split(/\s+/u)
+              .map((v) => cells(v, node, 2))
+              .join(" ")}`;
+          } else if ((m = /^LABEL\s+("(?:[^"\\]|\\.)*")\s+AT\s+(\S+)$/iu.exec(text))) {
+            translated = `LABEL ${m[1]} AT ${cells(m[2], node, 2)}`;
+          } else if ((m = /^HEIGHT\s+(\S+)$/iu.exec(text)))
+            translated = `HEIGHT ${metres(m[1], node)}`;
+          else if ((m = /^WALL_THICKNESS\s+(\S+)\s+(\S+)$/iu.exec(text)))
+            translated = `WALL_THICKNESS ${metres(m[1], node)} ${metres(m[2], node)}`;
+          else if ((m = /^RAILING\s+(\w+)\s+(\w+)\s+SPACING\s+(\S+)$/iu.exec(text)))
+            translated = `RAILING ${m[1]} ${m[2]} SPACING ${metres(m[3], node)}`;
+          else if ((m = /^SITE\s+(\w+)\s+(\S+)$/iu.exec(text)))
+            translated = `SITE ${m[1]} ${metres(m[2], node)}`;
+          else if (/^(WALLS|DOORS|WINDOWS|RAILS) all$/iu.test(text))
+            translated = text.replace(/all$/iu, directions.join(" "));
+          else if (
+            ["MOUNT", "LIGHT", "OUTLINE", "HEIGHT", "WALL_THICKNESS", "RAILING"].includes(
+              keyword,
+            ) ||
+            (/^(DOOR|PASSAGE|SHUTTER)\b/iu.test(text) && !/^SHUTTER\s+\w+\s+FULL$/iu.test(text))
+          )
+            fail(`Invalid ${keyword} syntax; lengths require explicit units`, node.line);
+          statement(node, keyword.toLowerCase());
+          emit(translated, node);
+        }
+      }
+      if (scope) fail(`${scope.kind.toUpperCase()} ${scope.name} needs END`, scope.node.line);
+      return { ast, lowered: output.join("\n"), mapping, places, replacements };
+    }
     function parseProgram(source) {
+      const design = parseDesign(source);
+      if (!design) return parseLegacyProgram(source);
+      const { mapping, places, replacements } = design,
+        loweredLines = design.lowered.split("\n");
+      let program;
+      try {
+        program = parseLegacyProgram(design.lowered, places, true);
+        for (const token of [
+          ...Object.values(program.layouts).flat(2),
+          ...program.rooms.flatMap((room) => room.mounts),
+        ]) {
+          if (token?.child && places.has(token.child))
+            fail("A room reused as a nested layout must use ROW, not PLACE", token.line);
+        }
+      } catch (error) {
+        if (error instanceof LayoutError)
+          fail(error.message.replace(/^Line \d+: /u, ""), mapping[error.line - 1]?.line || 1);
+        throw error;
+      }
+      const relocated = new WeakSet();
+      const relocate = (value) => {
+        if (!value || typeof value !== "object" || relocated.has(value)) return;
+        relocated.add(value);
+        if (Number.isInteger(value.line)) {
+          const node = mapping[value.line - 1];
+          if (node) {
+            if (typeof value.text === "string") {
+              const replacement = replacements.get(value),
+                raw = replacement?.text || node.raw.match(/(?:^|\s)([^\s]+)(?=\s+HEIGHT|$)/u)?.[1];
+              if (replacement) {
+                value.text = raw;
+                value.start = replacement.start;
+                value.end = value.start + raw.length;
+              } else {
+                /* Locate the original (possibly aliased) token, not its expanded model. */
+                const candidates = node.raw.match(/(?:<[^<>]*>|[^\s|<>])+/gu) || [],
+                  candidate = /^\s*MOUNT\b/iu.test(node.raw) ? candidates[4] : undefined;
+                if (candidate) {
+                  value.text = candidate;
+                  value.start = node.raw.indexOf(candidate);
+                  value.end = value.start + candidate.length;
+                } else {
+                  const rowText = node.text.replace(/^ROW\s+/iu, ""),
+                    tokens = [...rowText.matchAll(/(?:<[^<>]*>|[^\s|<>])+/gu)],
+                    legacyRow = loweredLines[value.line - 1],
+                    before = legacyRow.slice(0, value.start),
+                    ordinal = [...before.matchAll(/(?:<[^<>]*>|[^\s|<>])+/gu)].length,
+                    match = tokens[ordinal];
+                  if (match) {
+                    value.text = match[0];
+                    value.start = node.raw.indexOf(rowText) + match.index;
+                    value.end = value.start + value.text.length;
+                  }
+                }
+              }
+            }
+            value.line = node.line;
+          }
+        }
+        for (const key of ["outlineLine", "labelLine"])
+          if (value[key]) value[key] = mapping[value[key] - 1]?.line || value[key];
+        for (const [key, child] of Object.entries(value))
+          if (!["line", "outlineLine", "labelLine"].includes(key)) relocate(child);
+      };
+      relocate(program);
+      program.warnings = program.warnings.map((warning) =>
+        warning.replace(
+          /Line (\d+):/gu,
+          (_, line) => `Line ${mapping[Number(line) - 1]?.line || line}:`,
+        ),
+      );
+      return program;
+    }
+    function migrateDesign(source) {
+      if (parseDesign(source)) {
+        parseProgram(source);
+        return source;
+      }
+      const program = parseLegacyProgram(source),
+        lines = sourceLines(source),
+        assets = new Map(),
+        definitions = [],
+        used = new Set(Object.keys(catalog)),
+        roomNames = new Set(program.rooms.map((room) => room.name));
+      const key = (token) => JSON.stringify([token.name, token.dimensions, token.url]),
+        allTokens = [
+          ...Object.values(program.layouts).flat(2).filter(Boolean),
+          ...program.rooms.flatMap((room) => room.mounts),
+        ];
+      for (const token of allTokens) {
+        const id = key(token),
+          item = assets.get(id) || { token, count: 0 };
+        item.count++;
+        assets.set(id, item);
+      }
+      for (const item of assets.values()) {
+        if (item.count < 2) continue;
+        const base = tokenSource(
+          { ...item.token, child: undefined, wall: undefined, yaw: 0, offset: undefined },
+          true,
+        );
+        let name = `${item.token.name}_item`,
+          suffix = 2;
+        while (used.has(name)) name = `${item.token.name}_item${suffix++}`;
+        if ((base.length - name.length) * item.count <= `ASSET ${name} = ${base}\n`.length)
+          continue;
+        used.add(name);
+        item.alias = name;
+        definitions.push(`ASSET ${name} = ${base}`);
+      }
+      const tokenText = (token) => {
+          const item = assets.get(key(token));
+          if (!item?.alias) return tokenSource(token, true);
+          return (
+            item.alias +
+            (token.child ? `(${token.child}_${token.childPlacement})` : "") +
+            (token.wall ? `~${token.wall}` : token.yaw ? `@${decimal(token.yaw)}` : "") +
+            (token.offset?.some(Boolean) ? `[${token.offset.map(decimal).join(",")}m]` : "")
+          );
+        },
+        physical = (value) => `${decimal(value)}m`,
+        gridPoint = (values) => `${values.map(decimal).join(",")}g`,
+        output = ["DESIGN 2", `GRID ${physical(program.grid)}`];
+      for (const node of lines) {
+        if (node.comment) output.push(node.comment);
+        if (/^(DETAIL|SITE|FACADE|ROOF|WALL_THICKNESS)\b/iu.test(node.text)) {
+          let text = node.text;
+          text = text.replace(
+            /^(WALL_THICKNESS)\s+(\S+)\s+(\S+)$/iu,
+            (_, k, a, b) => `${k} ${physical(a)} ${physical(b)}`,
+          );
+          text = text.replace(
+            /^SITE\s+(\w+)\s+(\S+)$/iu,
+            (_, kind, margin) => `SITE ${kind} ${physical(margin)}`,
+          );
+          output.push(text);
+        }
+      }
+      if (definitions.length) output.push("", ...definitions);
+      let floor = 0;
+      for (const room of program.rooms) {
+        output.push("");
+        if (room.floor !== floor) {
+          output.push(`FLOOR ${room.floor}`);
+          floor = room.floor;
+        }
+        output.push(
+          `${room.kind.toUpperCase()} ${room.name} ${decimal(room.cols)}x${decimal(room.rows)}g AT ${gridPoint([room.x, room.z])}`,
+        );
+        const roomStatements = [];
+        for (
+          let i = room.line;
+          i < lines.length && !/^(ROOM|BALCONY|GARDEN|LAYOUT|FLOOR)\b/iu.test(lines[i].text);
+          i++
+        )
+          roomStatements.push(lines[i]);
+        const uniqueProperty = (text) =>
+          roomStatements.filter(
+            (node) =>
+              node.text.split(/\s/u)[0].toUpperCase() === text.split(/\s/u)[0].toUpperCase(),
+          ).length === 1;
+        for (let i = room.line; i < lines.length; i++) {
+          const node = lines[i];
+          if (/^(ROOM|BALCONY|GARDEN|LAYOUT|FLOOR)\b/iu.test(node.text)) break;
+          if (!node.text || /^(GRID|DETAIL|SITE|FACADE|ROOF|WALL_THICKNESS)\b/iu.test(node.text))
+            continue;
+          let text = node.text,
+            m;
+          if (/^(DOORS|WINDOWS) none$/iu.test(text) && uniqueProperty(text)) continue;
+          if (
+            (text.toLowerCase() === `surface ${room.kind === "garden" ? "grass" : "wood"}` ||
+              /^STYLE warm$/iu.test(text) ||
+              /^HEIGHT 2\.6$/iu.test(text)) &&
+            uniqueProperty(text)
+          )
+            continue;
+          if (
+            (m = /^(WALLS|WINDOWS|DOORS|RAILS)\s+(.+)$/iu.exec(text)) &&
+            directions.every((d) => m[2].toLowerCase().split(/\s+/u).includes(d))
+          )
+            text = `${m[1]} all`;
+          else if ((m = /^MOUNT\s+(\w+)\s+(\S+)\s+(\S+)(?:\s+HEIGHT\s+(\S+))?$/iu.exec(text))) {
+            const mount = room.mounts.find((entry) => entry.line === node.line);
+            text = `MOUNT ${m[1]} AT ${decimal(Number(m[2]) + 0.5)}g ${tokenText(mount)}${m[4] ? ` HEIGHT ${physical(m[4])}` : ""}`;
+          } else if ((m = /^LIGHT\s+(\w+)\s+AT\s+(\d+),(\d+)(?:\s+POWER\s+(\S+))?$/iu.exec(text)))
+            text = `LIGHT ${m[1]} AT ${gridPoint([Number(m[2]) + 0.5, Number(m[3]) + 0.5])}${m[4] && Number(m[4]) !== 18 ? ` POWER ${m[4]}` : ""}`;
+          else if (
+            (m = /^(DOOR|SHUTTER|PASSAGE)\s+(\w+)\s+AT\s+(\S+)(?:\s+WIDTH\s+(\S+))?$/iu.exec(text))
+          )
+            text = `${m[1]} ${m[2]} AT ${m[3]}g${m[4] ? ` WIDTH ${physical(m[4])}` : ""}`;
+          else if (/^OUTLINE\s/iu.test(text))
+            text = text.replace(/\S+,\S+/gu, (value) => `${value}g`);
+          else if (/^LABEL\s/iu.test(text)) text = text.replace(/ AT (\S+)$/u, " AT $1g");
+          else if (/^HEIGHT\s/iu.test(text)) text += "m";
+          else if (/^RAILING\s/iu.test(text)) text += "m";
+          output.push(`  ${text}`);
+        }
+        const rows = program.layouts[room.name],
+          dense = rows.map(
+            (row) => `  ROW ${row.map((token) => (token ? tokenText(token) : ".")).join(" | ")}`,
+          ),
+          sparse = [];
+        rows.forEach((row, z) =>
+          row.forEach((token, x) => {
+            if (token)
+              sparse.push(`  PLACE ${tokenText(token)} AT ${gridPoint([x + 0.5, z + 0.5])}`);
+          }),
+        );
+        output.push(
+          ...(allTokens.some((token) => token.child === room.name) ||
+          dense.join("\n").length < sparse.join("\n").length
+            ? dense
+            : sparse),
+          "END",
+        );
+      }
+      for (const [name, rows] of Object.entries(program.layouts)) {
+        if (roomNames.has(name)) continue;
+        output.push(
+          "",
+          `LAYOUT ${name}`,
+          ...rows.map(
+            (row) => `  ${row.map((token) => (token ? tokenText(token) : ".")).join(" | ")}`,
+          ),
+          "END",
+        );
+      }
+      let migrated = output.join("\n");
+      const references = new Map();
+      for (const node of sourceLines(migrated)) {
+        if (!node.text || node.text.startsWith("#")) continue;
+        /* Metadata prose is never rewritten. Only its optional trailing link is a reference. */
+        const searchable = /^DETAIL\b/iu.test(node.text)
+          ? node.text.replace(/^DETAIL\s+\w+\s+"(?:[^"\\]|\\.)*"/iu, "")
+          : node.text;
+        for (const match of searchable.matchAll(/<https?:\/\/[^<>]+>/gu))
+          references.set(match[0], (references.get(match[0]) || 0) + 1);
+      }
+      const linkDefinitions = [];
+      for (const [url, count] of references) {
+        const name = `ref${linkDefinitions.length + 1}`,
+          reference = `<$${name}>`,
+          definition = `LINK ${name} = ${url}`;
+        if ((url.length - reference.length) * count <= definition.length + 1) continue;
+        linkDefinitions.push(definition);
+        migrated = sourceLines(migrated)
+          .map((node) => {
+            const prose = /^DETAIL\s+\w+\s+"(?:[^"\\]|\\.)*"/iu.exec(node.text)?.[0];
+            if (prose)
+              return (
+                node.raw.slice(0, node.raw.indexOf(prose) + prose.length) +
+                node.raw
+                  .slice(
+                    node.raw.indexOf(prose) + prose.length,
+                    node.raw.length - node.comment.length,
+                  )
+                  .replaceAll(url, reference) +
+                node.comment
+              );
+            return (
+              node.raw.slice(0, node.raw.length - node.comment.length).replaceAll(url, reference) +
+              node.comment
+            );
+          })
+          .join("\n");
+      }
+      if (linkDefinitions.length)
+        migrated = migrated.replace("DESIGN 2\n", `DESIGN 2\n${linkDefinitions.join("\n")}\n`);
+      return migrated;
+    }
+    function formatDesign(source) {
+      const design = parseDesign(source);
+      if (!design) fail("Migrate to DESIGN 2 before formatting", 1);
+      parseProgram(source);
+      let depth = 0;
+      return sourceLines(source)
+        .map((node) => {
+          if (/^END$/iu.test(node.text)) depth--;
+          const text = `${"  ".repeat(Math.max(0, depth))}${node.text}${node.comment ? `${node.text ? " " : ""}${node.comment}` : ""}`;
+          if (/^(ROOM|BALCONY|GARDEN|LAYOUT)\b/iu.test(node.text)) depth++;
+          return node.text || node.comment ? text : "";
+        })
+        .join("\n");
+    }
+    function parseLegacyProgram(source, placements = new Map(), version2 = false) {
       if (source.length > 200_000) {
         fail("Layout exceeds 200,000 characters", 1);
       }
@@ -733,7 +1341,7 @@
             fail("Finish the layout with END", line);
           }
           const cells = [],
-            matches = [...original.slice(0, end).matchAll(/(?:[^\s|<]+(?:<[^<>]*>)?)/gu)];
+            matches = [...original.slice(0, end).matchAll(/(?:<[^<>]*>|[^\s|<>])+/gu)];
           if (matches.length === 0) {
             fail("Empty layout row", line);
           }
@@ -741,14 +1349,15 @@
             cells.push(parseToken(match[0], line, match.index));
           }
           if (
-            text.includes("|") &&
+            text.replace(/<[^<>]*>/gu, "").includes("|") &&
             (matches
               .slice(1)
               .some(
                 (m, i) =>
-                  !original.slice(matches[i].index + matches[i][0].length, m.index).includes("|"),
+                  original.slice(matches[i].index + matches[i][0].length, m.index).trim() !== "|",
               ) ||
-              text.split("|").some((c) => !c.trim()))
+              original.slice(0, matches[0].index).trim() !== "" ||
+              original.slice(matches.at(-1).index + matches.at(-1)[0].length, end).trim() !== "")
           ) {
             fail("Separate every cell with |", line);
           }
@@ -945,13 +1554,21 @@
             room[key] = value;
           }
         } else if (
-          (m = /^LIGHT\s+(\w+)\s+AT\s+(\d+),(\d+)(?:\s+POWER\s+([\d.]+))?$/iu.exec(text))
+          (m =
+            /^LIGHT\s+(\w+)\s+AT\s+(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:\s+POWER\s+([\d.]+))?$/iu.exec(
+              text,
+            ))
         ) {
           if (!room) {
             fail("Define a room first", line);
           }
           const power = m[4] === undefined ? 18 : Number(m[4]);
           if (
+            (!version2 &&
+              (!Number.isInteger(Number(m[2])) ||
+                !Number.isInteger(Number(m[3])) ||
+                Number(m[2]) < 0 ||
+                Number(m[3]) < 0)) ||
             !Object.hasOwn(catalog, m[1].toLowerCase()) ||
             !fixtureNames.has(m[1].toLowerCase()) ||
             m[1].toLowerCase() === "wall_lamp" ||
@@ -973,7 +1590,7 @@
           });
         } else if (
           (m =
-            /^MOUNT\s+(north|east|south|west)\s+(\d+(?:\.\d+)?)\s+(\S+)(?:\s+HEIGHT\s+([\d.]+))?$/iu.exec(
+            /^MOUNT\s+(north|east|south|west)\s+(-?\d+(?:\.\d+)?)\s+(\S+)(?:\s+HEIGHT\s+([\d.]+))?$/iu.exec(
               text,
             ))
         ) {
@@ -981,6 +1598,7 @@
             height = m[4] === undefined ? undefined : Number(m[4]);
           if (
             !room ||
+            (!version2 && Number(m[2]) < 0) ||
             !token ||
             !mountNames.has(token.name) ||
             token.wall ||
@@ -1135,7 +1753,8 @@
           }
           mount.edge = edge;
         }
-        rows.forEach((row, z) =>
+        if (placements.has(r.name)) program.layouts[r.name] = [placements.get(r.name)];
+        program.layouts[r.name].forEach((row, z) =>
           row.forEach((token, x) => {
             if (token) {
               furniturePosition(program, r, token, x, z);
@@ -1158,12 +1777,12 @@
       }
       const sizes = new Map(),
         lightCounts = new Map(),
-        visit = (name, path = []) => {
+        visit = (name, path = [], referenceLine = 1) => {
           if (path.includes(name)) {
-            fail("Sub-layouts cannot contain cycles", 1);
+            fail("Sub-layouts cannot contain cycles", referenceLine);
           }
           if (path.length > 4) {
-            fail("Sub-layouts can be nested at most four levels", 1);
+            fail("Sub-layouts can be nested at most four levels", referenceLine);
           }
           let count = 0,
             lights = 0;
@@ -1180,7 +1799,7 @@
                 if (!program.layouts[token.child]) {
                   fail(`Missing LAYOUT ${token.child}`, token.line);
                 }
-                count += visit(token.child, [...path, name]);
+                count += visit(token.child, [...path, name], token.line);
                 lights += lightCounts.get(token.child);
               }
               if (count > 1024) {
@@ -1599,8 +2218,8 @@
       });
     }
     function furniturePosition(program, room, token, col, row) {
-      let x = (col + 0.5) * program.grid + (token.offset?.[0] || 0),
-        z = (row + 0.5) * program.grid + (token.offset?.[1] || 0);
+      let x = (token.position?.[0] ?? (col + 0.5) * program.grid) + (token.offset?.[0] || 0),
+        z = (token.position?.[1] ?? (row + 0.5) * program.grid) + (token.offset?.[1] || 0);
       if (token.wall) {
         if (!room.walls.includes(token.wall)) {
           fail(`No supporting ${token.wall} wall`, token.line);
@@ -1718,6 +2337,14 @@
       furniturePosition,
       insideRoom,
       parseProgram,
+      parseDesign,
+      migrateDesign,
+      formatDesign,
+      get modernExamples() {
+        return Object.fromEntries(
+          Object.entries(examples).map(([name, source]) => [name, migrateDesign(source)]),
+        );
+      },
       parseToken,
       polygonArea,
       productUrl,
@@ -1726,7 +2353,11 @@
 const {
   catalog,
   clipPolygon,
-  examples,
+  modernExamples: examples,
+  examples: legacyExamples,
+  migrateDesign,
+  formatDesign,
+  parseDesign,
   fixtureNames,
   parseProgram,
   furniturePosition,
@@ -1755,7 +2386,7 @@ const initializeStudio = async function initializeStudio() {
       MatchDecorator,
       ViewPlugin,
     },
-    { defaultKeymap, indentWithTab },
+    { defaultKeymap, indentWithTab, history, historyKeymap, isolateHistory },
     { foldService, foldGutter, foldAll, unfoldAll, foldedRanges },
   ] = await Promise.all([
     import("three/webgpu"),
@@ -5213,7 +5844,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<https?:\/\/[^>]*>)|(\b(?:DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|PASSAGE|SHUTTER|DOORS|WINDOWS|RAILS|RAILING|SPACING|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|(<(?:https?:\/\/[^>]*|\$\w+)>)|(\b(?:DESIGN|ASSET|LINK|PLACE|ROW|DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|PASSAGE|SHUTTER|DOORS|WINDOWS|RAILS|RAILING|SPACING|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -5239,7 +5870,10 @@ const initializeStudio = async function initializeStudio() {
     studio;
   const doc = () => editor.state.doc.toString(),
     replaceSource = (source) =>
-      editor.dispatch({ changes: { from: 0, insert: source, to: editor.state.doc.length } }),
+      editor.dispatch({
+        changes: { from: 0, insert: source, to: editor.state.doc.length },
+        annotations: isolateHistory.of("full"),
+      }),
     guarded =
       (action) =>
       (...args) =>
@@ -5252,7 +5886,9 @@ const initializeStudio = async function initializeStudio() {
       version = revision + 1;
     revision = version;
     try {
+      $("errorLocation").hidden = true;
       const parsed = parseProgram(source);
+      $("migrateButton").hidden = Boolean(parseDesign(source));
       progress("Rendering…");
       await new Promise((resolve) => {
         requestAnimationFrame(resolve);
@@ -5302,6 +5938,9 @@ const initializeStudio = async function initializeStudio() {
     } catch (error) {
       if (version === revision) {
         status(`${error.message}${program ? " · Showing the last valid layout." : ""}`, true);
+        $("errorLocation").hidden = !error.line;
+        $("errorLocation").dataset.line = error.line || "";
+        $("errorLocation").textContent = `Go to line ${error.line}`;
         $("designStatus").textContent = "Check layout source";
         $("designStatus").dataset.state = "error";
       }
@@ -5531,7 +6170,11 @@ const initializeStudio = async function initializeStudio() {
     $("exampleSelect").add(editedDesign);
     const folding = foldService.of((state, from) => {
         const line = state.doc.lineAt(from);
-        if (!/^LAYOUT\b/iu.test(line.text.trim())) {
+        if (
+          !/^(LAYOUT|ROOM|BALCONY|GARDEN)\b/iu.test(line.text.trim()) ||
+          (!/^\s*DESIGN\s+2\s*(?:#.*)?$/imu.test(state.doc.toString()) &&
+            !/^LAYOUT\b/iu.test(line.text.trim()))
+        ) {
           return null;
         }
         for (let n = line.number + 1; n <= state.doc.lines; n += 1) {
@@ -5559,6 +6202,7 @@ const initializeStudio = async function initializeStudio() {
         doc: source,
         extensions: [
           lineNumbers(),
+          history(),
           drawSelection(),
           highlightActiveLine(),
           foldGutter(),
@@ -5576,6 +6220,7 @@ const initializeStudio = async function initializeStudio() {
             },
             indentWithTab,
             ...defaultKeymap,
+            ...historyKeymap,
           ]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
@@ -5687,6 +6332,30 @@ const initializeStudio = async function initializeStudio() {
         }
       }),
     );
+    $("migrateButton").addEventListener(
+      "click",
+      guarded(() => {
+        replaceSource(migrateDesign(doc()));
+        compile();
+      }),
+    );
+    $("formatButton").addEventListener(
+      "click",
+      guarded(() => {
+        replaceSource(formatDesign(migrateDesign(doc())));
+        compile();
+      }),
+    );
+    $("errorLocation").addEventListener("click", () => {
+      const number = Number($("errorLocation").dataset.line);
+      if (!number || number > editor.state.doc.lines) return;
+      const line = editor.state.doc.line(number);
+      editor.dispatch({
+        selection: { anchor: line.from, head: line.to },
+        effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+      });
+      editor.focus();
+    });
     $("foldButton").addEventListener("click", () => {
       folded = foldedRanges(editor.state).size > 0;
       if (folded) {
@@ -5909,6 +6578,10 @@ const initializeStudio = async function initializeStudio() {
         compile,
         editor,
         examples,
+        legacyExamples,
+        migrateDesign,
+        formatDesign,
+        parseDesign,
         parseProgram,
         get program() {
           return program;

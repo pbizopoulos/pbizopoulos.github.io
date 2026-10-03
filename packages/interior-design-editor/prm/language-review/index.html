@@ -1,0 +1,82 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interior language comparison</title><style>*{box-sizing:border-box}body{margin:0;background:#f1eee7;color:#292d2c;font:16px system-ui}main{max-width:1920px;margin:auto;padding:40px}h1{font-size:36px;margin:0 0 8px}h2{font-size:26px;margin:0}p{line-height:1.6}a{color:#365f50}section{margin:38px 0 64px}.meta{color:#58665d}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}.panel{background:#fff;border:1px solid #dcd8ce;border-radius:12px;padding:20px;min-width:0}.panel h3{margin:0 0 14px}.panel img{width:100%;display:block;background:#eae8df;border-radius:8px}.code-view{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start;margin-top:20px}pre{margin:0;font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f8f8f3;padding:20px;border-radius:8px}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:12px;border-bottom:1px solid #dcd8ce}details{margin-top:20px}summary{cursor:pointer;padding:12px;background:#e8e6de}.caption{font-size:13px;color:#5e665f}.badge{background:#dceadd;color:#31583c;padding:6px 12px;border-radius:20px;font-size:14px} @media(max-width:900px){.comparison,.code-view{grid-template-columns:1fr}main{padding:18px}}</style><main><h1>A smaller, explicit interior language</h1><p>Four existing examples, unchanged scenes. Scoped rooms, direct placement, reusable assets and explicit units.</p><p>This is an optimization for authoring and maintenance, not a claim of globally minimal syntax or faster parsing. Metadata and product references are retained.</p><table><thead><tr><th>Example</th><th>Original bytes</th><th>DESIGN 2 bytes</th><th>Reduction</th><th>Empty cells</th></tr></thead><tbody><tr><td>Apartment</td><td>10968</td><td>9995</td><td>8.9%</td><td>157 → 0</td></tr><tr><td>Bedroom</td><td>782</td><td>611</td><td>21.9%</td><td>53 → 0</td></tr><tr><td>Kitchen &amp; dining</td><td>694</td><td>629</td><td>9.4%</td><td>49 → 0</td></tr><tr><td>Small apartment</td><td>1454</td><td>1153</td><td>20.7%</td><td>99 → 0</td></tr></tbody></table><p><a href="metrics.json">Measured data and rendering comparison</a> · <a href="../LANGUAGE.md">Language reference</a> · <a href="../LANGUAGE-DESIGN.md">Design decisions and verification</a></p><section><h2><a href="apartment.html">Apartment</a></h2><p>8.9% fewer bytes · <a href="apartment-source-preview.png">Code beside render image</a></p><div class="code-view"><pre>BALCONY balcony 4.168927919741478x28g AT 15,2g
+  LABEL &quot;Balcony&quot; AT 2.25,4g
+  WALLS west south
+  SURFACE tile
+  RAILS north east
+  RAILING horizontal silver SPACING 1.5m
+  MOUNT west AT 8g retracted_double_awning HEIGHT 2.42m
+  MOUNT west AT 20g retracted_double_awning HEIGHT 2.42m
+  MOUNT north AT 0.7g retracted_side_awning HEIGHT 0.75m
+  PLACE ac_condenser&lt;$ref2&gt; AT 2.5,1.5g
+  PLACE hogsten_chair_item(hose_underneath)[-0.12,0m] AT 1.5,17.5g
+  PLACE folding_table[-0.12,0m]&lt;https://web.archive.org/web/20260724170149/https://www.ikea.gr/proioda/sundso-trapezi-ekswterikoy-xwroy-65x65-cm/80575560/&gt; AT 1.5,20.5g
+  PLACE hogsten_chair_item@180[-0.12,0m] AT 1.5,23.5g
+END</pre><div><img style="width:100%" src="apartment-v2.png" alt="Apartment"><p class="caption">Balcony excerpt shown; measurements cover the complete seven-room Apartment. Full source includes shared definitions and nested layouts.</p><p><a href="apartment-v1.design">Original source</a> · <a href="apartment-v2.design">DESIGN 2 source</a></p></div></div></section><section><h2><a href="bedroom.html">Bedroom</a></h2><p>21.9% fewer bytes · <a href="bedroom-source-preview.png">Code beside render image</a></p><div class="code-view"><pre>DESIGN 2
+GRID 0.5m
+DETAIL project &quot;Bedroom: 3.5 × 4 m. GRID is metres per cell.&quot;
+DETAIL project &quot;Furniture: asset[width x depth x height]~wall&lt;product URL&gt;.&quot;
+DETAIL project &quot;Links are product references; the renderer uses generic shapes.&quot;
+
+ROOM main 7x8g AT 0,0g
+  WALLS all
+  DOORS south
+  WINDOWS north
+  MOUNT east AT 4.5g mirror
+  LIGHT ceiling_light AT 3.5,4.5g
+  PLACE bed~north&lt;https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/&gt; AT 3.5,1.5g
+  PLACE side_table[0.55x0.55x0.45m]&lt;https://www.ikea.com/us/en/p/lack-side-table-white-30449908/&gt; AT 1.5,5.5g
+  PLACE dresser~east AT 5.5,6.5g
+END</pre><div><img style="width:100%" src="bedroom-v2.png" alt="Bedroom"><p class="caption">Complete source shown. Both versions render the same design.</p><p><a href="bedroom-v1.design">Original source</a> · <a href="bedroom-v2.design">DESIGN 2 source</a></p></div></div></section><section><h2><a href="kitchen-dining.html">Kitchen &amp; dining</a></h2><p>9.4% fewer bytes · <a href="kitchen-dining-source-preview.png">Code beside render image</a></p><div class="code-view"><pre>DESIGN 2
+GRID 0.5m
+DETAIL project &quot;Kitchen: 4 × 3.5 m. @ rotates furniture in degrees.&quot;
+DETAIL project &quot;Append &lt;https://...&gt; to furniture to keep its product link.&quot;
+
+ROOM main 8x7g AT 0,0g
+  WALLS all
+  DOORS south
+  WINDOWS east
+  SURFACE tile
+  LIGHT ceiling_light AT 4.5,3.5g
+  PLACE fridge~north AT 1.5,1.5g
+  PLACE kitchen_counter[1.35x0.62x0.9m]~north AT 4.5,1.5g
+  PLACE stove~north AT 6.5,1.5g
+  PLACE kitchen_chair AT 4.5,3.5g
+  PLACE kitchen_chair@90 AT 2.5,5.5g
+  PLACE kitchen_table[1.4x0.78x0.74m]&lt;https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/&gt; AT 4.5,5.5g
+  PLACE kitchen_chair@270 AT 6.5,5.5g
+END</pre><div><img style="width:100%" src="kitchen-dining-v2.png" alt="Kitchen &amp; dining"><p class="caption">Complete source shown. Both versions render the same design.</p><p><a href="kitchen-dining-v1.design">Original source</a> · <a href="kitchen-dining-v2.design">DESIGN 2 source</a></p></div></div></section><section><h2><a href="small-apartment.html">Small apartment</a></h2><p>20.7% fewer bytes · <a href="small-apartment-source-preview.png">Code beside render image</a></p><div class="code-view"><pre>DESIGN 2
+GRID 0.5m
+DETAIL project &quot;A 27 m² apartment: living/kitchen, bedroom and bathroom.&quot;
+DETAIL project &quot;AT places rooms in grid cells; matching DOORS connect rooms.&quot;
+DETAIL project &quot;Append &lt;https://...&gt; to furniture; click it to open the product.&quot;
+DETAIL project &quot;Rendered furniture is generic. Set dimensions to your actual item.&quot;
+
+ROOM living 8x6g AT 0,0g
+  WALLS all
+  DOORS east south
+  WINDOWS north west
+  LIGHT ceiling_light AT 3.5,5.5g
+  PLACE fridge~north AT 1.5,1.5g
+  PLACE kitchenette[2.1x0.65x2.25m]~north AT 5.5,1.5g
+  PLACE desk[1x0.6x0.74m]&lt;https://www.ikea.com/us/en/p/linnmon-adils-table-white-s29932181/&gt; AT 5.5,2.5g
+  PLACE sofa~west AT 1.5,3.5g
+  PLACE coffee_table AT 4.5,4.5g
+END
+
+ROOM bedroom 6x6g AT 8,0g
+  WALLS all
+  DOORS west south
+  WINDOWS north east
+  LIGHT ceiling_light AT 3.5,4.5g POWER 12
+  PLACE bed~north&lt;https://www.ikea.com/sg/en/p/malm-bed-frame-high-white-s89005264/&gt; AT 2.5,1.5g
+END
+
+ROOM bathroom 6x4g AT 8,6g
+  WALLS all
+  DOORS north
+  SURFACE tile
+  LIGHT ceiling_light AT 3.5,2.5g POWER 12
+  PLACE shower~west AT 1.5,1.5g
+  PLACE toilet~east AT 4.5,1.5g
+  PLACE bathroom_vanity~south AT 1.5,3.5g
+END</pre><div><img style="width:100%" src="small-apartment-v2.png" alt="Small apartment"><p class="caption">Complete source shown. Both versions render the same design.</p><p><a href="small-apartment-v1.design">Original source</a> · <a href="small-apartment-v2.design">DESIGN 2 source</a></p></div></div></section></main></html>

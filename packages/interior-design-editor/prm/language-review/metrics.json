@@ -1,0 +1,157 @@
+{
+  "method": "Unchanged metadata and product references; UTF-8 bytes; 100 warm parser samples; physical equivalence tolerance 1e-9 metres; screenshots from actual renderer.",
+  "examples": [
+    {
+      "name": "Apartment",
+      "slug": "apartment",
+      "before": {
+        "bytes": 10968,
+        "characters": 10945,
+        "lines": 208,
+        "nonblankLines": 208,
+        "emptyCells": 157,
+        "inlineUrls": 34
+      },
+      "after": {
+        "bytes": 9995,
+        "characters": 9972,
+        "lines": 152,
+        "nonblankLines": 141,
+        "emptyCells": 0,
+        "inlineUrls": 28
+      },
+      "reductionPercent": 8.9,
+      "parseV1": {
+        "medianMs": 7.399,
+        "p95Ms": 13.909
+      },
+      "parseV2": {
+        "medianMs": 16.685,
+        "p95Ms": 28.014
+      },
+      "render": {
+        "backend": "WebGL 2 fallback",
+        "objects": 58,
+        "maxTransformDifference": 0,
+        "changedPixels": 0,
+        "totalPixels": 955500,
+        "meanChannelDifference": 0,
+        "maxChannelDifference": 0
+      }
+    },
+    {
+      "name": "Bedroom",
+      "slug": "bedroom",
+      "before": {
+        "bytes": 782,
+        "characters": 781,
+        "lines": 21,
+        "nonblankLines": 21,
+        "emptyCells": 53,
+        "inlineUrls": 2
+      },
+      "after": {
+        "bytes": 611,
+        "characters": 610,
+        "lines": 16,
+        "nonblankLines": 15,
+        "emptyCells": 0,
+        "inlineUrls": 2
+      },
+      "reductionPercent": 21.9,
+      "parseV1": {
+        "medianMs": 0.393,
+        "p95Ms": 3.489
+      },
+      "parseV2": {
+        "medianMs": 0.764,
+        "p95Ms": 4.897
+      },
+      "render": {
+        "backend": "WebGL 2 fallback",
+        "objects": 4,
+        "maxTransformDifference": 0,
+        "changedPixels": 0,
+        "totalPixels": 955500,
+        "meanChannelDifference": 0,
+        "maxChannelDifference": 0
+      }
+    },
+    {
+      "name": "Kitchen & dining",
+      "slug": "kitchen-dining",
+      "before": {
+        "bytes": 694,
+        "characters": 693,
+        "lines": 18,
+        "nonblankLines": 18,
+        "emptyCells": 49,
+        "inlineUrls": 2
+      },
+      "after": {
+        "bytes": 629,
+        "characters": 628,
+        "lines": 19,
+        "nonblankLines": 18,
+        "emptyCells": 0,
+        "inlineUrls": 2
+      },
+      "reductionPercent": 9.4,
+      "parseV1": {
+        "medianMs": 0.477,
+        "p95Ms": 3.548
+      },
+      "parseV2": {
+        "medianMs": 0.799,
+        "p95Ms": 1.855
+      },
+      "render": {
+        "backend": "WebGL 2 fallback",
+        "objects": 7,
+        "maxTransformDifference": 0,
+        "changedPixels": 0,
+        "totalPixels": 955500,
+        "meanChannelDifference": 0,
+        "maxChannelDifference": 0
+      }
+    },
+    {
+      "name": "Small apartment",
+      "slug": "small-apartment",
+      "before": {
+        "bytes": 1454,
+        "characters": 1453,
+        "lines": 45,
+        "nonblankLines": 45,
+        "emptyCells": 99,
+        "inlineUrls": 3
+      },
+      "after": {
+        "bytes": 1153,
+        "characters": 1152,
+        "lines": 36,
+        "nonblankLines": 33,
+        "emptyCells": 0,
+        "inlineUrls": 3
+      },
+      "reductionPercent": 20.7,
+      "parseV1": {
+        "medianMs": 0.807,
+        "p95Ms": 3.173
+      },
+      "parseV2": {
+        "medianMs": 1.45,
+        "p95Ms": 4.483
+      },
+      "render": {
+        "backend": "WebGL 2 fallback",
+        "objects": 9,
+        "maxTransformDifference": 0,
+        "changedPixels": 0,
+        "totalPixels": 955500,
+        "meanChannelDifference": 0,
+        "maxChannelDifference": 0
+      }
+    }
+  ]
+}

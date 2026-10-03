@@ -83,6 +83,19 @@
             ><span>Assets</span>
           </button>
         </div>
+        <div class="language-toolbar" aria-label="Layout language tools">
+          <button
+            id="migrateButton"
+            title="Convert an existing layout to DESIGN 2; undo restores the original"
+          >
+            Upgrade language
+          </button>
+          <button id="formatButton" title="Indent layout blocks; undo restores the original">
+            Format
+          </button>
+          <a href="./prm/LANGUAGE.md" target="_blank" rel="noopener">Language guide ↗</a>
+          <button id="errorLocation" hidden>Go to error</button>
+        </div>
         <div id="editor" aria-label="Design source"></div>
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
         <footer class="editor-footer">
