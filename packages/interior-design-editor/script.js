@@ -1069,7 +1069,812 @@
       }
       return { ast, lowered: output.join("\n"), mapping, places, replacements };
     }
+    function isJsonDesign(source) {
+      return /^\s*[[{]/u.test(source);
+    }
+    /* Parse strict JSON while retaining value spans for diagnostics and object selection. */
+    function readJsonDesign(source) {
+      if (source.length > 200_000) fail("Layout exceeds 200,000 characters", 1);
+      let cursor = 0;
+      const spans = new Map(),
+        lineAt = (at) => source.slice(0, at).split("\n").length,
+        error = (message) => fail(message, lineAt(cursor)),
+        whitespace = () => {
+          while (/[\t\n\r ]/u.test(source[cursor] || "x")) cursor += 1;
+        },
+        string = () => {
+          const start = cursor;
+          cursor += 1;
+          while (cursor < source.length) {
+            const char = source[cursor++];
+            if (char === "\\") cursor += 1;
+            else if (char === '"') {
+              try {
+                return JSON.parse(source.slice(start, cursor));
+              } catch {
+                error("Invalid JSON string");
+              }
+            }
+          }
+          error("Unterminated JSON string");
+        },
+        value = (path, depth = 0) => {
+          whitespace();
+          if (depth > 64) error("JSON nesting exceeds 64 levels");
+          const start = cursor;
+          let result;
+          if (source[cursor] === "{" || source[cursor] === "[") {
+            const object = source[cursor++] === "{",
+              close = object ? "}" : "]";
+            result = object ? Object.create(null) : [];
+            whitespace();
+            if (source[cursor] !== close) {
+              while (true) {
+                whitespace();
+                let key = result.length;
+                if (object) {
+                  if (source[cursor] !== '"') error("Expected a JSON property name");
+                  key = string();
+                  if (Object.hasOwn(result, key)) error(`Duplicate JSON property "${key}"`);
+                  whitespace();
+                  if (source[cursor++] !== ":") error("Expected ':' after JSON property");
+                }
+                result[key] = value([...path, key], depth + 1);
+                whitespace();
+                if (source[cursor] === close) break;
+                if (source[cursor++] !== ",") error(`Expected ',' or '${close}'`);
+              }
+            }
+            cursor += 1;
+          } else if (source[cursor] === '"') result = string();
+          else {
+            const match = /^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/u.exec(
+              source.slice(cursor),
+            );
+            if (!match) error("Expected a JSON value");
+            cursor += match[0].length;
+            result = JSON.parse(match[0]);
+          }
+          const line = lineAt(start),
+            lineStart = source.lastIndexOf("\n", start - 1) + 1;
+          spans.set(JSON.stringify(path), {
+            from: start,
+            to: cursor,
+            line,
+            start: start - lineStart,
+          });
+          return result;
+        };
+      const document = value([]);
+      whitespace();
+      if (cursor !== source.length) error("Unexpected text after JSON document");
+      return { document, spans };
+    }
+    function parseJsonDesign(source) {
+      const { document, spans } = readJsonDesign(source),
+        span = (path) => spans.get(JSON.stringify(path)) || spans.get("[]"),
+        invalid = (path, message) =>
+          fail(`${path.join(".") || "document"}: ${message}`, span(path).line),
+        object = (value, path, keys) => {
+          if (!value || typeof value !== "object" || Array.isArray(value))
+            invalid(path, "expected an object");
+          if (keys)
+            for (const key of Object.keys(value)) {
+              if (!keys.includes(key)) invalid([...path, key], "unknown property");
+            }
+          return value;
+        },
+        number = (value, path, min = -120, max = 120) => {
+          if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max)
+            invalid(path, `expected a finite number from ${min} to ${max}`);
+          return value;
+        },
+        vector = (value, path, size = 2, min = -120, max = 120) => {
+          if (!Array.isArray(value) || value.length !== size)
+            invalid(path, `expected ${size} numbers`);
+          return value.map((entry, i) => number(entry, [...path, i], min, max));
+        },
+        choice = (value, path, choices) => {
+          if (!choices.includes(value)) invalid(path, `expected ${choices.join(", ")}`);
+          return value;
+        },
+        list = (value, path, max) => {
+          if (!Array.isArray(value) || value.length > max)
+            invalid(path, `expected an array with at most ${max} entries`);
+          return value;
+        },
+        identifier = (value, path) => {
+          if (typeof value !== "string" || !/^\w+$/u.test(value))
+            invalid(path, "expected an identifier containing letters, digits or underscores");
+          return value;
+        },
+        text = (value, path) => {
+          if (typeof value !== "string") invalid(path, "expected a string");
+          return JSON.stringify(value);
+        },
+        options = (value, path, instance = false) => {
+          const result = object(
+            value === undefined ? {} : value,
+            path,
+            instance ? ["position", "rotation", "wall"] : ["algorithm", "clearance", "step"],
+          );
+          if (instance) {
+            if (result.position !== undefined) vector(result.position, [...path, "position"]);
+            if (result.rotation !== undefined)
+              number(result.rotation, [...path, "rotation"], -360, 360);
+            if (result.wall !== undefined) choice(result.wall, [...path, "wall"], directions);
+            if (result.position !== undefined && result.wall !== undefined)
+              invalid(path, "use wall constraints for automatic placement or a fixed position");
+            if (result.wall !== undefined && result.rotation !== undefined)
+              invalid(path, "wall placement determines rotation");
+          } else {
+            if (result.algorithm !== undefined)
+              choice(result.algorithm, [...path, "algorithm"], ["wall-first", "grid-pack"]);
+            if (result.clearance !== undefined)
+              number(result.clearance, [...path, "clearance"], 0, 2);
+            if (result.step !== undefined) number(result.step, [...path, "step"], 0.05, 1);
+          }
+          return result;
+        };
+      object(
+        document,
+        [],
+        [
+          "version",
+          "units",
+          "grid",
+          "placement",
+          "floorPlan",
+          "assets",
+          "instances",
+          "site",
+          "facade",
+          "roof",
+          "wallThickness",
+          "details",
+        ],
+      );
+      if (document.version !== 3) invalid(["version"], "expected version 3");
+      if (document.units !== undefined) choice(document.units, ["units"], ["m"]);
+      const floorPlan = object(document.floorPlan, ["floorPlan"], ["rooms"]),
+        rooms = object(floorPlan.rooms, ["floorPlan", "rooms"]),
+        assets = object(document.assets === undefined ? {} : document.assets, ["assets"]),
+        instances = object(document.instances === undefined ? {} : document.instances, [
+          "instances",
+        ]),
+        defaults = {
+          algorithm: "wall-first",
+          clearance: 0.15,
+          step: 0.1,
+          ...options(document.placement, ["placement"]),
+        },
+        output = ["DESIGN 2"],
+        mapping = [[]],
+        pending = [],
+        tokenStrings = new Map(),
+        emit = (line, path) => {
+          output.push(line);
+          mapping.push(path);
+        },
+        metres = (values, separator = ",") => `${values.map(decimal).join(separator)}m`;
+      if (Object.keys(rooms).length > 32) invalid(["floorPlan", "rooms"], "at most 32 rooms");
+      if (Object.keys(instances).length > 1024) invalid(["instances"], "at most 1,024 instances");
+      if (document.grid !== undefined)
+        emit(`GRID ${decimal(number(document.grid, ["grid"], 0.2, 3))}m`, ["grid"]);
+      for (const key of ["facade", "roof"])
+        if (document[key] !== undefined) {
+          choice(
+            document[key],
+            [key],
+            key === "facade"
+              ? ["none", "plaster", "brick", "timber", "concrete"]
+              : ["none", "flat", "pitched", "terracotta"],
+          );
+          emit(`${key.toUpperCase()} ${document[key]}`, [key]);
+        }
+      if (document.site !== undefined) {
+        object(document.site, ["site"], ["surface", "margin"]);
+        choice(document.site.surface, ["site", "surface"], ["none", "grass", "paving", "sand"]);
+        emit(
+          `SITE ${document.site.surface}${document.site.margin === undefined ? "" : ` ${decimal(number(document.site.margin, ["site", "margin"], 1, 30))}m`}`,
+          ["site"],
+        );
+      }
+      if (document.wallThickness !== undefined)
+        emit(
+          `WALL_THICKNESS ${vector(document.wallThickness, ["wallThickness"], 2, 0.06, 0.6)
+            .map((v) => `${decimal(v)}m`)
+            .join(" ")}`,
+          ["wallThickness"],
+        );
+      for (const [id, asset] of Object.entries(assets)) {
+        const path = ["assets", id];
+        identifier(id, path);
+        object(asset, path, ["model", "size", "url"]);
+        if (typeof asset.model !== "string" || !Object.hasOwn(catalog, asset.model))
+          invalid([...path, "model"], "unknown catalog model");
+        let token = asset.model;
+        if (asset.size !== undefined)
+          token += `[${metres(vector(asset.size, [...path, "size"], 3, 0.001, 10), "x")}]`;
+        if (asset.url !== undefined) {
+          if (typeof asset.url !== "string") invalid([...path, "url"], "expected a URL string");
+          productUrl(asset.url, span([...path, "url"]).line);
+          if (/[<>\s]/u.test(asset.url))
+            invalid([...path, "url"], "URL must not contain whitespace or angle brackets");
+          token += `<${asset.url}>`;
+        }
+        tokenStrings.set(id, token);
+      }
+      const ids = Object.keys(instances).sort();
+      for (const id of ids) {
+        const instance = instances[id],
+          path = ["instances", id];
+        identifier(id, path);
+        object(instance, path, ["asset", "room", "placement"]);
+        if (!tokenStrings.has(instance.asset))
+          invalid([...path, "asset"], "unknown asset reference");
+        if (!Object.hasOwn(rooms, instance.room))
+          invalid([...path, "room"], "unknown room reference");
+        options(instance.placement, [...path, "placement"], true);
+      }
+      for (const id of Object.keys(rooms).sort()) {
+        const room = rooms[id],
+          path = ["floorPlan", "rooms", id];
+        identifier(id, path);
+        object(room, path, [
+          "size",
+          "origin",
+          "kind",
+          "floor",
+          "walls",
+          "windows",
+          "doors",
+          "rails",
+          "height",
+          "surface",
+          "style",
+          "outline",
+          "label",
+          "labelPosition",
+          "openings",
+          "lights",
+          "mounts",
+          "railing",
+          "placement",
+        ]);
+        const kind = choice(
+            room.kind === undefined ? "room" : room.kind,
+            [...path, "kind"],
+            ["room", "balcony", "garden"],
+          ),
+          size = vector(room.size, [...path, "size"], 2, 0.001, 120),
+          origin = vector(room.origin === undefined ? [0, 0] : room.origin, [...path, "origin"]),
+          floor = number(room.floor === undefined ? 0 : room.floor, [...path, "floor"], -8, 31),
+          settings = { ...defaults, ...options(room.placement, [...path, "placement"]) };
+        if (!Number.isInteger(floor)) invalid([...path, "floor"], "expected an integer");
+        emit(`FLOOR ${floor}`, path);
+        emit(`${kind.toUpperCase()} ${id} ${metres(size, "x")} AT ${metres(origin)}`, path);
+        for (const key of ["walls", "windows", "doors", "rails"]) {
+          /* JSON rooms default to enclosed; outdoor defaults remain those of the renderer. */
+          const values =
+            room[key] === undefined
+              ? key === "walls" && kind === "room"
+                ? directions
+                : undefined
+              : room[key];
+          if (values !== undefined) {
+            list(values, [...path, key], 4).forEach((dir, i) =>
+              choice(dir, [...path, key, i], directions),
+            );
+            emit(`${key.toUpperCase()} ${values.length ? values.join(" ") : "none"}`, [
+              ...path,
+              key,
+            ]);
+          }
+        }
+        if (room.height !== undefined)
+          emit(`HEIGHT ${decimal(number(room.height, [...path, "height"], 2.4, 6))}m`, [
+            ...path,
+            "height",
+          ]);
+        for (const key of ["surface", "style"])
+          if (room[key] !== undefined) {
+            choice(
+              room[key],
+              [...path, key],
+              key === "surface"
+                ? ["auto", "wood", "tile", "stone", "grass", "terracotta", "concrete"]
+                : ["warm", "blue", "neutral", "liminal", "industrial", "aquatic", "mediterranean"],
+            );
+            emit(`${key.toUpperCase()} ${room[key]}`, [...path, key]);
+          }
+        if (room.outline !== undefined)
+          emit(
+            `OUTLINE ${list(room.outline, [...path, "outline"], 64)
+              .map((point, i) => metres(vector(point, [...path, "outline", i], 2, 0)))
+              .join(" ")}`,
+            [...path, "outline"],
+          );
+        if (room.label !== undefined)
+          emit(
+            `LABEL ${text(room.label, [...path, "label"])}${room.labelPosition === undefined ? "" : ` AT ${metres(vector(room.labelPosition, [...path, "labelPosition"], 2, 0))}`}`,
+            [...path, "label"],
+          );
+        else if (room.labelPosition !== undefined)
+          invalid([...path, "labelPosition"], "requires label");
+        if (room.railing !== undefined) {
+          const railing = object(
+            room.railing,
+            [...path, "railing"],
+            ["style", "finish", "spacing"],
+          );
+          choice(railing.style, [...path, "railing", "style"], ["horizontal", "vertical"]);
+          choice(railing.finish, [...path, "railing", "finish"], ["silver", "timber"]);
+          emit(
+            `RAILING ${railing.style} ${railing.finish} SPACING ${decimal(number(railing.spacing, [...path, "railing", "spacing"], 0.1, 2))}m`,
+            [...path, "railing"],
+          );
+        }
+        for (const [i, opening] of list(
+          room.openings === undefined ? [] : room.openings,
+          [...path, "openings"],
+          8,
+        ).entries()) {
+          const entry = [...path, "openings", i];
+          object(opening, entry, ["type", "wall", "at", "width", "full"]);
+          choice(opening.type, [...entry, "type"], ["door", "passage", "shutter"]);
+          choice(opening.wall, [...entry, "wall"], directions);
+          if (opening.full !== undefined && typeof opening.full !== "boolean")
+            invalid([...entry, "full"], "expected a boolean");
+          if (
+            opening.full &&
+            (opening.type !== "shutter" || opening.at !== undefined || opening.width !== undefined)
+          )
+            invalid(entry, "full shutters cannot specify at or width");
+          if (!(room.walls ?? (kind === "room" ? directions : [])).includes(opening.wall))
+            invalid([...entry, "wall"], "opening needs a supporting wall");
+          emit(
+            `${opening.type.toUpperCase()} ${opening.wall} ${opening.full ? "FULL" : `AT ${decimal(number(opening.at, [...entry, "at"], 0))}m WIDTH ${decimal(number(opening.width === undefined ? 0.85 : opening.width, [...entry, "width"], 0.4, 2.4))}m`}`,
+            entry,
+          );
+        }
+        for (const [i, light] of list(
+          room.lights === undefined ? [] : room.lights,
+          [...path, "lights"],
+          16,
+        ).entries()) {
+          const entry = [...path, "lights", i];
+          object(light, entry, ["model", "position", "power"]);
+          if (!fixtureNames.has(light.model))
+            invalid([...entry, "model"], "expected a fixture model");
+          emit(
+            `LIGHT ${light.model} AT ${metres(vector(light.position, [...entry, "position"]))} POWER ${number(light.power === undefined ? 18 : light.power, [...entry, "power"], 0, 200)}`,
+            entry,
+          );
+        }
+        for (const [i, mount] of list(
+          room.mounts === undefined ? [] : room.mounts,
+          [...path, "mounts"],
+          1024,
+        ).entries()) {
+          const entry = [...path, "mounts", i];
+          object(mount, entry, ["asset", "wall", "at", "height"]);
+          if (!tokenStrings.has(mount.asset))
+            invalid([...entry, "asset"], "unknown asset reference");
+          choice(mount.wall, [...entry, "wall"], directions);
+          emit(
+            `MOUNT ${mount.wall} AT ${decimal(number(mount.at, [...entry, "at"], 0))}m ${tokenStrings.get(mount.asset)}${mount.height === undefined ? "" : ` HEIGHT ${decimal(number(mount.height, [...entry, "height"], 0, 6))}m`}`,
+            entry,
+          );
+        }
+        for (const instanceId of ids.filter((key) => instances[key].room === id)) {
+          const instance = instances[instanceId],
+            entry = ["instances", instanceId],
+            placement = instance.placement ?? {};
+          let token = tokenStrings.get(instance.asset);
+          if (placement.rotation !== undefined) token += `@${decimal(placement.rotation)}`;
+          emit(`PLACE ${token} AT ${metres(placement.position ?? [0, 0])}`, entry);
+          pending.push({
+            id: instanceId,
+            room: id.toLowerCase(),
+            path: entry,
+            placement,
+            settings,
+            generatedLine: output.length,
+          });
+        }
+        emit("END", path);
+      }
+      for (const [i, detail] of list(
+        document.details === undefined ? [] : document.details,
+        ["details"],
+        128,
+      ).entries()) {
+        const entry = ["details", i];
+        object(detail, entry, ["room", "text", "url"]);
+        identifier(detail.room === undefined ? "project" : detail.room, [...entry, "room"]);
+        if (detail.url !== undefined) {
+          if (typeof detail.url !== "string" || /[<>\s]/u.test(detail.url))
+            invalid([...entry, "url"], "expected a URL string");
+          productUrl(detail.url, span(entry).line);
+        }
+        emit(
+          `DETAIL ${detail.room === undefined ? "project" : detail.room} ${text(detail.text, [...entry, "text"])}${detail.url === undefined ? "" : ` <${detail.url}>`}`,
+          entry,
+        );
+      }
+      let program;
+      try {
+        program = parseProgram(output.join("\n"));
+      } catch (error) {
+        if (error instanceof LayoutError)
+          invalid(mapping[error.line - 1] ?? [], error.message.replace(/^Line \d+: /u, ""));
+        throw error;
+      }
+      /* Discard warnings caused by automatic instances' temporary positions. */
+      program.warnings = [];
+      const relocated = new WeakSet(),
+        relocate = (value) => {
+          if (!value || typeof value !== "object" || relocated.has(value)) return;
+          relocated.add(value);
+          if (Number.isInteger(value.line)) {
+            const path = mapping[value.line - 1] ?? [];
+            if (typeof value.text === "string" && path.includes("mounts")) {
+              const location = span([...path, "asset"]);
+              value.start = location.start;
+              value.end = location.start + location.to - location.from;
+              value.text = source.slice(location.from, location.to);
+            }
+            value.line = span(path).line;
+          }
+          for (const key of ["outlineLine", "labelLine"])
+            if (value[key]) value[key] = span(mapping[value[key] - 1] ?? []).line;
+          Object.values(value).forEach(relocate);
+        };
+      /* Preserve instance source identity even when multiple instances share one asset. */
+      for (const entry of pending) {
+        const room = program.rooms.find((value) => value.name === entry.room),
+          token = program.layouts[room.name]
+            .flat()
+            .find((value) => value?.line === entry.generatedLine);
+        entry.token = token;
+      }
+      relocate(program);
+      for (const entry of pending) {
+        const location = span(entry.path),
+          lineEnd = source.indexOf("\n", location.from);
+        entry.token.id = entry.id;
+        entry.token.line = location.line;
+        const lineStart = location.from - location.start,
+          keyStart = source.slice(lineStart, location.from).lastIndexOf(JSON.stringify(entry.id));
+        entry.token.start = keyStart < 0 ? location.start : keyStart;
+        entry.token.end =
+          location.start +
+          Math.min(location.to, lineEnd < 0 ? source.length : lineEnd) -
+          location.from;
+        entry.token.text = source.slice(lineStart + entry.token.start, lineStart + entry.token.end);
+      }
+      resolveJsonPlacement(program, pending);
+      program.version = 3;
+      program.placements = Object.fromEntries(
+        pending
+          .filter((entry) => !entry.unplaced)
+          .map((entry) => [
+            entry.id,
+            { position: [...entry.token.position], rotation: entry.token.yaw },
+          ]),
+      );
+      return program;
+    }
+    function resolveJsonPlacement(program, pending) {
+      /* Convex footprints and separating axes handle rotated furniture precisely. */
+      const footprint = (position, dimensions, yaw) => {
+          const angle = (yaw * Math.PI) / 180;
+          return [
+            [-1, -1],
+            [1, -1],
+            [1, 1],
+            [-1, 1],
+          ].map(([x, z]) => {
+            const a = (x * dimensions[0]) / 2,
+              b = (z * dimensions[1]) / 2;
+            return [
+              position[0] + a * Math.cos(angle) + b * Math.sin(angle),
+              position[1] + b * Math.cos(angle) - a * Math.sin(angle),
+            ];
+          });
+        },
+        overlaps = (a, b, gap) => {
+          for (const polygon of [a, b])
+            for (let i = 0; i < polygon.length; i += 1) {
+              const next = polygon[(i + 1) % polygon.length],
+                point = polygon[i],
+                dx = next[0] - point[0],
+                dz = next[1] - point[1],
+                length = Math.hypot(dx, dz),
+                project = (points) => points.map((p) => (p[0] * -dz + p[1] * dx) / length),
+                pa = project(a),
+                pb = project(b);
+              if (
+                Math.max(...pa) + gap <= Math.min(...pb) + 1e-9 ||
+                Math.max(...pb) + gap <= Math.min(...pa) + 1e-9
+              )
+                return false;
+            }
+          return true;
+        };
+      let attempts = 0;
+      for (const room of program.rooms) {
+        const entries = pending.filter((entry) => entry.room === room.name),
+          occupied = [],
+          width = room.cols * program.grid,
+          depth = room.rows * program.grid,
+          blockers = [],
+          addOpening = (
+            side,
+            at,
+            size,
+            clearance,
+            across = ["north", "west"].includes(side) ? 0 : side === "south" ? depth : width,
+          ) => {
+            const reach = Math.max(0.9, size) + clearance,
+              along = size / 2 + clearance;
+            if (side === "north")
+              blockers.push([
+                [at - along, across],
+                [at + along, across],
+                [at + along, across + reach],
+                [at - along, across + reach],
+              ]);
+            if (side === "south")
+              blockers.push([
+                [at - along, across - reach],
+                [at + along, across - reach],
+                [at + along, across],
+                [at - along, across],
+              ]);
+            if (side === "west")
+              blockers.push([
+                [across, at - along],
+                [across + reach, at - along],
+                [across + reach, at + along],
+                [across, at + along],
+              ]);
+            if (side === "east")
+              blockers.push([
+                [across - reach, at - along],
+                [across, at - along],
+                [across, at + along],
+                [across - reach, at + along],
+              ]);
+          };
+        const roomClearance = Math.max(0, ...entries.map((entry) => entry.settings.clearance));
+        /* Use the same partitioned openings as the renderer, including a neighbor's shared door. */
+        for (const spec of program.wallSpecs) {
+          if (spec.axis === "diagonal" || !spec.rooms.includes(room)) continue;
+          const generic = spec.rooms.some(
+              (other) =>
+                other.doors.includes(spec.sides[other.name]) &&
+                !(other.openings ?? []).some((opening) => opening.side === spec.sides[other.name]),
+            ),
+            door =
+              Boolean(spec.opening) || ((spec.rooms.length > 1 || !spec.hasSharedSpan) && generic);
+          if (!door) continue;
+          addOpening(
+            spec.sides[room.name],
+            ((spec.opening?.coordinate ?? (spec.min + spec.max) / 2) - room[spec.axis]) *
+              program.grid,
+            spec.opening?.width || Math.min(0.95, (spec.max - spec.min) * program.grid * 0.65),
+            roomClearance,
+            (spec.coordinate - room[spec.axis === "x" ? "z" : "x"]) * program.grid,
+          );
+        }
+        for (const mount of room.mounts) {
+          /* Mounted cabinetry also occupies floor space; thin decorations need no obstacle. */
+          if (mount.dimensions[1] < 0.2) continue;
+          const vertical = ["east", "west"].includes(mount.side),
+            positive = ["east", "south"].includes(mount.side),
+            across =
+              mount.edge.across * program.grid +
+              (positive ? -1 : 1) * (mount.dimensions[1] / 2 + 0.02),
+            along = (mount.cell + 0.5) * program.grid;
+          let position = vertical ? [across, along] : [along, across],
+            yaw = { north: 0, east: 270, south: 180, west: 90 }[mount.side];
+          if (mount.edge.axis === "diagonal") {
+            const edge = mount.edge,
+              axis = vertical ? 1 : 0,
+              fraction =
+                (along / program.grid - edge.start[axis]) / (edge.end[axis] - edge.start[axis]);
+            position = edge.start.map(
+              (value, i) =>
+                (value + fraction * (edge.end[i] - value)) * program.grid -
+                edge.normal[i] * (mount.dimensions[1] / 2 + 0.02),
+            );
+            yaw = (Math.atan2(-edge.normal[0], -edge.normal[1]) * 180) / Math.PI;
+          }
+          occupied.push({ corners: footprint(position, mount.dimensions, yaw), clearance: 0 });
+        }
+        for (const entry of entries.filter((value) => value.placement.position !== undefined)) {
+          const corners = footprint(entry.token.position, entry.token.dimensions, entry.token.yaw);
+          occupied.push({ corners, clearance: entry.settings.clearance });
+          if (blockers.some((blocker) => overlaps(corners, blocker, 0)))
+            program.warnings.push(
+              `Line ${entry.token.line}: ${entry.id} blocks opening clearance in ${room.name}.`,
+            );
+        }
+        for (const entry of entries.filter((value) => value.placement.position === undefined)) {
+          const { token, settings, placement } = entry,
+            rotations = placement.rotation === undefined ? [0, 90, 180, 270] : [placement.rotation],
+            cornersAt = (position, yaw) => footprint(position, token.dimensions, yaw),
+            valid = (position, yaw) => {
+              attempts += 1;
+              if (attempts > 200_000)
+                fail(
+                  "Automatic placement exceeded its search budget; use a larger step or fix more positions",
+                  token.line,
+                );
+              const corners = cornersAt(position, yaw);
+              for (const corner of corners)
+                if (!insideRoom(room, corner[0] / program.grid, corner[1] / program.grid))
+                  return false;
+              if (settings.clearance === 0 && (room.diagonal || room.regions.length > 1)) {
+                const local = corners.map((point) => point.map((value) => value / program.grid)),
+                  covered = room.regions.reduce(
+                    (total, region) => total + Math.abs(polygonArea(clipPolygon(local, region))),
+                    0,
+                  );
+                if (
+                  covered + 1e-8 <
+                  (token.dimensions[0] * token.dimensions[1]) / program.grid ** 2
+                )
+                  return false;
+              }
+              const cross = (a, b, c) =>
+                  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]),
+                distance = (point, a, b) => {
+                  const dx = b[0] - a[0],
+                    dz = b[1] - a[1],
+                    t = Math.max(
+                      0,
+                      Math.min(
+                        1,
+                        ((point[0] - a[0]) * dx + (point[1] - a[1]) * dz) / (dx * dx + dz * dz),
+                      ),
+                    );
+                  return Math.hypot(point[0] - a[0] - t * dx, point[1] - a[1] - t * dz);
+                };
+              for (const edge of room.edges) {
+                const a = edge.start.map((v) => v * program.grid),
+                  b = edge.end.map((v) => v * program.grid);
+                for (let i = 0; i < corners.length; i += 1) {
+                  const c = corners[i],
+                    d = corners[(i + 1) % corners.length];
+                  if (
+                    cross(a, b, c) * cross(a, b, d) < -1e-12 &&
+                    cross(c, d, a) * cross(c, d, b) < -1e-12
+                  )
+                    return false;
+                  if (
+                    Math.min(
+                      distance(a, c, d),
+                      distance(b, c, d),
+                      distance(c, a, b),
+                      distance(d, a, b),
+                    ) +
+                      1e-8 <
+                    settings.clearance
+                  )
+                    return false;
+                }
+              }
+              return (
+                !occupied.some((other) =>
+                  overlaps(corners, other.corners, Math.max(settings.clearance, other.clearance)),
+                ) && !blockers.some((other) => overlaps(corners, other, 0))
+              );
+            };
+          let found;
+          const tryAt = (position, yaw) => {
+            if (!found && valid(position, yaw))
+              found = { position: position.map((value) => Number(value.toFixed(9))), yaw };
+          };
+          if (settings.algorithm === "wall-first" || placement.wall) {
+            for (const side of placement.wall ? [placement.wall] : directions) {
+              if (!room.walls.includes(side)) continue;
+              const yaw = { north: 0, east: 270, south: 180, west: 90 }[side];
+              if (placement.rotation !== undefined && placement.rotation !== yaw) continue;
+              const vertical = ["east", "west"].includes(side),
+                length = vertical ? depth : width;
+              for (let i = 0; i <= Math.ceil(length / settings.step) && !found; i += 1) {
+                const along = i * settings.step;
+                let edge;
+                try {
+                  edge = supportingEdge(program, room, side, along, token.dimensions[0]);
+                } catch (error) {
+                  if (!(error instanceof LayoutError)) throw error;
+                  continue;
+                }
+                if (!edge) continue;
+                const positive = ["east", "south"].includes(side),
+                  across =
+                    edge.across * program.grid +
+                    (positive ? -1 : 1) * (token.dimensions[1] / 2 + settings.clearance);
+                tryAt(vertical ? [across, along] : [along, across], yaw);
+              }
+            }
+          }
+          if (!placement.wall) {
+            for (let z = 0; z <= Math.ceil(depth / settings.step) && !found; z += 1) {
+              for (let x = 0; x <= Math.ceil(width / settings.step) && !found; x += 1) {
+                for (const yaw of rotations) {
+                  if (found) break;
+                  tryAt([x * settings.step, z * settings.step], yaw);
+                }
+              }
+            }
+          }
+          if (found) {
+            token.position = found.position;
+            token.yaw = found.yaw;
+            occupied.push({
+              corners: cornersAt(token.position, token.yaw),
+              clearance: settings.clearance,
+            });
+          } else {
+            entry.unplaced = true;
+            program.warnings.push(
+              `Line ${token.line}: ${entry.id} could not be placed in ${room.name}${placement.wall ? ` along its ${placement.wall} wall` : ""}; adjust its size, clearance or placement.`,
+            );
+          }
+        }
+        program.layouts[room.name] = [
+          entries.filter((entry) => !entry.unplaced).map((entry) => entry.token),
+        ];
+        placementWarnings(program, room);
+      }
+    }
+    function freezePlacement(source) {
+      if (!isJsonDesign(source)) fail("Freeze placement requires a JSON design", 1);
+      const program = parseJsonDesign(source),
+        { document } = readJsonDesign(source);
+      for (const [id, placement] of Object.entries(program.placements))
+        document.instances[id].placement = placement;
+      return JSON.stringify(document, null, 2);
+    }
+    const automaticExample = JSON.stringify(
+      {
+        version: 3,
+        units: "m",
+        placement: { algorithm: "wall-first", clearance: 0.15 },
+        floorPlan: {
+          rooms: {
+            living: {
+              size: [5, 4],
+              origin: [0, 0],
+              openings: [{ type: "door", wall: "south", at: 2.5, width: 0.9 }],
+            },
+          },
+        },
+        assets: {
+          sofa: { model: "sofa", size: [2.2, 0.9, 0.85] },
+          chair: { model: "chair" },
+          table: { model: "coffee_table" },
+        },
+        instances: {
+          livingSofa: {
+            asset: "sofa",
+            room: "living",
+            placement: { position: [2.5, 0.6], rotation: 0 },
+          },
+          readingChair: { asset: "chair", room: "living" },
+          coffeeTable: { asset: "table", room: "living" },
+        },
+      },
+      null,
+      2,
+    );
     function parseProgram(source) {
+      if (isJsonDesign(source)) return parseJsonDesign(source);
       const design = parseDesign(source);
       if (!design) {
         return parseLegacyProgram(source);
@@ -1155,6 +1960,10 @@
       return program;
     }
     function migrateDesign(source) {
+      if (isJsonDesign(source)) {
+        parseJsonDesign(source);
+        return source;
+      }
       if (parseDesign(source)) {
         parseProgram(source);
         return source;
@@ -1385,6 +2194,10 @@
       return migrated;
     }
     function formatDesign(source) {
+      if (isJsonDesign(source)) {
+        parseJsonDesign(source);
+        return JSON.stringify(readJsonDesign(source).document, null, 2);
+      }
       const design = parseDesign(source);
       if (!design) {
         fail("Migrate to DESIGN 2 before formatting", 1);
@@ -2468,6 +3281,10 @@
       examples,
       fixtureNames,
       formatDesign,
+      freezePlacement,
+      readJsonDesign,
+      isJsonDesign,
+      automaticExample,
       furniturePosition,
       insideRoom,
       migrateDesign,
@@ -2486,7 +3303,11 @@
 const {
   catalog,
   clipPolygon,
-  modernExamples: examples,
+  modernExamples,
+  automaticExample,
+  freezePlacement,
+  readJsonDesign,
+  isJsonDesign,
   examples: legacyExamples,
   migrateDesign,
   formatDesign,
@@ -2497,6 +3318,7 @@ const {
   insideRoom,
   polygonArea,
 } = createLayoutCore();
+const examples = { "Automatic living room": automaticExample, ...modernExamples };
 const initializeStudio = async function initializeStudio() {
   const [
     THREE,
@@ -5977,7 +6799,7 @@ const initializeStudio = async function initializeStudio() {
                   : "separator"
         ],
       regexp:
-        /(#[^\n]*)|(<(?:https?:\/\/[^>]*|\$\w+)>)|(\b(?:DESIGN|ASSET|LINK|PLACE|ROW|DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|PASSAGE|SHUTTER|DOORS|WINDOWS|RAILS|RAILING|SPACING|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([|]|\.(?=\s*(?:[|]|$)))/giu,
+        /(#[^\n]*)|("(?:[^"\\]|\\.)*"|<(?:https?:\/\/[^>]*|\$\w+)>)|(\b(?:DESIGN|ASSET|LINK|PLACE|ROW|DETAIL|GRID|ROOM|BALCONY|GARDEN|OUTLINE|LABEL|WALLS|DOOR|PASSAGE|SHUTTER|DOORS|WINDOWS|RAILS|RAILING|SPACING|SURFACE|STYLE|MOUNT|LIGHT|LAYOUT|END|AT|FULL|WIDTH|POWER|FLOOR|HEIGHT|SITE|FACADE|ROOF|WALL_THICKNESS)\b)|([+-]?\d+(?:\.\d+)?)|([{}[\]:,|]|\.(?=\s*(?:[|]|$)))/giu,
     }),
     sourceHighlighting = ViewPlugin.fromClass(
       class {
@@ -6021,7 +6843,8 @@ const initializeStudio = async function initializeStudio() {
     try {
       $("errorLocation").hidden = true;
       const parsed = parseProgram(source);
-      $("migrateButton").hidden = Boolean(parseDesign(source));
+      $("migrateButton").hidden = isJsonDesign(source) || Boolean(parseDesign(source));
+      $("freezeButton").hidden = !isJsonDesign(source);
       progress("Rendering…");
       await new Promise((resolve) => {
         requestAnimationFrame(resolve);
@@ -6270,7 +7093,7 @@ const initializeStudio = async function initializeStudio() {
     $("assetDimensions").textContent = `${catalog[name].join(" × ")} m · Width × depth × height`;
     $("assetToken").textContent = name;
     $("assetContext").textContent =
-      "Copy a token and edit the design source to place or change assets.";
+      "Define assets and instances in the design source; omit placement for an automatic layout.";
     const version = previewRevision + 1;
     previewRevision = version;
     $("assetPreview").textContent = "Rendering preview…";
@@ -6303,6 +7126,23 @@ const initializeStudio = async function initializeStudio() {
     $("exampleSelect").add(editedDesign);
     const folding = foldService.of((state, from) => {
         const line = state.doc.lineAt(from);
+        if (isJsonDesign(state.doc.toString())) {
+          try {
+            const json = state.doc.toString(),
+              { spans } = readJsonDesign(json);
+            for (const location of spans.values())
+              if (
+                location.from >= line.from &&
+                location.from <= line.to &&
+                location.to > line.to &&
+                ["{", "["].includes(json[location.from])
+              )
+                return { from: location.from + 1, to: location.to - 1 };
+          } catch {
+            return null;
+          }
+          return null;
+        }
         if (
           !/^(LAYOUT|ROOM|BALCONY|GARDEN)\b/iu.test(line.text.trim()) ||
           (!/^\s*DESIGN\s+2\s*(?:#.*)?$/imu.test(state.doc.toString()) &&
@@ -6318,7 +7158,9 @@ const initializeStudio = async function initializeStudio() {
         }
         return null;
       }),
-      initialName = examples[params.get("example")] ? params.get("example") : "Small apartment";
+      initialName = examples[params.get("example")]
+        ? params.get("example")
+        : "Automatic living room";
     let saved;
     try {
       saved = localStorage.getItem("interior-studio-draft");
@@ -6469,6 +7311,13 @@ const initializeStudio = async function initializeStudio() {
       "click",
       guarded(() => {
         replaceSource(migrateDesign(doc()));
+        compile();
+      }),
+    );
+    $("freezeButton").addEventListener(
+      "click",
+      guarded(() => {
+        replaceSource(freezePlacement(doc()));
         compile();
       }),
     );

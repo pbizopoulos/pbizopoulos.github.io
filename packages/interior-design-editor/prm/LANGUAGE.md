@@ -1,159 +1,96 @@
-# Interior layout language — DESIGN 2
+# JSON interior designs — version 3
 
-DESIGN 2 describes the same scenes as the original editor with explicit units, scoped rooms, direct furniture placement and reusable definitions. Existing source and shared links without a version header still use the original language.
+Describe the floor plan, reusable assets and named instances in strict JSON. The default **Automatic living room** example mixes fixed and automatic furniture. Existing DESIGN 2 and legacy sources still render; see the [DESIGN 2 guide](./LANGUAGE-V2.md).
 
-```text
-DESIGN 2
-GRID 50cm
-ASSET dining = kitchen_chair[52x51x79cm]<https://example.com/chair>
-
-ROOM kitchen 4x3.5m AT 0,0m
-  WALLS all
-  SURFACE tile
-  DOOR south AT 2m WIDTH 85cm
-  LIGHT ceiling_light AT 2,1.75m POWER 18
-  PLACE kitchen_table AT 2,2.5m
-  PLACE dining AT 2,1.5m
-  PLACE dining@90 AT 1,2.5m
-  PLACE dining@270 AT 3,2.5m
-END
+```json
+{
+  "version": 3,
+  "units": "m",
+  "placement": { "algorithm": "wall-first", "clearance": 0.15 },
+  "floorPlan": {
+    "rooms": {
+      "living": {
+        "size": [5, 4],
+        "origin": [0, 0],
+        "openings": [{ "type": "door", "wall": "south", "at": 2.5, "width": 0.9 }]
+      }
+    }
+  },
+  "assets": {
+    "sofa": { "model": "sofa", "size": [2.2, 0.9, 0.85] },
+    "chair": { "model": "chair" }
+  },
+  "instances": {
+    "livingSofa": {
+      "asset": "sofa",
+      "room": "living",
+      "placement": { "position": [2.5, 0.6], "rotation": 0 }
+    },
+    "readingChair": { "asset": "chair", "room": "living" }
+  }
+}
 ```
 
-The editor starts its bundled examples in DESIGN 2. **Upgrade language** converts a valid older document; **Format** upgrades if necessary and indents blocks. Ctrl/Cmd+Z undoes either action. Ctrl/Cmd+Enter renders immediately. Invalid source leaves the last valid scene visible, and **Go to line** selects the offending source line.
+## Coordinates and references
 
-## Coordinates and units
+All lengths are metres. `units` is optional and only accepts `"m"`. Positions are `[x, z]`, with x east/right and z south/down. Room `origin` is the northwest bounding-box corner in project coordinates, default `[0, 0]`. Object positions are centres relative to that room corner. Asset `size` is `[width, depth, height]`; omission uses catalog dimensions. Rotations are degrees using the existing renderer's orientation.
 
-- `m`, `cm`, `mm`: physical lengths. `g`: drawing-grid units, whose size is set by `GRID`. Keywords and units are case-insensitive.
-- A unit suffix applies to the entire vector: `150,200cm`, `4x3m`, `50x60x80cm`. Do not write `150cm,200cm` or `4mx3m`.
-- All explicit lengths require a suffix. Furniture sizes, offsets, heights, widths, grid size, railing spacing and wall thickness require physical units. Room sizes, outlines and positions, object positions, labels, openings and wall positions may also use `g`.
-- Coordinates are `x,z`: x increases east/right, z increases south/down in floor-plan view. Room positions use the project origin. Positions inside a room use its northwest bounding-box corner, including rooms with polygonal outlines.
-- `PLACE` and `LIGHT` locate the **object centre**. `MOUNT ... AT` and `DOOR ... AT` measure the **centre along the wall**, starting from the minimum coordinate of the room bounding box. There is no implicit half-cell adjustment in DESIGN 2.
-- North/south walls measure their along-wall position in x; east/west walls in z. These are coordinates, not distances walked around a polygon. Outlines and supporting edges retain the original renderer's rules.
-- Angles use the compact `@degrees` modifier. Bare `POWER` is the renderer's intensity parameter, not a calibrated wattage.
-- `GRID` defaults to `0.82m`. Declare it once, before any room. Changing it scales `g` coordinates and dense-grid spacing; physical sizes and `m` coordinates retain their physical values.
-- Numbers are decimal, optionally negative where supported; exponent notation, expressions and non-finite values are not accepted.
+An asset's `model` must name a catalog model. Optional `url` retains an HTTP(S) product reference; it does not load a model. Each instance has an `asset` ID and a `room` ID. Reuse an asset by defining several instance IDs. Definitions may appear in any order. Reference IDs are exact and case-sensitive; use lowercase room IDs since the underlying renderer normalizes room names. IDs contain letters, digits or underscores. Unknown properties, duplicate JSON keys, invalid references and wrong types produce source-located errors. JSON comments and trailing commas are unsupported.
 
-## Blocks and scope
+## Automatic and manual placement
 
-```text
-ROOM living 8x6g AT 0,0g
-  LABEL "Living room" AT 4,3g
-  WALLS all
-  WINDOWS north west
-  PLACE sofa~west AT 1.5,3.5g
-END
+Omit an instance's `placement`, or give `{}`, to request automatic placement. Project `placement` supplies defaults; room `placement` overrides individual settings.
 
-BALCONY terrace 4x8g AT 8,0g
-  WALLS west
-  RAILS north east south
-  SURFACE tile
-END
+| Setting     | Default        | Meaning                                                     |
+| ----------- | -------------- | ----------------------------------------------------------- |
+| `algorithm` | `"wall-first"` | `"wall-first"` or `"grid-pack"`                             |
+| `clearance` | `0.15`         | Minimum separation from room edges and furniture, 0–2m      |
+| `step`      | `0.1`          | Candidate spacing, 0.05–1m; independent of the drawing grid |
+
+`wall-first` searches supporting walls in north/east/south/west order, then falls back to the grid. Along each wall it scans increasing coordinates and rotates the furniture to face into the room. `grid-pack` scans increasing z, then x, starting at the room origin. Grid candidates try rotations 0°, 90°, 180°, 270°, unless constrained. Both strategies choose the first valid candidate. They are greedy geometric placement methods and do not infer relationships such as chairs surrounding tables.
+
+Instance `placement` accepts:
+
+- `position`: fixes the centre at `[x, z]`. `rotation` defaults to zero. Fixed furniture is reserved before any automatic furniture and is never moved by the algorithms.
+- `rotation` without `position`: fixes orientation while the algorithm chooses the position.
+- `wall` without `position`: restricts placement to one supporting `"north"`, `"east"`, `"south"` or `"west"` wall. Wall placement sets rotation, so it cannot be combined with `rotation` or `position`.
+
+Automatic candidates must fit the full outline, respect rotated furniture footprints, avoid fixed furniture and substantial mounted cabinetry, and leave space in front of doors, passages and shutters. Opening keep-out depth is the larger of 0.9m and opening width, plus clearance. Between two furniture instances the larger clearance applies. Fixed positions retain their coordinates and receive warnings for overlaps, boundary violations and blocked openings.
+
+Room and instance IDs are sorted lexically, independently of JSON property order. With the same source values, catalog dimensions and implementation, evaluation produces the same placements. Adding or renaming instances can move other automatic instances. The placement search is capped at 200,000 candidates per document; exceeding it produces an error suggesting a larger step or more fixed positions. A failed fit is a warning: the instance remains in the source and is omitted from the rendered scene.
+
+**Freeze placement** writes evaluated positions and rotations into every successfully placed instance. Unplaced instances retain their constraints. The action is undoable. **Format** indents JSON; folding handles objects and arrays. Clicking furniture selects its original instance source. Invalid source leaves the last valid scene visible. Saved drafts and shared links retain JSON verbatim. Older sources keep their existing formatting and upgrade tools.
+
+## Additional floor-plan properties
+
+`floorPlan.rooms` is a map of room IDs to room objects. `size` is required. Indoor rooms default to all four walls, 2.6m height, wood surface and warm style.
+
+| Property                             | Meaning                                                                                                                                                                                                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`                               | `"room"` (default), `"balcony"`, or `"garden"`; outdoor defaults match DESIGN 2                                                                                                                                                                                                                   |
+| `floor`                              | Integer −8 through 31; elevation is floor × 3m                                                                                                                                                                                                                                                    |
+| `walls`, `windows`, `doors`, `rails` | Direction arrays; `[]` removes them. `doors` and `windows` use the renderer's automatic opening positions                                                                                                                                                                                         |
+| `height`                             | 2.4–6m                                                                                                                                                                                                                                                                                            |
+| `surface`, `style`                   | Same named choices as DESIGN 2                                                                                                                                                                                                                                                                    |
+| `outline`                            | 4–32 `[x, z]` polygon points within the room bounding box, reaching every bound                                                                                                                                                                                                                   |
+| `label`, `labelPosition`             | Display label and optional room-local `[x, z]` anchor                                                                                                                                                                                                                                             |
+| `openings`                           | Up to eight `{ "type": "door", "wall": "south", "at": 2, "width": 0.9 }` objects. Type also accepts `"passage"` and `"shutter"`; width defaults to 0.85m. `at` is the centre along the wall measured from the bounding-box minimum. A full shutter uses `"full": true` and omits `at` and `width` |
+| `lights`                             | Up to sixteen `{ "model": "downlight", "position": [2, 2], "power": 18 }` fixtures; power defaults to 18                                                                                                                                                                                          |
+| `mounts`                             | `{ "asset": "mirror", "wall": "north", "at": 2, "height": 1 }`; height sets the bottom and may be omitted for the renderer default                                                                                                                                                                |
+| `railing`                            | Balcony `{ "style": "horizontal", "finish": "silver", "spacing": 1.5 }`; choices match DESIGN 2                                                                                                                                                                                                   |
+| `placement`                          | Room overrides for algorithm, clearance and step                                                                                                                                                                                                                                                  |
+
+Optional project properties: `grid` (default 0.82m), `wallThickness` (`[exterior, interior]`), `site` (`{ "surface": "grass", "margin": 5 }`), `facade`, `roof`, and `details` (array of `{ "room": "project", "text": "Notes", "url": "https://example.com" }`, with optional URL and room). Named finishes and geometry rules match DESIGN 2.
+
+Existing limits apply: at most 32 rooms, 1,024 instances and 64 total fixtures. Each room side spans 2–40 drawing-grid units; the entire floor plan fits 40×40 units. `grid` is 0.2–3m. Grid size affects these bounds, not placement spacing. Asset sizes are 0.001–10m per component. JSON source is limited to 200,000 characters and 64 nesting levels. This initial JSON format does not expose nested furniture attachments; existing documents containing them remain supported in their original format.
+
+## Verification
+
+```sh
+node --test packages/interior-design-editor/prm/{layout,language,json}.test.mjs
+# Serve the repository on port 8765, then:
+node packages/interior-design-editor/prm/json-browser.cjs
+node packages/interior-design-editor/prm/language-browser.cjs
 ```
 
-`ROOM`, `BALCONY`, `GARDEN`, and reusable `LAYOUT` definitions each end with `END`. Room properties and furniture belong inside their room block. Blocks do not nest. An empty room is valid and needs no placeholder layout. Room/layout identifiers share the legacy namespace and must be unique as applicable.
-
-`FLOOR`, `DETAIL`, `SITE`, `FACADE`, `ROOF`, `WALL_THICKNESS`, `ASSET`, `LINK` and `GRID` belong at the top level. `FLOOR n` applies to subsequent rooms until changed; floor elevations remain `n × 3m`.
-
-Comments start with `#` outside quoted strings and `<links>`. Labels and detail text use JSON double-quoted strings, including JSON escaping.
-
-## Furniture
-
-```text
-PLACE sofa AT 2,1.5m
-PLACE chair@35 AT 1,2m
-PLACE bed[160x200x56cm]~south AT 3,2m
-PLACE desk(work_on_top) AT 2,2m
-PLACE chair(hose_underneath) AT 1,1m
-```
-
-`PLACE token AT x,zunit` gives a continuous position. Several objects may occupy the same drawing-grid cell. Overlaps and furniture extending outside the room produce warnings; supporting-wall failures remain errors.
-
-A token is an asset name followed by optional modifiers:
-
-| Modifier                             | Meaning                                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `[widthxdepthxheightm]`              | Override the model dimensions; any physical suffix works.                                         |
-| `@angle`                             | Rotate in degrees using the existing renderer's orientation.                                      |
-| `~north`, `~east`, `~south`, `~west` | Align against a supporting wall, with automatic rotation and existing clearance.                  |
-| `[dx,dzm]`                           | Add a physical offset. For wall-aligned objects, only the along-wall component affects placement. |
-| `(layout_on_top)`                    | Attach a nested arrangement on top of the model.                                                  |
-| `(layout_underneath)`                | Attach an arrangement at its base.                                                                |
-| `<https://...>`                      | Product reference; does not import a 3D model.                                                    |
-| `<$reference>`                       | Use a named `LINK`.                                                                               |
-
-Modifiers may appear in any order. Each kind may appear once. `@` and `~` cannot be combined. Sizes are width/depth/height; scene transforms use x/y/z internally. Model default dimensions come from the asset catalog. Use explicit dimensions when an item must retain a fixed size independently of catalog defaults.
-
-Wall alignment intentionally overrides the perpendicular coordinate. For example, `sofa~west AT 1,2m` takes its position along the west wall from z = 2m. The x coordinate does not set a wall gap; the existing placement clearance does.
-
-## Reusable assets and links
-
-```text
-LINK manual = <https://example.com/product#specifications>
-ASSET dining = kitchen_chair[52x51x79cm]<$manual>
-DETAIL project "Chair specifications" <$manual>
-
-ROOM dining_room 4x4m AT 0,0m
-  WALLS all
-  PLACE dining AT 1,1m
-  PLACE dining@180 AT 1,3m
-  PLACE dining[60x55x85cm] AT 3,3m
-END
-```
-
-Definitions must precede use. Asset and link names are case-insensitive and occupy separate namespaces. An `ASSET` name cannot shadow a catalog name or legacy numeric alias. An asset defines a model, size and optional product URL; rotation, wall alignment, offsets and nested layouts belong to instances. An instance can override its definition's size or URL. A definition can reuse an earlier asset; recursive and forward definitions are not supported.
-
-`LINK` values must be HTTP(S) URLs without credentials. References in prose are literal; only a link position resolves `<$name>`.
-
-## Dense grids and nested arrangements
-
-Use `ROW` inside a room when a compact drawing grid is easier than coordinates:
-
-```text
-DESIGN 2
-GRID 1m
-ROOM study 4x4g AT 0,0g
-  ROW . | . | .
-  ROW . | desk(work_on_top) | .
-END
-
-LAYOUT work
-  book | mug
-END
-```
-
-Each `ROW` advances one cell row from the northwest corner. The first cell centre is `0.5,0.5g`. `.` is empty; the legacy `-` and `0` alternatives remain accepted. Use either `ROW` or `PLACE` in one room, not both. A room need not fill every cell.
-
-A reusable `LAYOUT` retains the original cell syntax without `ROW`. Its full row/column shape matters: the renderer distributes its items over their parent's footprint. Empty edge cells must therefore remain intact. Layouts may refer to other layouts up to four levels, without cycles. A room layout may be reused as an arrangement when represented with `ROW`; direct `PLACE` rooms are not reusable arrangements.
-
-## Room and project statements
-
-| Statement                            | Example / meaning                                                                                                      |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `LABEL`                              | `LABEL "Kitchen" AT 2,1m`; position optional.                                                                          |
-| `OUTLINE`                            | `OUTLINE 0,0g 6,0g 6,6g 3,6g 3,3g 0,3g`; one simple polygon inside the room bounds.                                    |
-| `WALLS`, `WINDOWS`, `DOORS`, `RAILS` | Direction list, `all` or `none`. Plural `DOORS`/`WINDOWS` retain automatic placement.                                  |
-| `DOOR`, `PASSAGE`, `SHUTTER`         | `DOOR south AT 2m WIDTH 85cm`; `SHUTTER east FULL` spans a supported edge.                                             |
-| `HEIGHT`                             | `HEIGHT 2.8m`; room height.                                                                                            |
-| `SURFACE`                            | `auto`, `wood`, `tile`, `stone`, `grass`, `terracotta`, `concrete`.                                                    |
-| `STYLE`                              | `warm`, `blue`, `neutral`, `liminal`, `industrial`, `aquatic`, `mediterranean`.                                        |
-| `MOUNT`                              | `MOUNT north AT 2m mirror HEIGHT 1m`; HEIGHT sets the bottom of the item, optional asset-specific default.             |
-| `LIGHT`                              | `LIGHT downlight AT 2,1.5m POWER 12`; POWER defaults to 18.                                                            |
-| `RAILING`                            | `RAILING horizontal silver SPACING 1.5m`; balcony only, orientation `horizontal`/`vertical`, finish `silver`/`timber`. |
-| `FLOOR`                              | `FLOOR -1`; subsequent rooms use that floor.                                                                           |
-| `DETAIL`                             | `DETAIL project "Notes"` or `DETAIL bedroom "Product" <https://example.com>`; retained in project details.             |
-| `WALL_THICKNESS`                     | `WALL_THICKNESS 24cm 12cm`; exterior then interior.                                                                    |
-| `SITE`                               | `SITE grass 5m`; `none`, `grass`, `paving`, `sand`; optional margin.                                                   |
-| `FACADE`                             | `none`, `plaster`, `brick`, `timber`, `concrete`.                                                                      |
-| `ROOF`                               | `none`, `flat`, `pitched`, `terracotta`; shape restrictions unchanged.                                                 |
-
-Legacy defaults remain: indoor room walls north/east/west, wood flooring, warm style, 2.6m height, no openings. Balcony defaults include east/south/west rails and no walls. Gardens default to grass and no walls. Use `WALLS all` for an enclosed room. Explicit properties may override earlier settings in the same block; repeated definitions and duplicate geometry statements still follow legacy validation.
-
-## Bounds and compatibility
-
-Existing scene limits still apply: at most 32 rooms, each 2–40 grid units per side; project bounds at most 40×40 grid units; grid 0.2–3m; floors −8 through 31; at most 1,024 expanded furniture instances and 64 fixtures. Sizes must be positive and no more than 10m per component; offsets are within ±10m; direct coordinates within ±120m. Opening widths, ceiling heights, supporting edges and polygon validation retain their existing limits.
-
-Migration preserves evaluated scene geometry, product references and detail text. It removes redundant catalog-size overrides and default properties, extracts repeated assets/URLs only when they save source, and chooses direct placement or a dense grid by source length. It retains grid shape when a room layout is reused. Comments are retained but may move to the document header; migration is a semantic conversion, not a lossless text-formatting operation. Formatting DESIGN 2 changes indentation and surrounding whitespace, not token spelling, numeric precision, prose or comments.
-
-The migrated Apartment deliberately retains its precise grid size and offsets. Do not round those measurements merely to shorten the text: some objects sit at validation boundaries.
-
-See [the illustrated comparisons](./language-review/index.html) and [design decisions](./LANGUAGE-DESIGN.md).
+Browser scripts accept `PLAYWRIGHT_MODULE`, `CHROME_PATH` and `INTERIOR_BACKEND` overrides.
