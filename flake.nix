@@ -1,16 +1,16 @@
 {
   inputs = {
+    afairesi.url = "github:afairesi/afairesi";
     disko = {
-      inputs.nixpkgs.follows = "perigrafo/nixpkgs";
+      inputs.nixpkgs.follows = "afairesi/nixpkgs";
       url = "github:nix-community/disko";
     };
-    perigrafo.url = "github:afairesi/afairesi";
     preservation.url = "github:nix-community/preservation";
   };
   outputs =
     inputs:
     let
-      blueprint = inputs.perigrafo.blueprint {
+      blueprint = inputs.afairesi.blueprint {
         inherit inputs;
         nixpkgs.config = {
           allowUnfree = true;
@@ -20,6 +20,6 @@
     in
     blueprint
     // {
-      formatter = inputs.perigrafo.lib.mkFormatter { inherit (inputs) self; };
+      formatter = inputs.afairesi.lib.mkFormatter { inherit (inputs) self; };
     };
 }

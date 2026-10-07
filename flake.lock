@@ -1,9 +1,29 @@
 {
   "nodes": {
+    "afairesi": {
+      "inputs": {
+        "blueprint": "blueprint",
+        "nixpkgs": "nixpkgs",
+        "treefmt-nix": "treefmt-nix"
+      },
+      "locked": {
+        "lastModified": 1791367073,
+        "narHash": "sha256-rfNHzcbjP8pLEMI5ix9SVrO+qJqrmh+RjDnoJElvKeM=",
+        "owner": "afairesi",
+        "repo": "afairesi",
+        "rev": "fcd24f727490a4934539bfbeb1b3b93263f8a559",
+        "type": "github"
+      },
+      "original": {
+        "owner": "afairesi",
+        "repo": "afairesi",
+        "type": "github"
+      }
+    },
     "blueprint": {
       "inputs": {
         "nixpkgs": [
-          "perigrafo",
+          "afairesi",
           "nixpkgs"
         ],
         "systems": "systems"
@@ -25,7 +45,7 @@
     "disko": {
       "inputs": {
         "nixpkgs": [
-          "perigrafo",
+          "afairesi",
           "nixpkgs"
         ]
       },
@@ -59,26 +79,6 @@
         "type": "github"
       }
     },
-    "perigrafo": {
-      "inputs": {
-        "blueprint": "blueprint",
-        "nixpkgs": "nixpkgs",
-        "treefmt-nix": "treefmt-nix"
-      },
-      "locked": {
-        "lastModified": 1791358568,
-        "narHash": "sha256-57XRyMHJjbWMl8Mdo61nuhxX+obEnLGrnO6waGThtjQ=",
-        "owner": "afairesi",
-        "repo": "afairesi",
-        "rev": "dea7504fe79297131b268d0b95227a59674f28c7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "afairesi",
-        "repo": "afairesi",
-        "type": "github"
-      }
-    },
     "preservation": {
       "locked": {
         "lastModified": 1757436102,
@@ -96,8 +96,8 @@
     },
     "root": {
       "inputs": {
+        "afairesi": "afairesi",
         "disko": "disko",
-        "perigrafo": "perigrafo",
         "preservation": "preservation"
       }
     },
@@ -119,7 +119,7 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
-          "perigrafo",
+          "afairesi",
           "nixpkgs"
         ]
       },
