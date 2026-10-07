@@ -4,7 +4,7 @@
       inputs.nixpkgs.follows = "perigrafo/nixpkgs";
       url = "github:nix-community/disko";
     };
-    perigrafo.url = "github:perigrafo/perigrafo";
+    perigrafo.url = "github:afairesi/afairesi";
     preservation.url = "github:nix-community/preservation";
   };
   outputs =
