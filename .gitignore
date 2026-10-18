@@ -4,9 +4,6 @@
 !/.github/workflows/workflow.yml
 !/.gitignore
 !/LICENSE
-!/checks/
-!/checks/laptopVmWithDisko/
-!/checks/laptopVmWithDisko/default.nix
 !/flake.lock
 !/flake.nix
 !/hosts/
