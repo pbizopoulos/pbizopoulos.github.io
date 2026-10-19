@@ -10,7 +10,7 @@
   outputs =
     inputs:
     let
-      blueprint = inputs.afairesi.blueprint {
+      flake = inputs.afairesi.lib.mkFlake {
         inherit inputs;
         nixpkgs.config = {
           allowUnfree = true;
@@ -18,7 +18,7 @@
         };
       };
     in
-    blueprint
+    flake
     // {
       formatter = inputs.afairesi.lib.mkFormatter { inherit (inputs) self; };
     };
