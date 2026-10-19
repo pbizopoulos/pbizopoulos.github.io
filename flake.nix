@@ -9,17 +9,11 @@
   };
   outputs =
     inputs:
-    let
-      flake = inputs.afairesi.lib.mkFlake {
-        inherit inputs;
-        nixpkgs.config = {
-          allowUnfree = true;
-          permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-63-6.18.56" ];
-        };
+    inputs.afairesi.lib.mkFlake {
+      inherit inputs;
+      nixpkgs.config = {
+        allowUnfree = true;
+        permittedInsecurePackages = [ "broadcom-sta-6.30.223.271-63-6.18.56" ];
       };
-    in
-    flake
-    // {
-      formatter = inputs.afairesi.lib.mkFormatter { inherit (inputs) self; };
     };
 }
