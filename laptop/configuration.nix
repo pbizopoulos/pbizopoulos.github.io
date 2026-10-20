@@ -1,6 +1,19 @@
-{ inputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 {
   boot = {
+    extraModulePackages = [
+      (config.boot.kernelPackages.broadcom_sta.overrideAttrs (previous: {
+        postFixup = (previous.postFixup or "") + ''
+          ${lib.getExe pkgs.kmodigest} "$out/lib/modules/${config.boot.kernelPackages.kernel.modDirVersion}/kernel/net/wireless/wl.ko"
+        '';
+      }))
+    ];
     kernelParams = [ "i915.enable_psr=0" ];
     loader.systemd-boot.enable = true;
   };

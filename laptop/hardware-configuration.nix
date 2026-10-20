@@ -6,7 +6,6 @@
 }:
 {
   boot = {
-    extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
     initrd.availableKernelModules = [
       "ahci"
       "ehci_pci"
