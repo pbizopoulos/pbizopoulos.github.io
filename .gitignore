@@ -12,5 +12,5 @@
 !/laptop/
 !/laptop/configuration.nix
 !/laptop/hardware-configuration.nix
-!/prm/
-!/prm/**
+!/laptop/prm/
+!/laptop/prm/**
