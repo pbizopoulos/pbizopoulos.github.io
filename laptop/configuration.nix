@@ -186,16 +186,9 @@
       home.size = pkgs.lib.mkForce "500M";
       swap.size = pkgs.lib.mkForce "1M";
     };
-    users.users.pbizopoulos = {
-      hashedPasswordFile = pkgs.lib.mkForce null;
-      password = "password";
-    };
-    virtualisation = {
-      fileSystems = {
-        "/home".neededForBoot = true;
-        "/persistent".neededForBoot = true;
-      };
-      graphics = false;
+    virtualisation.fileSystems = {
+      "/home".neededForBoot = true;
+      "/persistent".neededForBoot = true;
     };
   };
 }
