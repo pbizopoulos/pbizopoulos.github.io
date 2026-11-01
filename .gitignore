@@ -9,6 +9,8 @@
 !/cv/index.html
 !/flake.lock
 !/flake.nix
+!/install-iso/
+!/install-iso/configuration.nix
 !/laptop/
 !/laptop/configuration.nix
 !/laptop/hardware-configuration.nix
