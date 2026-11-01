@@ -55,7 +55,6 @@
     nodev."/" = {
       fsType = "tmpfs";
       mountOptions = [
-        "defaults"
         "mode=755"
       ];
     };
@@ -82,13 +81,10 @@
     hostName = baseNameOf ./.;
     wireless.iwd.enable = true;
   };
-  nix.settings = {
-    experimental-features = [
-      "flakes"
-      "nix-command"
-    ];
-    trusted-users = [ "pbizopoulos" ];
-  };
+  nix.settings.experimental-features = [
+    "flakes"
+    "nix-command"
+  ];
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
