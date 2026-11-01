@@ -59,10 +59,7 @@
       ];
     };
   };
-  environment.sessionVariables = {
-    EDITOR = "vim";
-    NIXOS_OZONE_WL = "1";
-  };
+  environment.sessionVariables.EDITOR = "vim";
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
