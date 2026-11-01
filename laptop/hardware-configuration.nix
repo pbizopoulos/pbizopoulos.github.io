@@ -19,6 +19,7 @@
       "kvm-intel"
       "wl"
     ];
+    kernelParams = [ "i915.enable_psr=0" ];
   };
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];

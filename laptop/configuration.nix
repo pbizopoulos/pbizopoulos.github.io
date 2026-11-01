@@ -1,9 +1,11 @@
-{ inputs, pkgs, ... }:
 {
-  boot = {
-    kernelParams = [ "i915.enable_psr=0" ];
-    loader.systemd-boot.enable = true;
-  };
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+{
+  boot.loader.systemd-boot.enable = true;
   disko.devices = {
     disk.main = {
       content = {
@@ -70,10 +72,7 @@
     pkgs.noto-fonts
     pkgs.noto-fonts-color-emoji
   ];
-  hardware = {
-    enableRedistributableFirmware = true;
-    graphics.enable = true;
-  };
+  hardware.graphics.enable = true;
   imports = [
     ./hardware-configuration.nix
     inputs.disko.nixosModules.disko
@@ -132,7 +131,7 @@
     };
     foot = {
       enable = true;
-      settings.main.font = "Liberation Mono:pixelsize=60:style=Bold";
+      settings.main.font = "Noto Sans Mono:pixelsize=60:style=Bold";
       theme = "solarized-light";
     };
     git = {
@@ -183,8 +182,8 @@
   };
   virtualisation.vmVariantWithDisko = {
     disko.devices.disk.main.content.partitions = {
-      home.size = pkgs.lib.mkForce "500M";
-      swap.size = pkgs.lib.mkForce "1M";
+      home.size = lib.mkForce "500M";
+      swap.size = lib.mkForce "1M";
     };
     virtualisation.fileSystems = {
       "/home".neededForBoot = true;
