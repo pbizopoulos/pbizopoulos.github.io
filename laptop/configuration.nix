@@ -78,10 +78,13 @@
     hostName = baseNameOf ./.;
     wireless.iwd.enable = true;
   };
-  nix.settings.experimental-features = [
-    "flakes"
-    "nix-command"
-  ];
+  nix.settings = {
+    experimental-features = [
+      "flakes"
+      "nix-command"
+    ];
+    trusted-users = [ "pbizopoulos" ];
+  };
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
