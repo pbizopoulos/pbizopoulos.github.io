@@ -120,7 +120,7 @@
     dwl = {
       enable = true;
       package = pkgs.dwl.override {
-        configH = ./prm/dwl-config.h;
+        configH = ./dwl-config.h;
       };
     };
     foot = {
