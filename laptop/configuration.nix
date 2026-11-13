@@ -161,12 +161,11 @@
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
       packages = [
-        (pkgs.ungoogled-chromium.override {
-          commandLineArgs = [
-            "--force-device-scale-factor=4"
-            "--use-angle=vulkan"
-          ];
-        })
+        (pkgs.firefox.overrideAttrs (oldAttrs: {
+          buildCommand = oldAttrs.buildCommand + ''
+            wrapProgram "$out/bin/firefox" --set GDK_DPI_SCALE 4
+          '';
+        }))
         (pkgs.google-chrome.override {
           commandLineArgs = [
             "--force-device-scale-factor=4"
