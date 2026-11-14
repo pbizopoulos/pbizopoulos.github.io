@@ -120,12 +120,7 @@
       };
       enable = true;
     };
-    google-chrome = {
-      commandLineArgs = [
-        "--use-angle=vulkan"
-      ];
-      enable = true;
-    };
+    google-chrome.enable = true;
     vim = {
       defaultEditor = true;
       enable = true;
