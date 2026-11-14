@@ -79,7 +79,6 @@ in
     (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
     ../laptop/hardware-configuration.nix
   ];
-  networking.hostName = baseNameOf ./.;
   nix.settings.experimental-features = [
     "flakes"
     "nix-command"

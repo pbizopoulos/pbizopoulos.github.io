@@ -71,10 +71,7 @@
     inputs.disko.nixosModules.disko
     inputs.preservation.nixosModules.default
   ];
-  networking = {
-    hostName = baseNameOf ./.;
-    wireless.iwd.enable = true;
-  };
+  networking.wireless.iwd.enable = true;
   nix.settings = {
     experimental-features = [
       "flakes"
