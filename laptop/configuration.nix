@@ -59,7 +59,6 @@
       ];
     };
   };
-  environment.sessionVariables.EDITOR = "vim";
   fileSystems = {
     "/home".neededForBoot = true;
     "/persistent".neededForBoot = true;
@@ -123,17 +122,6 @@
         configH = ./dwl-config.h;
       };
     };
-    firefox = {
-      enable = true;
-      package = pkgs.firefox.overrideAttrs (oldAttrs: {
-        buildCommand = oldAttrs.buildCommand + ''
-          wrapProgram "$out/bin/firefox" \
-            --set GDK_DPI_SCALE 4 \
-            --run '${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY'
-        '';
-      });
-      preferences."widget.use-xdg-desktop-portal.file-picker" = 1;
-    };
     foot = {
       enable = true;
       settings.main.font = "Noto Sans Mono:pixelsize=60:style=Bold";
@@ -149,6 +137,20 @@
       };
       enable = true;
     };
+    google-chrome = {
+      commandLineArgs = [
+        "--force-device-scale-factor=4"
+        "--use-angle=vulkan"
+      ];
+      enable = true;
+    };
+    vim = {
+      defaultEditor = true;
+      enable = true;
+      package = pkgs.vim.customize {
+        vimrcConfig.customRC = "filetype plugin indent on";
+      };
+    };
   };
   security.pam.services.waylock = { };
   services = {
@@ -163,13 +165,7 @@
     };
   };
   system.stateVersion = "25.11";
-  systemd = {
-    suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
-    user.services.xdg-desktop-portal-gtk.environment = {
-      GDK_BACKEND = "x11";
-      GDK_DPI_SCALE = "4";
-    };
-  };
+  systemd.suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
   time.timeZone = "Europe/Athens";
   users = {
     mutableUsers = false;
@@ -177,18 +173,7 @@
       extraGroups = [ "wheel" ];
       hashedPasswordFile = "/persistent/passwords/pbizopoulos";
       isNormalUser = true;
-      packages = [
-        (pkgs.google-chrome.override {
-          commandLineArgs = [
-            "--force-device-scale-factor=4"
-            "--use-angle=vulkan"
-          ];
-        })
-        (pkgs.vim.customize {
-          vimrcConfig.customRC = "filetype plugin indent on";
-        })
-        pkgs.waylock
-      ];
+      packages = [ pkgs.waylock ];
     };
   };
   virtualisation.vmVariantWithDisko = {
@@ -200,13 +185,5 @@
       "/home".neededForBoot = true;
       "/persistent".neededForBoot = true;
     };
-  };
-  xdg.portal = {
-    config = {
-      common.default = [ "gtk" ];
-      dwl."org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
-    };
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 }
