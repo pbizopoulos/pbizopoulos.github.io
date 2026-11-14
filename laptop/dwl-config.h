@@ -21,7 +21,7 @@ static const Layout layouts[] = {
     {"><>", NULL},
 };
 static const MonitorRule monrules[] = {
-    {NULL, 0.55f, 1, 1, &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL, -1, -1},
+    {NULL, 0.55f, 1, 4, &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL, -1, -1},
 };
 static const struct xkb_rule_names xkb_rules = {
     .layout = "us,gr",

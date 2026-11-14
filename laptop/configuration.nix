@@ -107,7 +107,7 @@
     };
     foot = {
       enable = true;
-      settings.main.font = "Noto Sans Mono:pixelsize=60:style=Bold";
+      settings.main.font = "Noto Sans Mono:size=11.25:style=Bold";
       theme = "solarized-light";
     };
     git = {
@@ -122,7 +122,6 @@
     };
     google-chrome = {
       commandLineArgs = [
-        "--force-device-scale-factor=4"
         "--use-angle=vulkan"
       ];
       enable = true;
