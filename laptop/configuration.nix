@@ -163,7 +163,9 @@
       packages = [
         (pkgs.firefox.overrideAttrs (oldAttrs: {
           buildCommand = oldAttrs.buildCommand + ''
-            wrapProgram "$out/bin/firefox" --set GDK_DPI_SCALE 4
+            wrapProgram "$out/bin/firefox" \
+              --set GDK_DPI_SCALE 4 \
+              --set GTK_THEME Adwaita:light
           '';
         }))
         (pkgs.google-chrome.override {
