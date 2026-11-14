@@ -93,21 +93,9 @@
         }
       ];
       files = [
-        "/etc/ssh/ssh_host_ed25519_key.pub"
-        "/etc/ssh/ssh_host_rsa_key.pub"
         {
           file = "/etc/machine-id";
           inInitrd = true;
-        }
-        {
-          configureParent = true;
-          file = "/etc/ssh/ssh_host_ed25519_key";
-          how = "symlink";
-        }
-        {
-          configureParent = true;
-          file = "/etc/ssh/ssh_host_rsa_key";
-          how = "symlink";
         }
       ];
     };
@@ -151,15 +139,12 @@
     };
   };
   security.pam.services.waylock = { };
-  services = {
-    openssh.enable = true;
-    pipewire = {
-      enable = true;
-      pulse.enable = true;
-      wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
-        "device.routes.default-sink-volume" = 0.422;
-        "device.routes.default-source-volume" = 1.0e-3;
-      };
+  services.pipewire = {
+    enable = true;
+    pulse.enable = true;
+    wireplumber.extraConfig."60-defaults"."wireplumber.settings" = {
+      "device.routes.default-sink-volume" = 0.422;
+      "device.routes.default-source-volume" = 1.0e-3;
     };
   };
   system.stateVersion = "25.11";
