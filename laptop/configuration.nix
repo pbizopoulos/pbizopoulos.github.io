@@ -129,7 +129,7 @@
         buildCommand = oldAttrs.buildCommand + ''
           wrapProgram "$out/bin/firefox" \
             --set GDK_DPI_SCALE 4 \
-            --run '${pkgs.dbus}/bin/dbus-update-activation-environment --systemd WAYLAND_DISPLAY'
+            --run '${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY'
         '';
       });
       preferences."widget.use-xdg-desktop-portal.file-picker" = 1;
@@ -165,7 +165,10 @@
   system.stateVersion = "25.11";
   systemd = {
     suppressedSystemUnits = [ "systemd-machine-id-commit.service" ];
-    user.services.xdg-desktop-portal-gtk.environment.GDK_DPI_SCALE = "4";
+    user.services.xdg-desktop-portal-gtk.environment = {
+      GDK_BACKEND = "x11";
+      GDK_DPI_SCALE = "4";
+    };
   };
   time.timeZone = "Europe/Athens";
   users = {
