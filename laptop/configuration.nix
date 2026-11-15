@@ -107,7 +107,7 @@
     };
     foot = {
       enable = true;
-      settings.main.font = "Noto Sans Mono:size=11.25:style=Bold";
+      settings.main.font = "Noto Sans Mono:size=11.25";
       theme = "solarized-light";
     };
     git = {
