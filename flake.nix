@@ -1,6 +1,6 @@
 {
   inputs = {
-    afairesi.url = "github:afairesi/afairesi";
+    afairesi.url = "github:afairesi/flake-conventions";
     disko = {
       inputs.nixpkgs.follows = "afairesi/nixpkgs";
       url = "github:nix-community/disko";
